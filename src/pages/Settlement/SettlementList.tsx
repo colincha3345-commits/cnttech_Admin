@@ -1,0 +1,261 @@
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    DownloadOutlined,
+    DollarOutlined,
+    CalculatorOutlined,
+    CheckCircleOutlined,
+    ClockCircleOutlined,
+} from '@ant-design/icons';
+import {
+    Card,
+    CardContent,
+    Button,
+    SearchInput,
+    DataTable,
+} from '@/components/ui';
+import { settlementService } from '@/services/settlementService';
+
+import type { Settlement, SettlementStatus } from '@/types/settlement';
+
+const SETTLEMENT_STATUS_LABELS: Record<SettlementStatus, string> = {
+    pending: '정산 예정',
+    calculated: '정산 확정',
+    completed: '정산 완료',
+    on_hold: '정산 보류',
+};
+
+export function SettlementList() {
+    const navigate = useNavigate();
+    const [keyword, setKeyword] = useState('');
+    const [status, setStatus] = useState<SettlementStatus | ''>('');
+    const [data, setData] = useState<Settlement[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    const loadData = async () => {
+        setIsLoading(true);
+        try {
+            const res = await settlementService.getSettlements({ keyword, status });
+            setData(res.data);
+        } catch (error) {
+            console.error('Failed to load settlements:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, [keyword, status]);
+
+    const handleRunSettlement = async () => {
+        if (!window.confirm('현재 대상에 대한 정산을 실행하시겠습니까?')) return;
+        setIsProcessing(true);
+        try {
+            const res = await settlementService.runSettlement();
+            alert(res.message);
+            loadData();
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const totalNet = useMemo(() =>
+        data.reduce((acc, curr) => acc + curr.netAmount, 0),
+        [data]);
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold text-txt-main">가맹점 정산 관리</h1>
+                <Button variant="outline">
+                    <span className="flex items-center gap-2">
+                        <DownloadOutlined /> 내역 다운로드
+                    </span>
+                </Button>
+            </div>
+
+            {/* 요약 카드 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-blue-50 border-blue-100">
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-blue-600 mb-1">이번 회차 총 정산액</p>
+                                <h3 className="text-2xl font-bold text-blue-900 font-mono">
+                                    ₩{totalNet.toLocaleString()}
+                                </h3>
+                            </div>
+                            <DollarOutlined style={{ fontSize: 32 }} className="text-blue-200" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-txt-muted mb-1">정산 대기건</p>
+                                <h3 className="text-2xl font-bold text-txt-main font-mono">
+                                    {data.filter(s => s.status === 'pending').length}건
+                                </h3>
+                            </div>
+                            <ClockCircleOutlined style={{ fontSize: 32 }} className="text-border" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-txt-muted mb-1">정산 완료건 (당월)</p>
+                                <h3 className="text-2xl font-bold text-txt-main font-mono">
+                                    {data.filter(s => s.status === 'completed').length}건
+                                </h3>
+                            </div>
+                            <CheckCircleOutlined style={{ fontSize: 32 }} className="text-border" />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* 필터 섹션 */}
+            <Card>
+                <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-end">
+                    <div className="flex-1">
+                        <SearchInput
+                            placeholder="가맹점명 또는 정산 ID 검색"
+                            value={keyword}
+                            onChange={(val) => setKeyword(val)}
+                        />
+                    </div>
+                    <div className="w-full md:w-48 text-left">
+                        <label className="block text-xs font-medium text-txt-muted mb-1">정산 상태</label>
+                        <select
+                            className="w-full border border-border rounded-lg p-2 text-sm h-10 bg-bg-main text-txt-main"
+                            value={status}
+                            onChange={(e) => setStatus(e.target.value as SettlementStatus)}
+                        >
+                            <option value="">전체 상태</option>
+                            {Object.entries(SETTLEMENT_STATUS_LABELS).map(([value, label]) => (
+                                <option key={value} value={value}>{label}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <Button
+                        variant="secondary"
+                        onClick={handleRunSettlement}
+                        isLoading={isProcessing}
+                    >
+                        <span className="flex items-center gap-2">
+                            <CalculatorOutlined /> 정산 실행
+                        </span>
+                    </Button>
+                </CardContent>
+            </Card>
+
+            {/* 목록 테이블 */}
+            <Card className="overflow-hidden">
+                <DataTable<Settlement>
+                    columns={[
+                        {
+                            key: 'createdAt',
+                            header: '날짜',
+                            render: (item) => (
+                                <span className="text-sm text-txt-main whitespace-nowrap">{item.createdAt.slice(0, 10)}</span>
+                            ),
+                        },
+                        {
+                            key: 'storeName',
+                            header: '가맹점',
+                            render: (item) => (
+                                <div>
+                                    <div className="text-sm font-medium text-txt-main">{item.storeName}</div>
+                                    <div className="text-xs text-txt-muted">{item.storeId}</div>
+                                </div>
+                            ),
+                        },
+                        {
+                            key: 'totalSales',
+                            header: '총 매출액',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm font-medium text-txt-main font-mono whitespace-nowrap">₩{item.totalSales.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'deliveryFee',
+                            header: '배달비용',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-txt-sub font-mono whitespace-nowrap">₩{item.deliveryFee.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'pointsUsed',
+                            header: '포인트',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-purple-600 font-mono whitespace-nowrap">₩{item.pointsUsed.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'couponsUsed',
+                            header: '쿠폰',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-purple-600 font-mono whitespace-nowrap">₩{item.couponsUsed.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'vouchersUsed',
+                            header: '교환권',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-txt-sub font-mono whitespace-nowrap">₩{item.vouchersUsed.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'hqDiscount',
+                            header: '할인액(본사)',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-red-500 font-bold font-mono whitespace-nowrap">₩{item.hqSupport.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'storeDiscount',
+                            header: '할인액(가맹)',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-red-500 font-bold font-mono whitespace-nowrap">₩{(item.promotionDiscount - item.hqSupport).toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'platformFee',
+                            header: '플랫폼 수수료',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-txt-muted font-mono whitespace-nowrap">-₩{item.platformFee.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'netAmount',
+                            header: '정산 대상액',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm font-bold text-blue-600 font-mono whitespace-nowrap">₩{item.netAmount.toLocaleString()}</span>
+                            ),
+                        },
+                    ]}
+                    data={data}
+                    isLoading={isLoading}
+                    keyExtractor={(item) => item.id}
+                    onRowClick={(item) => navigate(`/settlement/${item.id}`)}
+                />
+            </Card>
+        </div>
+    );
+}
