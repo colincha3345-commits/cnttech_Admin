@@ -90,6 +90,34 @@ export interface TermsAgreement {
 }
 
 /**
+ * 단골매장 정보
+ */
+export interface FavoriteStore {
+  storeId: string;
+  storeName: string;
+  address: string;
+  phone: string;
+  registeredAt: Date;
+}
+
+/**
+ * 배달지 주소
+ * 마지막 주문 배달지가 우선 노출, 최대 10개
+ */
+export interface DeliveryAddress {
+  id: string;
+  alias: string;              // 별칭 (집, 회사, 기타)
+  address: string;            // 기본 주소 (도로명/지번)
+  addressDetail: string;      // 상세 주소
+  zipCode: string;            // 우편번호
+  lat: number | null;         // 위도
+  lng: number | null;         // 경도
+  isDefault: boolean;         // 기본 배달지 여부
+  lastUsedAt: Date | null;    // 마지막 사용일 (주문 시 갱신)
+  createdAt: Date;
+}
+
+/**
  * 회원 정보
  */
 export interface Member {
@@ -129,6 +157,12 @@ export interface Member {
 
   // 포인트
   pointBalance: number;         // 현재 포인트 잔액
+
+  // 단골매장 (최대 3개)
+  favoriteStores: FavoriteStore[];
+
+  // 배달지 주소 (최대 10개, lastUsedAt 내림차순 정렬)
+  deliveryAddresses: DeliveryAddress[];
 }
 
 /**

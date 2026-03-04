@@ -7,6 +7,8 @@ import {
   GiftOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ShopOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 
 import { Card, Badge, MaskedData } from '@/components/ui';
@@ -230,6 +232,106 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
           </div>
         ) : (
           <p className="text-txt-muted">연동된 SNS가 없습니다.</p>
+        )}
+      </Card>
+
+      {/* 단골매장 */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold text-txt-main mb-4 flex items-center gap-2">
+          <ShopOutlined />
+          단골매장
+          <span className="text-sm font-normal text-txt-muted">
+            ({member.favoriteStores?.length || 0}/3)
+          </span>
+        </h3>
+        {member.favoriteStores && member.favoriteStores.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {member.favoriteStores.map((store) => (
+              <div
+                key={store.storeId}
+                className="p-4 rounded-lg border border-border-main bg-bg-hover"
+              >
+                <p className="text-sm font-semibold text-txt-main mb-2">
+                  {store.storeName}
+                </p>
+                <p className="text-xs text-txt-secondary flex items-center gap-1 mb-1">
+                  <EnvironmentOutlined />
+                  {store.address}
+                </p>
+                <p className="text-xs text-txt-secondary flex items-center gap-1 mb-1">
+                  <PhoneOutlined />
+                  {store.phone}
+                </p>
+                <p className="text-xs text-txt-muted mt-2">
+                  등록일: {formatDate(store.registeredAt)}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-txt-muted">등록된 단골매장이 없습니다.</p>
+        )}
+      </Card>
+
+      {/* 배달지 주소 */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold text-txt-main mb-4 flex items-center gap-2">
+          <EnvironmentOutlined />
+          배달지 주소
+          <span className="text-sm font-normal text-txt-muted">
+            ({member.deliveryAddresses?.length || 0}/10)
+          </span>
+        </h3>
+        {member.deliveryAddresses && member.deliveryAddresses.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th className="w-[60px]">우선</th>
+                  <th className="w-[80px]">별칭</th>
+                  <th>주소</th>
+                  <th className="w-[80px]">우편번호</th>
+                  <th className="w-[120px]">마지막 사용</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...member.deliveryAddresses]
+                  .sort((a, b) => {
+                    const aTime = a.lastUsedAt ? new Date(a.lastUsedAt).getTime() : 0;
+                    const bTime = b.lastUsedAt ? new Date(b.lastUsedAt).getTime() : 0;
+                    return bTime - aTime;
+                  })
+                  .map((addr, idx) => (
+                    <tr key={addr.id}>
+                      <td className="text-center">
+                        {idx === 0 ? (
+                          <Badge variant="success">최근</Badge>
+                        ) : addr.isDefault ? (
+                          <Badge variant="info">기본</Badge>
+                        ) : (
+                          <span className="text-xs text-txt-muted">{idx + 1}</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className="text-sm font-medium text-txt-main">{addr.alias}</span>
+                      </td>
+                      <td>
+                        <p className="text-sm text-txt-main">{addr.address}</p>
+                        <p className="text-xs text-txt-muted">{addr.addressDetail}</p>
+                      </td>
+                      <td>
+                        <span className="text-xs text-txt-secondary font-mono">{addr.zipCode}</span>
+                      </td>
+                      <td className="text-xs text-txt-secondary">
+                        {formatDate(addr.lastUsedAt)}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-txt-muted">등록된 배달지가 없습니다.</p>
         )}
       </Card>
 

@@ -308,6 +308,8 @@ export function unifiedUserToMember(user: CustomerUser): Member {
     smsEnabled: user.smsEnabled,
     emailEnabled: user.emailEnabled,
     pointBalance: user.pointBalance,
+    favoriteStores: [],
+    deliveryAddresses: [],
   };
 }
 

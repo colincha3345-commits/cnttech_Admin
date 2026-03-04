@@ -412,34 +412,8 @@ export function PopupManagement() {
                   <label className="block text-sm font-medium text-txt-main mb-1">팝업 제목 *</label>
                   <input type="text" className="form-input w-full" value={formData.title} onChange={(e) => handleFormChange({ title: e.target.value })} placeholder="팝업 제목을 입력하세요" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">내용</label>
-                  <textarea className="form-input w-full resize-y" value={formData.content} onChange={(e) => handleFormChange({ content: e.target.value })} placeholder="팝업 내용을 입력하세요" rows={3} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">팝업 이미지</label>
-                  <ImageUpload
-                    value={formData.imageUrl}
-                    onChange={(file) => {
-                      if (file) {
-                        handleFormChange({ imageUrl: URL.createObjectURL(file) });
-                      } else {
-                        handleFormChange({ imageUrl: '' });
-                      }
-                    }}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">웹 링크 URL (PC/Web)</label>
-                    <input type="text" className="form-input w-full" value={formData.webLinkUrl} onChange={(e) => handleFormChange({ webLinkUrl: e.target.value })} placeholder="클릭 시 이동할 웹 주소 (선택)" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">앱 딥링크 URL (Mobile)</label>
-                    <input type="text" className="form-input w-full" value={formData.deepLinkUrl} onChange={(e) => handleFormChange({ deepLinkUrl: e.target.value })} placeholder="클릭 시 이동할 앱 딥링크 (선택)" />
-                  </div>
-                </div>
 
+                {/* 팝업 전시 설정 - 최상단 배치 */}
                 <div className="border-t border-border pt-4">
                   <h3 className="text-sm font-semibold text-txt-main mb-3">팝업 전시 설정</h3>
 
@@ -490,28 +464,63 @@ export function PopupManagement() {
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">시작일</label>
-                    <input type="date" className="form-input w-full" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">시작일</label>
+                      <input type="date" className="form-input w-full" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">종료일</label>
+                      <input type="date" className={`form-input w-full ${formData.isAlwaysOn ? 'opacity-50' : ''}`} value={formData.endDate} onChange={(e) => handleFormChange({ endDate: e.target.value })} disabled={formData.isAlwaysOn} />
+                      <label className="flex items-center gap-1.5 mt-1 text-xs text-txt-muted cursor-pointer">
+                        <input type="checkbox" checked={formData.isAlwaysOn} onChange={(e) => handleFormChange({ isAlwaysOn: e.target.checked })} />
+                        상시 노출
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">종료일</label>
-                    <input type="date" className={`form-input w-full ${formData.isAlwaysOn ? 'opacity-50' : ''}`} value={formData.endDate} onChange={(e) => handleFormChange({ endDate: e.target.value })} disabled={formData.isAlwaysOn} />
-                    <label className="flex items-center gap-1.5 mt-1 text-xs text-txt-muted cursor-pointer">
-                      <input type="checkbox" checked={formData.isAlwaysOn} onChange={(e) => handleFormChange({ isAlwaysOn: e.target.checked })} />
-                      상시 노출
+
+                  <div className="mt-3">
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={formData.showOncePerDay} onChange={(e) => handleFormChange({ showOncePerDay: e.target.checked })} />
+                      <span className="font-medium">오늘 하루 안 보기</span>
+                      <span className="text-xs text-txt-muted">사용자가 닫으면 24시간 숨김</span>
                     </label>
                   </div>
                 </div>
-                <div>
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input type="checkbox" checked={formData.showOncePerDay} onChange={(e) => handleFormChange({ showOncePerDay: e.target.checked })} />
-                    <span className="font-medium">오늘 하루 안 보기</span>
-                    <span className="text-xs text-txt-muted">사용자가 닫으면 24시간 숨김</span>
-                  </label>
+
+                {/* 팝업 콘텐츠 */}
+                <div className="border-t border-border pt-4">
+                  <h3 className="text-sm font-semibold text-txt-main mb-3">팝업 콘텐츠</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">내용</label>
+                      <textarea className="form-input w-full resize-y" value={formData.content} onChange={(e) => handleFormChange({ content: e.target.value })} placeholder="팝업 내용을 입력하세요" rows={3} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">팝업 이미지</label>
+                      <ImageUpload
+                        value={formData.imageUrl}
+                        onChange={(file) => {
+                          if (file) {
+                            handleFormChange({ imageUrl: URL.createObjectURL(file) });
+                          } else {
+                            handleFormChange({ imageUrl: '' });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-txt-main mb-1">웹 링크 URL (PC/Web)</label>
+                        <input type="text" className="form-input w-full" value={formData.webLinkUrl} onChange={(e) => handleFormChange({ webLinkUrl: e.target.value })} placeholder="클릭 시 이동할 웹 주소 (선택)" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-txt-main mb-1">앱 딥링크 URL (Mobile)</label>
+                        <input type="text" className="form-input w-full" value={formData.deepLinkUrl} onChange={(e) => handleFormChange({ deepLinkUrl: e.target.value })} placeholder="클릭 시 이동할 앱 딥링크 (선택)" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* 상태 토글 (수정 모드) */}
