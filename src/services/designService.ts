@@ -30,8 +30,9 @@ const MOCK_BANNERS: Banner[] = [
 ];
 
 const MOCK_POPUPS: Popup[] = [
-    { id: 'popup-001', title: '앱 업데이트 안내', content: '더 나은 서비스를 위해 최신 버전으로 업데이트해주세요.', imageUrl: '/images/popup-update.jpg', linkUrl: '', popupType: 'center', status: 'active', sortOrder: 1, startDate: '2026-02-20', endDate: null, showOncePerDay: true, createdAt: '2026-02-19T10:00:00Z' },
-    { id: 'popup-002', title: '신규 가입 쿠폰 안내', content: '회원가입 감사 쿠폰 3,000원이 발급되었습니다!', imageUrl: '/images/popup-coupon.jpg', linkUrl: '/marketing/coupons', popupType: 'bottom_sheet', status: 'active', sortOrder: 2, startDate: '2026-02-01', endDate: '2026-03-31', showOncePerDay: false, createdAt: '2026-01-30T14:00:00Z' },
+    { id: 'popup-001', title: '앱 업데이트 안내', content: '더 나은 서비스를 위해 최신 버전으로 업데이트해주세요.', imageUrl: '/images/popup-update.jpg', webLinkUrl: '', deepLinkUrl: '', deviceType: 'mobile', popupType: 'screen', exposureTarget: 'all', exposureScreen: ['main'], status: 'active', sortOrder: 1, startDate: '2026-02-20', endDate: null, showOncePerDay: true, createdAt: '2026-02-19T10:00:00Z' },
+    { id: 'popup-002', title: '신규 가입 쿠폰 안내', content: '회원가입 감사 쿠폰 3,000원이 발급되었습니다!', imageUrl: '/images/popup-coupon.jpg', webLinkUrl: '/marketing/coupons', deepLinkUrl: 'myapp://coupon', deviceType: 'mobile', popupType: 'bottom_sheet', exposureTarget: 'member', exposureScreen: ['main', 'event'], status: 'active', sortOrder: 2, startDate: '2026-02-01', endDate: '2026-03-31', showOncePerDay: false, createdAt: '2026-01-30T14:00:00Z' },
+    { id: 'popup-003', title: '웹메인 공지사항', content: 'PC버전 메인 화면 공지사항입니다.', imageUrl: '/images/popup-notice.jpg', webLinkUrl: '/notice/1', deepLinkUrl: '', deviceType: 'pc', popupType: 'modal', exposureTarget: 'all', exposureScreen: ['main'], status: 'active', sortOrder: 3, startDate: '2026-03-01', endDate: '2026-03-31', showOncePerDay: true, createdAt: '2026-02-28T14:00:00Z' }
 ];
 
 const MOCK_BADGES: IconBadge[] = [
@@ -97,7 +98,7 @@ class MockDesignService {
     }
     async createPopup(data: PopupFormData): Promise<Popup> {
         await this.delay();
-        const newPopup: Popup = { id: `popup-${Date.now()}`, title: data.title, content: data.content, imageUrl: data.imageUrl, linkUrl: data.linkUrl, popupType: data.popupType, status: 'inactive', sortOrder: data.sortOrder, startDate: data.startDate, endDate: data.isAlwaysOn ? null : data.endDate, showOncePerDay: data.showOncePerDay, createdAt: new Date().toISOString() };
+        const newPopup: Popup = { id: `popup-${Date.now()}`, title: data.title, content: data.content, imageUrl: data.imageUrl, webLinkUrl: data.webLinkUrl, deepLinkUrl: data.deepLinkUrl, deviceType: data.deviceType, popupType: data.popupType, exposureTarget: data.exposureTarget, exposureScreen: data.exposureScreen, status: 'inactive', sortOrder: data.sortOrder, startDate: data.startDate, endDate: data.isAlwaysOn ? null : data.endDate, showOncePerDay: data.showOncePerDay, createdAt: new Date().toISOString() };
         this.popups.push(newPopup);
         return newPopup;
     }

@@ -27,10 +27,9 @@ export function Header({ onMenuClick, title = '대시보드' }: HeaderProps) {
   const { user, logout } = useAuth();
 
   const handleMyPage = () => {
-    const path = user?.staffType === 'franchise'
-      ? '/staff/franchise'
-      : '/staff/headquarters';
-    navigate(`${path}?editMyProfile=true`);
+    if (!user?.id) return;
+    const type = user.staffType === 'franchise' ? 'franchise' : 'headquarters';
+    navigate(`/staff/edit/${type}/${user.id}`);
   };
 
   const handleLogout = async () => {

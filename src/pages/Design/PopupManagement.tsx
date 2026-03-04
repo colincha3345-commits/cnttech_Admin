@@ -4,7 +4,7 @@
  */
 import { useState, useMemo } from 'react';
 import { usePopups } from '@/hooks/useDesign';
-import type { Popup, PopupFormData, PopupStatus, PopupType } from '@/types/design';
+import type { Popup, PopupFormData, PopupStatus, PopupType, DeviceType, ExposureTarget, ExposureScreen } from '@/types/design';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -50,8 +50,12 @@ const DEFAULT_POPUP_FORM: PopupFormData = {
   title: '',
   content: '',
   imageUrl: '',
-  linkUrl: '',
-  popupType: 'center',
+  webLinkUrl: '',
+  deepLinkUrl: '',
+  deviceType: 'pc',
+  popupType: 'modal',
+  exposureTarget: 'all',
+  exposureScreen: [],
   sortOrder: 0,
   startDate: '',
   endDate: '',
@@ -72,11 +76,27 @@ const POPUP_STATUS_BADGE: Record<PopupStatus, 'success' | 'default' | 'info'> = 
 };
 
 const POPUP_TYPE_LABELS: Record<PopupType, string> = {
-  center: '중앙 팝업',
-  bottom_sheet: '바텀시트',
-  full_screen: '전체화면',
-  toast: '토스트',
+  modal: '모달 팝업',
+  screen: '스크린 팝업',
+  bottom_sheet: '바텀시트 (모바일 전용)',
 };
+
+const DEVICE_TYPE_LABELS: Record<DeviceType, string> = {
+  pc: 'PC',
+  mobile: '모바일',
+};
+
+const EXPOSURE_TARGET_LABELS: Record<ExposureTarget, string> = {
+  all: '전체 (비회원+회원)',
+  guest: '비회원 (로그인 전)',
+  member: '회원 (로그인 후)',
+};
+
+const EXPOSURE_SCREEN_OPTIONS: { value: ExposureScreen; label: string }[] = [
+  { value: 'main', label: '메인(홈)' },
+  { value: 'menu', label: '메뉴 목록' },
+  { value: 'event', label: '이벤트 목록' },
+];
 
 const STATUS_FILTER_OPTIONS = [
   { value: 'all' as const, label: '전체' },
@@ -142,7 +162,8 @@ const SortablePopupItem: React.FC<{
               </Badge>
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <Badge variant="default">{POPUP_TYPE_LABELS[popup.popupType]}</Badge>
+              <Badge variant="default">{DEVICE_TYPE_LABELS[popup.deviceType]}</Badge>
+              <Badge variant="secondary">{POPUP_TYPE_LABELS[popup.popupType]}</Badge>
               <span className="text-xs text-txt-muted">순서 {popup.sortOrder}</span>
               <span className="text-xs text-txt-muted border-l border-border pl-2">{popup.showOncePerDay ? '1일 1회' : '매번 노출'}</span>
             </div>
@@ -172,6 +193,7 @@ export function PopupManagement() {
   const [formData, setFormData] = useState<PopupFormData>({ ...DEFAULT_POPUP_FORM });
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
   const [isDraggingMode, setIsDraggingMode] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const filteredPopups = useMemo(() => {
     const sorted = [...popups].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -215,8 +237,12 @@ export function PopupManagement() {
       title: popup.title,
       content: popup.content,
       imageUrl: popup.imageUrl,
-      linkUrl: popup.linkUrl,
+      webLinkUrl: popup.webLinkUrl,
+      deepLinkUrl: popup.deepLinkUrl,
+      deviceType: popup.deviceType,
       popupType: popup.popupType,
+      exposureTarget: popup.exposureTarget,
+      exposureScreen: [...popup.exposureScreen],
       sortOrder: popup.sortOrder,
       startDate: popup.startDate,
       endDate: popup.endDate ?? '',
@@ -274,7 +300,23 @@ export function PopupManagement() {
   };
 
   const handleFormChange = (updates: Partial<PopupFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev) => {
+      const next = { ...prev, ...updates };
+      // 바텀시트는 모바일 전용이므로 디바이스 강제 지정
+      if (next.popupType === 'bottom_sheet') {
+        next.deviceType = 'mobile';
+      }
+      return next;
+    });
+  };
+
+  const handleExposureScreenToggle = (screenValue: ExposureScreen) => {
+    setFormData((prev) => {
+      const screens = prev.exposureScreen.includes(screenValue)
+        ? prev.exposureScreen.filter(s => s !== screenValue)
+        : [...prev.exposureScreen, screenValue];
+      return { ...prev, exposureScreen: screens };
+    });
   };
 
   return (
@@ -387,25 +429,70 @@ export function PopupManagement() {
                     }}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">링크 URL</label>
-                  <input type="text" className="form-input w-full" value={formData.linkUrl} onChange={(e) => handleFormChange({ linkUrl: e.target.value })} placeholder="클릭 시 이동 경로 (선택)" />
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">팝업 유형</label>
-                    <select className="form-input w-full" value={formData.popupType} onChange={(e) => handleFormChange({ popupType: e.target.value as PopupType })}>
-                      {Object.entries(POPUP_TYPE_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
-                    </select>
+                    <label className="block text-sm font-medium text-txt-main mb-1">웹 링크 URL (PC/Web)</label>
+                    <input type="text" className="form-input w-full" value={formData.webLinkUrl} onChange={(e) => handleFormChange({ webLinkUrl: e.target.value })} placeholder="클릭 시 이동할 웹 주소 (선택)" />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">정렬 순서</label>
-                    <input type="number" className="form-input w-full" value={formData.sortOrder} onChange={(e) => handleFormChange({ sortOrder: Number(e.target.value) })} min={0} />
+                    <label className="block text-sm font-medium text-txt-main mb-1">앱 딥링크 URL (Mobile)</label>
+                    <input type="text" className="form-input w-full" value={formData.deepLinkUrl} onChange={(e) => handleFormChange({ deepLinkUrl: e.target.value })} placeholder="클릭 시 이동할 앱 딥링크 (선택)" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+
+                <div className="border-t border-border pt-4">
+                  <h3 className="text-sm font-semibold text-txt-main mb-3">팝업 전시 설정</h3>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">노출 기기 (Device)</label>
+                      <select className="form-input w-full" value={formData.deviceType} onChange={(e) => handleFormChange({ deviceType: e.target.value as DeviceType })} disabled={formData.popupType === 'bottom_sheet'}>
+                        {Object.entries(DEVICE_TYPE_LABELS).map(([val, label]) => (
+                          <option key={val} value={val}>{label}</option>
+                        ))}
+                      </select>
+                      {formData.popupType === 'bottom_sheet' && (
+                        <p className="text-xs text-info mt-1">※ 바텀시트는 모바일에서만 지원됩니다.</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">팝업 유형</label>
+                      <select className="form-input w-full" value={formData.popupType} onChange={(e) => handleFormChange({ popupType: e.target.value as PopupType })}>
+                        {Object.entries(POPUP_TYPE_LABELS).map(([val, label]) => (
+                          <option key={val} value={val}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">노출 대상 (회원/비회원)</label>
+                      <select className="form-input w-full" value={formData.exposureTarget} onChange={(e) => handleFormChange({ exposureTarget: e.target.value as ExposureTarget })}>
+                        {Object.entries(EXPOSURE_TARGET_LABELS).map(([val, label]) => (
+                          <option key={val} value={val}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-txt-main mb-1">노출 화면</label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {EXPOSURE_SCREEN_OPTIONS.map((opt) => (
+                          <label key={opt.value} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.exposureScreen.includes(opt.value)}
+                              onChange={() => handleExposureScreenToggle(opt.value)}
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
                   <div>
                     <label className="block text-sm font-medium text-txt-main mb-1">시작일</label>
                     <input type="date" className="form-input w-full" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
@@ -429,7 +516,7 @@ export function PopupManagement() {
 
                 {/* 상태 토글 (수정 모드) */}
                 {selectedPopup && (
-                  <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-bg-hover">
+                  <div className="flex items-center justify-between p-3 py-2 mt-4 rounded-lg border border-border bg-bg-hover">
                     <div>
                       <span className="text-sm font-medium text-txt-main">현재 상태: </span>
                       <Badge variant={POPUP_STATUS_BADGE[selectedPopup.status]}>
@@ -443,8 +530,12 @@ export function PopupManagement() {
                 )}
 
                 {/* 액션 버튼 */}
-                <div className="flex justify-between pt-4 border-t border-border">
-                  <div>
+                <div className="flex justify-between pt-6 border-t border-border">
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsPreviewOpen(true)}>
+                      <MobileOutlined style={{ fontSize: 14, marginRight: 6 }} />
+                      미리보기
+                    </Button>
                     {selectedPopup && (
                       <Button variant="outline" onClick={handleDuplicate}>
                         <CopyOutlined style={{ fontSize: 14, marginRight: 6 }} />
@@ -480,6 +571,103 @@ export function PopupManagement() {
         confirmText="삭제"
         type="warning"
       />
+
+      {/* 미리보기 모달 */}
+      <PopupPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        popupData={formData}
+      />
     </div>
   );
 }
+
+const PopupPreviewModal: React.FC<{ isOpen: boolean; onClose: () => void; popupData: PopupFormData }> = ({ isOpen, onClose, popupData }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
+      <div
+        className={`relative bg-white shadow-2xl rounded-2xl overflow-hidden
+        ${popupData.deviceType === 'mobile' ? 'w-[375px] h-[667px]' : 'w-[800px] h-[600px]'}
+        ${popupData.popupType === 'bottom_sheet' ? 'flex flex-col justify-end bg-transparent shadow-none' : ''}
+        ${popupData.popupType === 'screen' ? 'w-full h-full rounded-none' : ''}`}
+      >
+        {popupData.popupType === 'bottom_sheet' ? (
+          <div className="bg-white rounded-t-2xl w-full h-[60%] overflow-auto shadow-[0_-4px_20px_rgba(0,0,0,0.1)] pb-8 animate-slide-up relative">
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-black">
+              <CloseOutlined className="text-xl" />
+            </button>
+            <div className="p-4 border-b border-gray-100 flex justify-center">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
+            </div>
+            {popupData.imageUrl && (
+              <img src={popupData.imageUrl} alt="preview" className="w-full h-auto" />
+            )}
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-2">{popupData.title || '제목 없음'}</h3>
+              <p className="text-gray-600 whitespace-pre-wrap">{popupData.content}</p>
+            </div>
+            {popupData.showOncePerDay && (
+              <div className="px-6 py-4 flex justify-between text-sm text-txt-muted border-t border-gray-100 bg-gray-50 absolute bottom-0 w-full">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" />
+                  <span>오늘 하루 열지 않음</span>
+                </label>
+                <button onClick={onClose}>닫기</button>
+              </div>
+            )}
+          </div>
+        ) : popupData.popupType === 'screen' ? (
+          <div className="w-full h-full bg-white flex flex-col items-center justify-center relative">
+            <button onClick={onClose} className="absolute top-6 right-6 text-gray-500 hover:text-black text-2xl z-20">
+              <CloseOutlined />
+            </button>
+            {popupData.imageUrl && (
+              <div className="w-full max-w-2xl px-4 flex-1 flex items-center justify-center">
+                <img src={popupData.imageUrl} alt="preview" className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg" />
+              </div>
+            )}
+            <div className="p-8 text-center max-w-2xl bg-white relative z-10 rounded-xl">
+              <h3 className="text-3xl font-bold mb-4">{popupData.title || '제목 없음'}</h3>
+              <p className="text-lg text-gray-600 whitespace-pre-wrap leading-relaxed">{popupData.content}</p>
+            </div>
+            {popupData.showOncePerDay && (
+              <div className="absolute bottom-0 w-full p-6 flex justify-between text-white bg-black/30 backdrop-blur-sm z-20">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" />
+                  <span>오늘 하루 보지 않기</span>
+                </label>
+                <button onClick={onClose}>닫기</button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col h-full bg-white relative">
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-black bg-white/80 p-1 rounded-full z-10">
+              <CloseOutlined className="text-xl" />
+            </button>
+            <div className="flex-1 overflow-auto">
+              {popupData.imageUrl && (
+                <img src={popupData.imageUrl} alt="preview" className="w-full h-auto" />
+              )}
+              <div className="p-6">
+                <h3 className="text-xl font-bold mb-2 text-txt-main">{popupData.title || '제목 없음'}</h3>
+                <p className="text-gray-600 whitespace-pre-wrap">{popupData.content}</p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+              {popupData.showOncePerDay ? (
+                <label className="flex items-center gap-2 text-sm text-txt-muted cursor-pointer">
+                  <input type="checkbox" />
+                  <span>오늘 하루 안 보기</span>
+                </label>
+              ) : <div />}
+              <button onClick={onClose} className="text-sm font-medium hover:text-black text-txt-muted px-2 py-1">닫기</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

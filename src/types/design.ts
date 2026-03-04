@@ -26,15 +26,22 @@ export interface BannerFormData {
 }
 
 export type PopupStatus = 'active' | 'inactive' | 'scheduled';
-export type PopupType = 'center' | 'bottom_sheet' | 'full_screen' | 'toast';
+export type PopupType = 'modal' | 'screen' | 'bottom_sheet';
+export type DeviceType = 'pc' | 'mobile';
+export type ExposureTarget = 'all' | 'guest' | 'member';
+export type ExposureScreen = 'main' | 'menu' | 'event';
 
 export interface Popup {
     id: string;
     title: string;
     content: string;
     imageUrl: string;
-    linkUrl: string;
+    webLinkUrl: string;
+    deepLinkUrl: string;
+    deviceType: DeviceType;
     popupType: PopupType;
+    exposureTarget: ExposureTarget;
+    exposureScreen: ExposureScreen[];
     status: PopupStatus;
     sortOrder: number;
     startDate: string;
@@ -47,8 +54,12 @@ export interface PopupFormData {
     title: string;
     content: string;
     imageUrl: string;
-    linkUrl: string;
+    webLinkUrl: string;
+    deepLinkUrl: string;
+    deviceType: DeviceType;
     popupType: PopupType;
+    exposureTarget: ExposureTarget;
+    exposureScreen: ExposureScreen[];
     sortOrder: number;
     startDate: string;
     endDate: string;

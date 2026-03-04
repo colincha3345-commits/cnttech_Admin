@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput } from '@/components/ui';
@@ -9,10 +9,8 @@ import {
   useDeleteFranchiseStaff,
   useToast,
 } from '@/hooks';
-import { useAuth } from '@/stores/authStore';
 import { STAFF_STATUS_LABELS } from '@/types/staff';
 import type { StaffAccount, StaffStatus } from '@/types/staff';
-import { StaffFormModal } from './components/StaffFormModal';
 
 export const FranchiseStaff: React.FC = () => {
   const toast = useToast();
