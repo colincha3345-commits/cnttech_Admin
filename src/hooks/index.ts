@@ -63,6 +63,7 @@ export {
   useDeleteHeadquartersStaff,
   useCheckLoginIdDuplicate,
   useResetPassword,
+  useChangePassword,
   useResendInvitation,
 } from './useHeadquartersStaff';
 export {

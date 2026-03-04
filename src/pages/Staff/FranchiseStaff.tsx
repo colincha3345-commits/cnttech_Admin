@@ -15,14 +15,10 @@ import type { StaffAccount, StaffStatus } from '@/types/staff';
 export const FranchiseStaff: React.FC = () => {
   const toast = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [keyword, setKeyword] = useState('');
   const [storeFilter, setStoreFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState<StaffStatus | ''>('');
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedStaff, setSelectedStaff] = useState<StaffAccount | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StaffAccount | null>(null);
   const limit = 10;
 
@@ -39,17 +35,6 @@ export const FranchiseStaff: React.FC = () => {
   const staff = data?.data || [];
   const pagination = data?.pagination;
 
-  // 마이페이지 쿼리 파라미터 감지 → 본인 계정 모달 자동 오픈
-  useEffect(() => {
-    if (searchParams.get('editMyProfile') !== 'true' || !user || staff.length === 0) return;
-
-    const myStaff = staff.find((s) => s.email === user.email);
-    if (myStaff) {
-      setSelectedStaff(myStaff);
-      setIsModalOpen(true);
-    }
-    setSearchParams({}, { replace: true });
-  }, [searchParams, user, staff, setSearchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,11 +55,6 @@ export const FranchiseStaff: React.FC = () => {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '삭제에 실패했습니다.');
     }
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedStaff(null);
   };
 
   const getStatusBadgeVariant = (status: StaffStatus) => {
@@ -303,14 +283,6 @@ export const FranchiseStaff: React.FC = () => {
           </div>
         )}
       </Card>
-
-      {/* 직원 추가/수정 모달 */}
-      <StaffFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        staff={selectedStaff}
-        staffType="franchise"
-      />
 
       {/* 삭제 확인 다이얼로그 */}
       <ConfirmDialog

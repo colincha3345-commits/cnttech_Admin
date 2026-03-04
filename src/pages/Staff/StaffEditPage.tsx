@@ -3,7 +3,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { CheckCircleOutlined, CloseCircleOutlined, MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, CloseCircleOutlined, MailOutlined, ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
 
 import { Card, Button, Input, Label, Spinner, ConfirmDialog } from '@/components/ui';
 import {
@@ -17,8 +17,10 @@ import {
     useUpdateFranchiseStaff,
     useCheckLoginIdDuplicate,
     useResetPassword,
+    useChangePassword,
     useToast,
 } from '@/hooks';
+import { useAuth } from '@/stores/authStore';
 import type { StaffType, StaffInviteFormData } from '@/types/staff';
 
 export const StaffEditPage: React.FC = () => {
@@ -26,6 +28,7 @@ export const StaffEditPage: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const toast = useToast();
+    const { user } = useAuth();
 
     const staffType = (type === 'franchise' ? 'franchise' : 'headquarters') as StaffType;
     const isHeadquarters = staffType === 'headquarters';
@@ -67,6 +70,10 @@ export const StaffEditPage: React.FC = () => {
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
 
     const resetPasswordMutation = useResetPassword();
+    const changePasswordMutation = useChangePassword();
+
+    const isMyPage = isEditMode && user?.id === id;
+    const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
     const isMutating =
         inviteHqStaff.isPending ||
@@ -235,6 +242,30 @@ export const StaffEditPage: React.FC = () => {
             setIsResetConfirmOpen(false);
         } catch (error) {
             toast.error(error instanceof Error ? error.message : '비밀번호 초기화에 실패했습니다.');
+        }
+    };
+
+    const handleChangePassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!staff) return;
+        if (!passwordForm.currentPassword.trim()) {
+            toast.error('현재 비밀번호를 입력해주세요.');
+            return;
+        }
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            toast.error('새 비밀번호가 일치하지 않습니다.');
+            return;
+        }
+        try {
+            await changePasswordMutation.mutateAsync({
+                id: staff.id,
+                currentPassword: passwordForm.currentPassword,
+                newPassword: passwordForm.newPassword,
+            });
+            toast.success('비밀번호가 변경되었습니다.');
+            setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : '비밀번호 변경에 실패했습니다.');
         }
     };
 
@@ -428,6 +459,53 @@ export const StaffEditPage: React.FC = () => {
                     </div>
                 </form>
             </Card>
+
+            {/* 비밀번호 변경 (마이페이지) */}
+            {isMyPage && staff && staff.status !== 'invited' && (
+                <Card className="p-6">
+                    <form onSubmit={handleChangePassword} className="space-y-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <LockOutlined className="text-txt-muted" />
+                            <h2 className="text-lg font-semibold text-txt-main">비밀번호 변경</h2>
+                        </div>
+                        <div className="space-y-2">
+                            <Label required>현재 비밀번호</Label>
+                            <Input
+                                type="password"
+                                placeholder="현재 비밀번호"
+                                value={passwordForm.currentPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))}
+                                disabled={changePasswordMutation.isPending}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label required>새 비밀번호</Label>
+                            <Input
+                                type="password"
+                                placeholder="대/소문자, 숫자, 특수문자 포함 8자 이상"
+                                value={passwordForm.newPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                                disabled={changePasswordMutation.isPending}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label required>새 비밀번호 확인</Label>
+                            <Input
+                                type="password"
+                                placeholder="새 비밀번호 재입력"
+                                value={passwordForm.confirmPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                disabled={changePasswordMutation.isPending}
+                            />
+                        </div>
+                        <div className="flex justify-end pt-2">
+                            <Button type="submit" disabled={changePasswordMutation.isPending}>
+                                {changePasswordMutation.isPending ? <Spinner size="sm" /> : '비밀번호 변경'}
+                            </Button>
+                        </div>
+                    </form>
+                </Card>
+            )}
 
             <ConfirmDialog
                 isOpen={isResetConfirmOpen}

@@ -112,6 +112,16 @@ export function useResetPassword() {
 }
 
 /**
+ * 비밀번호 변경 (본인)
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: ({ id, currentPassword, newPassword }: { id: string; currentPassword: string; newPassword: string }) =>
+      staffService.changePassword(id, currentPassword, newPassword),
+  });
+}
+
+/**
  * 초대 재발송
  */
 export function useResendInvitation() {

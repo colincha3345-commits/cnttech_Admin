@@ -627,6 +627,42 @@ class StaffService {
     return tempPassword;
   }
 
+  /**
+   * 본인 비밀번호 변경
+   */
+  async changePassword(id: string, currentPassword: string, newPassword: string): Promise<void> {
+    await this.delay();
+
+    const staff =
+      this.headquarters.find((s) => s.id === id) ||
+      this.franchise.find((s) => s.id === id);
+
+    if (!staff) {
+      throw new Error('직원을 찾을 수 없습니다.');
+    }
+
+    // 현재 비밀번호 검증 (Mock: 아무 값이나 통과, 빈 값만 차단)
+    if (!currentPassword.trim()) {
+      throw new Error('현재 비밀번호를 입력해주세요.');
+    }
+
+    // 비밀번호 정책 검증
+    if (newPassword.length < 8) {
+      throw new Error('새 비밀번호는 8자 이상이어야 합니다.');
+    }
+
+    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword) || !/[!@#$%^&*]/.test(newPassword)) {
+      throw new Error('비밀번호는 대/소문자, 숫자, 특수문자를 포함해야 합니다.');
+    }
+
+    auditService.log({
+      action: 'PASSWORD_CHANGED',
+      resource: `staff:${staff.staffType}`,
+      userId: id,
+      details: { targetStaffId: id, method: 'self_change' },
+    });
+  }
+
   // ============================================
   // 초대 관리
   // ============================================
