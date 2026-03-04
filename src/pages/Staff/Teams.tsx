@@ -1,23 +1,21 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined } from '@ant-design/icons';
 
 import { Card, Button, Badge, Spinner, ConfirmDialog } from '@/components/ui';
 import { useTeams, useDeleteTeam, useToast } from '@/hooks';
-import { TeamFormModal } from './components/TeamFormModal';
 import type { Team } from '@/types/staff';
 
 export const Teams: React.FC = () => {
   const toast = useToast();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const navigate = useNavigate();
   const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
 
   const { data: teams, isLoading } = useTeams();
   const deleteTeam = useDeleteTeam();
 
   const handleEdit = (team: Team) => {
-    setSelectedTeam(team);
-    setIsModalOpen(true);
+    navigate(`/staff/teams/${team.id}/edit`);
   };
 
   const handleDelete = async () => {
@@ -32,11 +30,6 @@ export const Teams: React.FC = () => {
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedTeam(null);
-  };
-
   if (isLoading) {
     return <Spinner layout="center" />;
   }
@@ -49,7 +42,7 @@ export const Teams: React.FC = () => {
           <h1 className="text-2xl font-bold text-txt-main">팀 관리</h1>
           <p className="text-sm text-txt-muted mt-1">본사 직원 소속 팀을 관리합니다.</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => navigate('/staff/teams/new')}>
           <PlusOutlined className="mr-1" />
           팀 추가
         </Button>
@@ -106,20 +99,13 @@ export const Teams: React.FC = () => {
             <Button
               variant="outline"
               className="mt-4"
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => navigate('/staff/teams/new')}
             >
               첫 번째 팀 추가하기
             </Button>
           </Card>
         )}
       </div>
-
-      {/* 팀 생성/수정 모달 */}
-      <TeamFormModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        team={selectedTeam}
-      />
 
       {/* 삭제 확인 다이얼로그 */}
       <ConfirmDialog

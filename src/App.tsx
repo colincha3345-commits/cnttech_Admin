@@ -11,7 +11,7 @@ import { Discounts, Coupons, BenefitCampaigns, PointSettings, PushList, PushNoti
 import { EventManagement } from '@/pages/events';
 import { OrderList, OrderDetail } from '@/pages/Orders';
 import { AppMemberList, AppMemberDetail, MemberExtract, MemberGroups, MemberGroupDetail, GradeManagement } from '@/pages/AppMembers';
-import { HeadquartersStaff, FranchiseStaff, Teams, StaffApprovals, StaffEditPage } from '@/pages/Staff';
+import { HeadquartersStaff, FranchiseStaff, Teams, TeamEditPage, StaffApprovals, StaffApprovalDetail, StaffEditPage } from '@/pages/Staff';
 import { StoreList, StoreDetail, StoreForm, OperatingInfoEdit, IntegrationCodesEdit, AmenitiesEdit, ClosedDayEdit, PaymentMethodsEdit } from '@/pages/Store';
 import { SettlementList, SettlementDetail, SettlementStats } from '@/pages/Settlement';
 import { BannerManagement, PopupManagement, IconBadgeManagement, MainScreenManagement } from '@/pages/Design';
@@ -81,7 +81,10 @@ export default function App() {
           <Route path="staff/franchise" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><FranchiseStaff /></ProtectedRoute>} />
           <Route path="staff/edit/:type/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StaffEditPage /></ProtectedRoute>} />
           <Route path="staff/approvals" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StaffApprovals /></ProtectedRoute>} />
+          <Route path="staff/approvals/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StaffApprovalDetail /></ProtectedRoute>} />
           <Route path="staff/teams" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><Teams /></ProtectedRoute>} />
+          <Route path="staff/teams/:id/edit" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><TeamEditPage /></ProtectedRoute>} />
+          <Route path="staff/teams/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><TeamEditPage /></ProtectedRoute>} />
           <Route path="staff/stores" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><StoreList /></ProtectedRoute>} />
           <Route path="staff/stores/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StoreForm mode="create" /></ProtectedRoute>} />
           <Route path="staff/stores/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><StoreDetail /></ProtectedRoute>} />
