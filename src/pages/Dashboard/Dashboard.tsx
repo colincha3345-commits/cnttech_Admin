@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 
-import { Spinner } from '@/components/ui/Spinner';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { StatCard } from '@/components/ui/StatCard';
 import { Button } from '@/components/ui/Button';
 import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
@@ -82,7 +82,7 @@ export function Dashboard() {
   ];
 
   if (isLoading) {
-    return <Spinner layout="fullHeight" />;
+    return <PageLoader text="대시보드 데이터를 불러오는 중입니다..." />;
   }
 
   return (

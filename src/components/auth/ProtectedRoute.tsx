@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-
 import { useAuthStore } from '@/stores/authStore';
+import { PageLoader } from '@/components/ui';
 import type { PermissionAction } from '@/types';
 import type { Resource } from '@/types/rbac';
 import { hasPermission, getAccessibleRoutes } from '@/utils/permissionChecker';
@@ -32,14 +32,7 @@ export function ProtectedRoute({
 
   // 로딩 중
   if (status === 'loading' || status === 'idle') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-main">
-        <div className="flex flex-col items-center gap-4">
-          <div className="spinner w-8 h-8" />
-          <p className="text-txt-muted text-sm">인증 확인 중...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader text="인증 확인 중..." fullScreen />;
   }
 
   // 미인증

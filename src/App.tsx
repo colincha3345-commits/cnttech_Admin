@@ -11,8 +11,8 @@ import { Discounts, Coupons, BenefitCampaigns, PointSettings, PushList, PushNoti
 import { EventManagement } from '@/pages/events';
 import { OrderList, OrderDetail } from '@/pages/Orders';
 import { AppMemberList, AppMemberDetail, MemberExtract, MemberGroups, MemberGroupDetail, GradeManagement } from '@/pages/AppMembers';
-import { HeadquartersStaff, FranchiseStaff, Teams, StaffApprovals } from '@/pages/Staff';
-import { StoreList, StoreDetail, StoreForm } from '@/pages/Store';
+import { HeadquartersStaff, FranchiseStaff, Teams, StaffApprovals, StaffEditPage } from '@/pages/Staff';
+import { StoreList, StoreDetail, StoreForm, OperatingInfoEdit, IntegrationCodesEdit, AmenitiesEdit, ClosedDayEdit, PaymentMethodsEdit } from '@/pages/Store';
 import { SettlementList, SettlementDetail, SettlementStats } from '@/pages/Settlement';
 import { BannerManagement, PopupManagement, IconBadgeManagement, MainScreenManagement } from '@/pages/Design';
 import { InquiryList, FaqManagement, TermsManagement } from '@/pages/Support';
@@ -79,12 +79,20 @@ export default function App() {
           {/* 본사/가맹계정 */}
           <Route path="staff/headquarters" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><HeadquartersStaff /></ProtectedRoute>} />
           <Route path="staff/franchise" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><FranchiseStaff /></ProtectedRoute>} />
+          <Route path="staff/edit/:type/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StaffEditPage /></ProtectedRoute>} />
           <Route path="staff/approvals" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StaffApprovals /></ProtectedRoute>} />
           <Route path="staff/teams" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><Teams /></ProtectedRoute>} />
           <Route path="staff/stores" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><StoreList /></ProtectedRoute>} />
           <Route path="staff/stores/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StoreForm mode="create" /></ProtectedRoute>} />
           <Route path="staff/stores/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><StoreDetail /></ProtectedRoute>} />
           <Route path="staff/stores/:id/edit" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StoreForm mode="edit" /></ProtectedRoute>} />
+
+          {/* 매장 상세 페이지 - 서브모달에서 페이지로 변경된 라우트 */}
+          <Route path="staff/stores/:id/edit/operating" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><OperatingInfoEdit /></ProtectedRoute>} />
+          <Route path="staff/stores/:id/edit/integration" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><IntegrationCodesEdit /></ProtectedRoute>} />
+          <Route path="staff/stores/:id/edit/amenities" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><AmenitiesEdit /></ProtectedRoute>} />
+          <Route path="staff/stores/:id/edit/closed-day" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><ClosedDayEdit /></ProtectedRoute>} />
+          <Route path="staff/stores/:id/edit/payment-methods" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><PaymentMethodsEdit /></ProtectedRoute>} />
 
           {/* 디자인관리 */}
           <Route path="design/banners" element={<ProtectedRoute requiredPermissions={[{ resource: 'design', action: 'read' }]}><BannerManagement /></ProtectedRoute>} />

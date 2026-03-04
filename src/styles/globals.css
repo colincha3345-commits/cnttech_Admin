@@ -713,6 +713,11 @@ body {
   color: var(--text-muted);
 }
 
+.form-input:hover::placeholder,
+.form-input:focus::placeholder {
+  color: transparent;
+}
+
 .form-input:hover:not(:focus):not(:read-only):not(:disabled) {
   border-color: #CBD5E1;
 }

@@ -42,11 +42,6 @@ import {
 } from '@/types/store';
 import { STAFF_STATUS_LABELS, type StaffStatus } from '@/types/staff';
 import { StaffLinkModal } from './components/StaffLinkModal';
-import { OperatingInfoEditModal } from './components/OperatingInfoEditModal';
-import { IntegrationCodesEditModal } from './components/IntegrationCodesEditModal';
-import { AmenitiesEditModal } from './components/AmenitiesEditModal';
-import { ClosedDayEditModal } from './components/ClosedDayEditModal';
-import { PaymentMethodsEditModal } from './components/PaymentMethodsEditModal';
 
 type TabKey = 'basic' | 'business' | 'operating' | 'integration' | 'payment' | 'staff';
 
@@ -74,13 +69,6 @@ export const StoreDetail: React.FC = () => {
   const [unlinkTarget, setUnlinkTarget] = useState<{ linkId: string; staffName: string } | null>(
     null
   );
-
-  // 편집 모달 상태
-  const [isOperatingEditOpen, setIsOperatingEditOpen] = useState(false);
-  const [isIntegrationEditOpen, setIsIntegrationEditOpen] = useState(false);
-  const [isAmenitiesEditOpen, setIsAmenitiesEditOpen] = useState(false);
-  const [isClosedDayEditOpen, setIsClosedDayEditOpen] = useState(false);
-  const [isPaymentMethodsEditOpen, setIsPaymentMethodsEditOpen] = useState(false);
 
   const { data: store, isLoading } = useStoreWithStaff(id);
   const deleteStore = useDeleteStore();
@@ -386,7 +374,7 @@ export const StoreDetail: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">영업 정보</h2>
-              <Button size="sm" variant="outline" onClick={() => setIsOperatingEditOpen(true)}>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit/operating`)}>
                 <EditOutlined className="mr-1" />
                 수정
               </Button>
@@ -593,13 +581,21 @@ export const StoreDetail: React.FC = () => {
                               <p className="mt-1 font-medium">{store.operatingInfo.deliverySettings.minOrderAmount.toLocaleString()}원</p>
                             </div>
                           )}
-                          {store.operatingInfo.deliverySettings.deliveryRadius != null && (
-                            <div>
-                              <label className="text-sm text-txt-muted">배달 반경</label>
-                              <p className="mt-1 font-medium">{store.operatingInfo.deliverySettings.deliveryRadius}km</p>
-                            </div>
-                          )}
                         </>
+                      )}
+                      <div>
+                        <label className="text-sm text-txt-muted">예약 가능</label>
+                        <div className="mt-1">
+                          <Badge variant={store.operatingInfo.deliverySettings.isReservationAvailable ? 'success' : 'secondary'}>
+                            {store.operatingInfo.deliverySettings.isReservationAvailable ? '가능' : '불가'}
+                          </Badge>
+                        </div>
+                      </div>
+                      {store.operatingInfo.deliverySettings.isReservationAvailable && store.operatingInfo.deliverySettings.reservationLeadTimeMinutes != null && (
+                        <div>
+                          <label className="text-sm text-txt-muted">예약 가능 시간</label>
+                          <p className="mt-1 font-medium">현재 시간 +{store.operatingInfo.deliverySettings.reservationLeadTimeMinutes}분부터</p>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -636,6 +632,20 @@ export const StoreDetail: React.FC = () => {
                           )}
                         </>
                       )}
+                      <div>
+                        <label className="text-sm text-txt-muted">예약 가능</label>
+                        <div className="mt-1">
+                          <Badge variant={store.operatingInfo.pickupSettings.isReservationAvailable ? 'success' : 'secondary'}>
+                            {store.operatingInfo.pickupSettings.isReservationAvailable ? '가능' : '불가'}
+                          </Badge>
+                        </div>
+                      </div>
+                      {store.operatingInfo.pickupSettings.isReservationAvailable && store.operatingInfo.pickupSettings.reservationLeadTimeMinutes != null && (
+                        <div>
+                          <label className="text-sm text-txt-muted">예약 가능 시간</label>
+                          <p className="mt-1 font-medium">현재 시간 +{store.operatingInfo.pickupSettings.reservationLeadTimeMinutes}분부터</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -644,7 +654,7 @@ export const StoreDetail: React.FC = () => {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b border-border pb-2">
                     <h3 className="text-md font-medium">정기휴무</h3>
-                    <Button size="sm" variant="ghost" onClick={() => setIsClosedDayEditOpen(true)}>
+                    <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/stores/${id}/edit/closed-day`)}>
                       <EditOutlined className="mr-1" />
                       수정
                     </Button>
@@ -702,7 +712,7 @@ export const StoreDetail: React.FC = () => {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <h3 className="text-md font-medium">매장 편의시설</h3>
-                      <Button size="sm" variant="ghost" onClick={() => setIsAmenitiesEditOpen(true)}>
+                      <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/stores/${id}/edit/amenities`)}>
                         <EditOutlined className="mr-1" />
                         수정
                       </Button>
@@ -763,7 +773,7 @@ export const StoreDetail: React.FC = () => {
                 <Button
                   variant="outline"
                   className="mt-4"
-                  onClick={() => navigate(`/staff/stores/${id}/edit`)}
+                  onClick={() => navigate(`/staff/stores/${id}/edit/operating`)}
                 >
                   <EditOutlined className="mr-1" />
                   영업 정보 등록
@@ -777,7 +787,7 @@ export const StoreDetail: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">연동 정보</h2>
-              <Button size="sm" variant="outline" onClick={() => setIsIntegrationEditOpen(true)}>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit/integration`)}>
                 <EditOutlined className="mr-1" />
                 수정
               </Button>
@@ -888,7 +898,7 @@ export const StoreDetail: React.FC = () => {
                 <Button
                   variant="outline"
                   className="mt-4"
-                  onClick={() => navigate(`/staff/stores/${id}/edit`)}
+                  onClick={() => navigate(`/staff/stores/${id}/edit/integration`)}
                 >
                   <EditOutlined className="mr-1" />
                   연동 정보 등록
@@ -902,7 +912,7 @@ export const StoreDetail: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">결제 수단</h2>
-              <Button size="sm" variant="outline" onClick={() => setIsPaymentMethodsEditOpen(true)}>
+              <Button size="sm" variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit/payment-methods`)}>
                 <EditOutlined className="mr-1" />
                 수정
               </Button>
@@ -959,7 +969,7 @@ export const StoreDetail: React.FC = () => {
                 <Button
                   variant="outline"
                   className="mt-4"
-                  onClick={() => setIsPaymentMethodsEditOpen(true)}
+                  onClick={() => navigate(`/staff/stores/${id}/edit/payment-methods`)}
                 >
                   <EditOutlined className="mr-1" />
                   결제 수단 등록
@@ -1054,48 +1064,6 @@ export const StoreDetail: React.FC = () => {
         onClose={() => setIsLinkModalOpen(false)}
         storeId={id!}
         storeName={store.name}
-      />
-
-      {/* 영업정보 편집 모달 */}
-      <OperatingInfoEditModal
-        isOpen={isOperatingEditOpen}
-        onClose={() => setIsOperatingEditOpen(false)}
-        storeId={id!}
-        currentData={store.operatingInfo}
-      />
-
-      {/* 연동정보 편집 모달 */}
-      <IntegrationCodesEditModal
-        isOpen={isIntegrationEditOpen}
-        onClose={() => setIsIntegrationEditOpen(false)}
-        storeId={id!}
-        currentData={store.integrationCodes}
-      />
-
-      {/* 편의시설 편집 모달 */}
-      <AmenitiesEditModal
-        isOpen={isAmenitiesEditOpen}
-        onClose={() => setIsAmenitiesEditOpen(false)}
-        storeId={id!}
-        currentData={store.amenities}
-      />
-
-      {/* 휴무일 편집 모달 */}
-      <ClosedDayEditModal
-        isOpen={isClosedDayEditOpen}
-        onClose={() => setIsClosedDayEditOpen(false)}
-        storeId={id!}
-        currentRegularClosedDays={store.operatingInfo?.regularClosedDays}
-        currentIrregularClosedDays={store.operatingInfo?.irregularClosedDays}
-        currentOperatingInfo={store.operatingInfo}
-      />
-
-      {/* 결제수단 편집 모달 */}
-      <PaymentMethodsEditModal
-        isOpen={isPaymentMethodsEditOpen}
-        onClose={() => setIsPaymentMethodsEditOpen(false)}
-        storeId={id!}
-        currentData={store.paymentMethods}
       />
 
       {/* 삭제 확인 다이얼로그 */}

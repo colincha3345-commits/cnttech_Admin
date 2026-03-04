@@ -151,7 +151,8 @@ export interface DeliverySettings {
   availableStartTime?: string; // HH:mm
   availableEndTime?: string; // HH:mm
   minOrderAmount?: number; // 배달 최소주문금액
-  deliveryRadius?: number; // 배달 반경 (km)
+  isReservationAvailable?: boolean; // 예약기능 온/오프
+  reservationLeadTimeMinutes?: number; // 예약 가능 (현재 시간 + n분부터)
 }
 
 // 포장 상세 설정
@@ -160,6 +161,8 @@ export interface PickupSettings {
   availableStartTime?: string; // HH:mm
   availableEndTime?: string; // HH:mm
   minOrderAmount?: number; // 포장 최소주문금액
+  isReservationAvailable?: boolean; // 예약기능 온/오프
+  reservationLeadTimeMinutes?: number; // 예약 가능 (현재 시간 + n분부터)
 }
 
 // 영업 정보

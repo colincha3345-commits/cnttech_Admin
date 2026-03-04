@@ -1,14 +1,11 @@
-/**
- * 영업정보 편집 모달
- * Accordion 구조: 영업시간 / 배달설정 / 포장설정 / 임시휴업
- */
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 
-import { Modal, Button, Input, Spinner, Accordion, Switch } from '@/components/ui';
+import { Card, Button, Input, Spinner, Accordion, Switch } from '@/components/ui';
 import type { AccordionItemData } from '@/components/ui';
-import { useUpdateOperatingInfo, useToast } from '@/hooks';
+import { useStore, useUpdateOperatingInfo, useToast } from '@/hooks';
 import type {
-  OperatingInfo,
   OperatingInfoFormData,
   DayOperatingHours,
   DeliverySettings,
@@ -16,13 +13,6 @@ import type {
   WeekDay,
 } from '@/types/store';
 import { WEEK_DAYS, WEEK_DAY_SHORT_LABELS, DEFAULT_DAILY_HOURS } from '@/types/store';
-
-interface OperatingInfoEditModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  storeId: string;
-  currentData?: OperatingInfo;
-}
 
 type HoursMode = 'simple' | 'daily';
 
@@ -33,65 +23,49 @@ const DEFAULT_HOURS: DayOperatingHours = {
   lastOrderMinutes: 30,
 };
 
-export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
-  isOpen,
-  onClose,
-  storeId,
-  currentData,
-}) => {
+export const OperatingInfoEdit: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const toast = useToast();
+
+  const { data: store, isLoading } = useStore(id);
   const updateOperatingInfo = useUpdateOperatingInfo();
 
-  // 영업시간 모드: 간편(평일/주말) vs 요일별
-  const [hoursMode, setHoursMode] = useState<HoursMode>(
-    currentData?.dailyHours ? 'daily' : 'simple'
-  );
-
+  const [hoursMode, setHoursMode] = useState<HoursMode>('simple');
   const [formData, setFormData] = useState<OperatingInfoFormData>({
-    weekdayHours: currentData?.weekdayHours || DEFAULT_HOURS,
-    weekendHours: currentData?.weekendHours || DEFAULT_HOURS,
-    holidayHours: currentData?.holidayHours,
-    dailyHours: currentData?.dailyHours,
-    regularClosedDays: currentData?.regularClosedDays,
-    irregularClosedDays: currentData?.irregularClosedDays,
-    deliveryFee: currentData?.deliveryFee || 3000,
-    freeDeliveryMinAmount: currentData?.freeDeliveryMinAmount,
-    isTemporarilyClosed: currentData?.isTemporarilyClosed || false,
-    temporaryCloseReason: currentData?.temporaryCloseReason,
-    temporaryCloseStartDate: currentData?.temporaryCloseStartDate
-      ? currentData.temporaryCloseStartDate.toISOString().split('T')[0]
-      : undefined,
-    temporaryCloseEndDate: currentData?.temporaryCloseEndDate
-      ? currentData.temporaryCloseEndDate.toISOString().split('T')[0]
-      : undefined,
-    isDeliveryAvailable: currentData?.isDeliveryAvailable ?? true,
-    isPickupAvailable: currentData?.isPickupAvailable ?? true,
-    deliverySettings: currentData?.deliverySettings || { isAvailable: currentData?.isDeliveryAvailable ?? true },
-    pickupSettings: currentData?.pickupSettings || { isAvailable: currentData?.isPickupAvailable ?? true },
-    isVisible: currentData?.isVisible ?? true,
+    weekdayHours: DEFAULT_HOURS,
+    weekendHours: DEFAULT_HOURS,
+    deliveryFee: 3000,
+    isTemporarilyClosed: false,
+    isDeliveryAvailable: true,
+    isPickupAvailable: true,
+    deliverySettings: { isAvailable: true },
+    pickupSettings: { isAvailable: true },
+    isVisible: true,
   });
 
   const initialDataRef = useRef<string>('');
 
   useEffect(() => {
-    if (currentData) {
+    if (store?.operatingInfo) {
+      const currentData = store.operatingInfo;
       setHoursMode(currentData.dailyHours ? 'daily' : 'simple');
       const data: OperatingInfoFormData = {
-        weekdayHours: currentData.weekdayHours,
-        weekendHours: currentData.weekendHours,
+        weekdayHours: currentData.weekdayHours || DEFAULT_HOURS,
+        weekendHours: currentData.weekendHours || DEFAULT_HOURS,
         holidayHours: currentData.holidayHours,
         dailyHours: currentData.dailyHours,
         regularClosedDays: currentData.regularClosedDays,
         irregularClosedDays: currentData.irregularClosedDays,
-        deliveryFee: currentData.deliveryFee,
+        deliveryFee: currentData.deliveryFee || 3000,
         freeDeliveryMinAmount: currentData.freeDeliveryMinAmount,
         isTemporarilyClosed: currentData.isTemporarilyClosed || false,
         temporaryCloseReason: currentData.temporaryCloseReason,
         temporaryCloseStartDate: currentData.temporaryCloseStartDate
-          ? currentData.temporaryCloseStartDate.toISOString().split('T')[0]
+          ? new Date(currentData.temporaryCloseStartDate).toISOString().split('T')[0]
           : undefined,
         temporaryCloseEndDate: currentData.temporaryCloseEndDate
-          ? currentData.temporaryCloseEndDate.toISOString().split('T')[0]
+          ? new Date(currentData.temporaryCloseEndDate).toISOString().split('T')[0]
           : undefined,
         isDeliveryAvailable: currentData.isDeliveryAvailable ?? true,
         isPickupAvailable: currentData.isPickupAvailable ?? true,
@@ -102,9 +76,8 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
       setFormData(data);
       initialDataRef.current = JSON.stringify(data);
     }
-  }, [currentData]);
+  }, [store]);
 
-  // 간편 모드 영업시간 변경
   const handleSimpleHoursChange = (
     type: 'weekdayHours' | 'weekendHours' | 'holidayHours',
     field: keyof DayOperatingHours,
@@ -119,7 +92,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     }));
   };
 
-  // 요일별 영업시간 변경
   const handleDailyHoursChange = (
     day: WeekDay,
     field: keyof DayOperatingHours,
@@ -137,7 +109,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     }));
   };
 
-  // 배달 설정 변경
   const handleDeliveryChange = (field: keyof DeliverySettings, value: string | number | boolean) => {
     setFormData((prev) => ({
       ...prev,
@@ -148,7 +119,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     }));
   };
 
-  // 포장 설정 변경
   const handlePickupChange = (field: keyof PickupSettings, value: string | number | boolean) => {
     setFormData((prev) => ({
       ...prev,
@@ -159,7 +129,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     }));
   };
 
-  // 모드 전환 시 dailyHours 초기화
   const handleModeChange = (mode: HoursMode) => {
     setHoursMode(mode);
     if (mode === 'daily' && !formData.dailyHours) {
@@ -172,8 +141,8 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) return;
 
-    // 간편 모드이면 dailyHours 제거
     const submitData: OperatingInfoFormData = {
       ...formData,
       dailyHours: hoursMode === 'daily' ? formData.dailyHours : undefined,
@@ -183,14 +152,14 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
 
     if (JSON.stringify(formData) === initialDataRef.current) {
       toast.info('변경사항이 없습니다.');
-      onClose();
+      navigate(`/staff/stores/${id}`);
       return;
     }
 
     try {
-      await updateOperatingInfo.mutateAsync({ storeId, data: submitData });
+      await updateOperatingInfo.mutateAsync({ storeId: id, data: submitData });
       toast.success('영업정보가 수정되었습니다.');
-      onClose();
+      navigate(`/staff/stores/${id}`);
     } catch {
       toast.error('영업정보 수정에 실패했습니다.');
     }
@@ -269,7 +238,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     </div>
   );
 
-  // ── 섹션 1: 영업시간 ──
   const hoursContent = (
     <div className="space-y-4">
       <div className="flex gap-4">
@@ -346,7 +314,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     </div>
   );
 
-  // ── 섹션 2: 배달 설정 ──
   const deliveryContent = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -390,18 +357,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
                 placeholder="15000"
               />
             </div>
-            <div>
-              <label className="block text-sm text-txt-muted mb-1">배달 반경 (km)</label>
-              <Input
-                type="number"
-                value={formData.deliverySettings.deliveryRadius ?? ''}
-                onChange={(e) =>
-                  handleDeliveryChange('deliveryRadius', e.target.value ? Number(e.target.value) : 0)
-                }
-                placeholder="3"
-                step="0.5"
-              />
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -431,12 +386,34 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
               />
             </div>
           </div>
+
+          <div className="pt-4 border-t border-border">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium">예약 가능 (배달)</span>
+              <Switch
+                checked={formData.deliverySettings?.isReservationAvailable ?? false}
+                onCheckedChange={(v) => handleDeliveryChange('isReservationAvailable', v)}
+              />
+            </div>
+            {formData.deliverySettings?.isReservationAvailable && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-txt-muted">현재 시간 기준</span>
+                <Input
+                  type="number"
+                  value={formData.deliverySettings.reservationLeadTimeMinutes ?? ''}
+                  onChange={(e) => handleDeliveryChange('reservationLeadTimeMinutes', e.target.value ? Number(e.target.value) : 0)}
+                  placeholder="30"
+                  className="w-24 text-center"
+                />
+                <span className="text-sm text-txt-muted">분 후부터 예약 가능</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 
-  // ── 섹션 3: 포장 설정 ──
   const pickupContent = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -480,12 +457,34 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
               className="w-48"
             />
           </div>
+
+          <div className="pt-4 border-t border-border">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-sm font-medium">예약 가능 (포장)</span>
+              <Switch
+                checked={formData.pickupSettings?.isReservationAvailable ?? false}
+                onCheckedChange={(v) => handlePickupChange('isReservationAvailable', v)}
+              />
+            </div>
+            {formData.pickupSettings?.isReservationAvailable && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-txt-muted">현재 시간 기준</span>
+                <Input
+                  type="number"
+                  value={formData.pickupSettings.reservationLeadTimeMinutes ?? ''}
+                  onChange={(e) => handlePickupChange('reservationLeadTimeMinutes', e.target.value ? Number(e.target.value) : 0)}
+                  placeholder="30"
+                  className="w-24 text-center"
+                />
+                <span className="text-sm text-txt-muted">분 후부터 예약 가능</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 
-  // ── 섹션 4: 임시 휴업 ──
   const closureContent = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -537,7 +536,6 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     </div>
   );
 
-  // ── 섹션 0: 매장 노출 ──
   const visibilityContent = (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
@@ -565,25 +563,52 @@ export const OperatingInfoEditModal: React.FC<OperatingInfoEditModalProps> = ({
     { id: 'closure', title: '임시 휴업', content: closureContent },
   ];
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="영업정보 수정" size="lg">
-      <form onSubmit={handleSubmit}>
-        <Accordion
-          items={accordionItems}
-          defaultOpenId="hours"
-          allowMultiple
-          className="!p-0"
-        />
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-border mt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
-            취소
-          </Button>
-          <Button type="submit" disabled={updateOperatingInfo.isPending}>
-            {updateOperatingInfo.isPending ? <Spinner size="sm" /> : '저장'}
-          </Button>
-        </div>
-      </form>
-    </Modal>
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate(`/staff/stores/${id}`)}
+          className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
+        >
+          <ArrowLeftOutlined />
+        </button>
+        <h1 className="text-2xl font-bold text-txt-main">
+          영업정보 수정
+        </h1>
+      </div>
+
+      <Card className="p-6">
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4 text-txt-muted">
+            매장명: {store?.name}
+          </div>
+          <Accordion
+            items={accordionItems}
+            defaultOpenId="hours"
+            allowMultiple
+            className="!p-0"
+          />
+
+          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
+            <Button type="button" variant="outline" onClick={() => navigate(`/staff/stores/${id}`)}>
+              취소
+            </Button>
+            <Button type="submit" disabled={updateOperatingInfo.isPending}>
+              {updateOperatingInfo.isPending ? <Spinner size="sm" /> : '저장'}
+            </Button>
+          </div>
+        </form>
+      </Card>
+    </div>
   );
 };
+
+export default OperatingInfoEdit;

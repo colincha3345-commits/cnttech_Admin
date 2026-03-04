@@ -48,23 +48,6 @@ export class ApiError extends Error {
     }
 }
 
-/**
- * 저장된 인증 토큰 반환
- * authStore와 동일한 sessionStorage 키(auth-storage) 사용
- */
-function getAuthToken(): string | null {
-    try {
-        // authStore는 sessionStorage + 'auth-storage' 키 사용 (localStorage가 아님)
-        const raw = sessionStorage.getItem('auth-storage');
-        if (!raw) return null;
-        const parsed = JSON.parse(raw) as {
-            state?: { session?: { accessToken?: string } };
-        };
-        return parsed?.state?.session?.accessToken ?? null;
-    } catch {
-        return null;
-    }
-}
 
 /**
  * 기본 API fetch 함수
@@ -75,10 +58,8 @@ async function apiFetch<T>(
 ): Promise<T> {
     const { timeout = 15000, ...fetchOptions } = options;
 
-    const token = getAuthToken();
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...fetchOptions.headers,
     };
 
@@ -89,6 +70,7 @@ async function apiFetch<T>(
 
     try {
         const response = await fetch(url, {
+            credentials: 'include', // HttpOnly 쿠키 전송
             ...fetchOptions,
             headers,
             signal: controller.signal,

@@ -1,0 +1,39 @@
+/* 애니메이션 정의: 투명도와 위치 이동 */
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 공통 스타일: 초기에는 숨김 처리 */
+.logo-part {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* 순차적 등장 타이밍 (Delay) 설정 */
+/* 1. 파란색 마름모 (가장 먼저 등장) */
+.part-1 { animation-delay: 0.1s; fill: #0085CA; } 
+
+/* 2. 상단 검정 마름모 */
+.part-2 { animation-delay: 0.3s; fill: #1D1D1B; }
+
+/* 3. 하단 검정 마름모 */
+.part-3 { animation-delay: 0.5s; fill: #1D1D1B; }
+
+/* 4. 텍스트 (마지막 등장) */
+.part-text { 
+  animation-delay: 0.7s; 
+  fill: #000000; 
+  font-family: Arial, sans-serif; 
+  font-weight: 900; 
+  font-style: italic;
+  font-size: 38px;
+}
+
+/* 다크 모드 대응 텍스트 컬러 오버라이드 (추가 개선사항) */
+.dark .part-2, .dark .part-3 {
+  fill: #E5E7EB; /* tailwind gray-200 */
+}
+.dark .part-text {
+  fill: #FFFFFF;
+}

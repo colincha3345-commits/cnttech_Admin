@@ -312,7 +312,7 @@ function ButtonShareTab({
   handleImageChange: (field: keyof EventFormData) => (file: File | null) => void;
 }) {
   const allChannels = ALL_SHARE_CHANNELS;
-  const [previewChannel, setPreviewChannel] = useState<ShareChannel | 'push'>('kakao');
+  const [previewChannel, setPreviewChannel] = useState<ShareChannel>('kakao');
 
   return (
     <div className="space-y-4">
@@ -411,28 +411,7 @@ function ButtonShareTab({
         )}
       </div>
 
-      {/* 푸시 알림 설정 */}
-      <div className="p-4 bg-bg-hover rounded-lg border border-border space-y-3">
-        <span className="text-sm font-medium text-txt-main">푸시 알림 미리보기</span>
-        <div>
-          <Label>푸시 제목</Label>
-          <Input
-            value={formData.pushTitle}
-            onChange={(e) => onFormChange({ pushTitle: e.target.value })}
-            placeholder="이벤트 제목 (비우면 이벤트 제목 사용)"
-            disabled={disabled}
-          />
-        </div>
-        <div>
-          <Label>푸시 내용</Label>
-          <Input
-            value={formData.pushBody}
-            onChange={(e) => onFormChange({ pushBody: e.target.value })}
-            placeholder="푸시 알림에 표시될 내용을 입력하세요"
-            disabled={disabled}
-          />
-        </div>
-      </div>
+
 
       {/* 미리보기 패널 */}
       <div className="rounded-xl border border-border overflow-hidden">
@@ -443,7 +422,6 @@ function ButtonShareTab({
             { id: 'facebook' as const, label: '페이스북', color: '#1877F2', emoji: '📘' },
             { id: 'instagram' as const, label: '인스타그램', color: '#E1306C', emoji: '📸' },
             { id: 'twitter' as const, label: 'X', color: '#000000', emoji: '✕' },
-            { id: 'push' as const, label: '푸시알림', color: '#6366f1', emoji: '🔔' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -466,8 +444,6 @@ function ButtonShareTab({
             title={formData.shareTitle || formData.title || '이벤트 제목'}
             description={formData.shareDescription || formData.description || '이벤트 내용을 입력하세요'}
             imageUrl={formData.shareImageUrl || formData.bannerImageUrl}
-            pushTitle={formData.pushTitle || formData.title || '이벤트 알림'}
-            pushBody={formData.pushBody || formData.description || '새로운 이벤트를 확인해 보세요!'}
           />
         </div>
 
@@ -487,15 +463,11 @@ function SharePreview({
   title,
   description,
   imageUrl,
-  pushTitle,
-  pushBody,
 }: {
-  channel: ShareChannel | 'push';
+  channel: ShareChannel;
   title: string;
   description: string;
   imageUrl: string;
-  pushTitle: string;
-  pushBody: string;
 }) {
   const truncate = (str: string, n: number) => str.length > n ? str.slice(0, n) + '…' : str;
 
@@ -661,74 +633,8 @@ function SharePreview({
     );
   }
 
-  // 푸시 알림
-  return (
-    <div className="space-y-4 w-72">
-      {/* iOS 스타일 */}
-      <div>
-        <p className="text-xs text-gray-500 font-medium mb-2 text-center">🍎 iOS</p>
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/60">
-          {/* iOS 상단 잠금화면 느낌 배경 */}
-          <div
-            className="p-4"
-            style={{
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            }}
-          >
-            <div className="bg-white/20 backdrop-blur rounded-xl p-3">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <span className="text-white font-bold text-xs">APP</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <p className="text-xs font-semibold text-white">앱 이름</p>
-                    <p className="text-xs text-white/70">지금</p>
-                  </div>
-                  <p className="text-sm font-semibold text-white leading-tight">{truncate(pushTitle, 30)}</p>
-                  <p className="text-xs text-white/80 leading-tight mt-0.5">{truncate(pushBody, 60)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Android 스타일 */}
-      <div>
-        <p className="text-xs text-gray-500 font-medium mb-2 text-center">🤖 Android</p>
-        <div className="bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
-          {/* 상태바 */}
-          <div className="flex justify-between items-center px-4 py-1.5 bg-gray-900">
-            <span className="text-white text-[10px]">9:41</span>
-            <div className="flex gap-1 items-center">
-              <span className="text-white text-[10px]">●●●</span>
-            </div>
-          </div>
-          {/* 알림 드로워 */}
-          <div className="mx-2 mb-2 bg-gray-800 rounded-xl p-3">
-            <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-bold text-xs">A</span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1 mb-0.5">
-                  <p className="text-xs font-bold text-white">{truncate(pushTitle, 30)}</p>
-                </div>
-                <p className="text-xs text-gray-300 leading-tight">{truncate(pushBody, 60)}</p>
-                <p className="text-[10px] text-gray-500 mt-1">앱 이름 · 지금</p>
-              </div>
-            </div>
-            {/* 액션 버튼 */}
-            <div className="flex gap-2 mt-2 pt-2 border-t border-gray-700">
-              <button className="flex-1 text-xs text-indigo-400 font-medium py-1">이벤트 보기</button>
-              <button className="text-xs text-gray-400 py-1">닫기</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  // Other channels handled above
+  return null;
 }
 
 // ============================================

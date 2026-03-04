@@ -80,8 +80,40 @@ export const mockPermissions: Permission[] = [
   },
 ];
 
-// 세션 저장소 (메모리)
+const MOCK_DB_KEY = 'mock_backend_sessions';
+
+// 세션 저장소 (메모리 + localStorage 동기화로 백엔드 DB 시뮬레이션)
 export const mockSessions: Map<string, AuthSession> = new Map();
+
+try {
+  const saved = localStorage.getItem(MOCK_DB_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved) as Record<string, AuthSession>;
+    Object.entries(parsed).forEach(([token, session]) => {
+      // 만료되지 않은 세션만 복원
+      if (new Date() <= new Date(session.expiresAt)) {
+        mockSessions.set(token, {
+          ...session,
+          expiresAt: new Date(session.expiresAt),
+        });
+      }
+    });
+  }
+} catch (e) {
+  console.error('Mock DB Load Error', e);
+}
+
+function syncMockDb() {
+  const obj = Object.fromEntries(mockSessions.entries());
+  localStorage.setItem(MOCK_DB_KEY, JSON.stringify(obj));
+}
+
+// 쿠키 파싱 헬퍼
+export function getMockTokenFromCookie(name: string): string | null {
+  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  if (match && match[2]) return match[2];
+  return null;
+}
 
 // 로그인 시도 기록 (메모리)
 export const mockLoginAttempts: Map<string, LoginAttempt> = new Map();
@@ -117,6 +149,12 @@ export function createSession(user: AuthUser): AuthSession {
   };
 
   mockSessions.set(session.accessToken, session);
+  syncMockDb();
+
+  // 브라우저 쿠키에 토큰 저장 (HttpOnly 시뮬레이션)
+  document.cookie = `mock_access_token=${session.accessToken}; path=/; max-age=1800; SameSite=Lax`;
+  document.cookie = `mock_refresh_token=${session.refreshToken}; path=/; max-age=86400; SameSite=Lax`;
+
   return session;
 }
 
@@ -127,6 +165,7 @@ export function validateSession(token: string): AuthSession | null {
   if (!session) return null;
   if (new Date() > session.expiresAt) {
     mockSessions.delete(token);
+    syncMockDb();
     return null;
   }
 
@@ -134,17 +173,12 @@ export function validateSession(token: string): AuthSession | null {
 }
 
 // 세션 삭제
-export function removeSession(token: string): void {
-  mockSessions.delete(token);
-}
-
-// 세션 복원 (localStorage에서 로드된 세션을 mockSessions에 추가)
-export function restoreSession(session: AuthSession): void {
-  // 만료되지 않은 세션만 복원
-  if (new Date() <= new Date(session.expiresAt)) {
-    mockSessions.set(session.accessToken, {
-      ...session,
-      expiresAt: new Date(session.expiresAt), // Date 객체로 변환
-    });
+export function removeSession(): void {
+  const token = getMockTokenFromCookie('mock_access_token');
+  if (token) {
+    mockSessions.delete(token);
+    syncMockDb();
   }
+  document.cookie = `mock_access_token=; path=/; max-age=0`;
+  document.cookie = `mock_refresh_token=; path=/; max-age=0`;
 }

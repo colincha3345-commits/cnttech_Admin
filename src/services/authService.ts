@@ -11,8 +11,6 @@ import {
   mockLoginAttempts,
   toAuthUser,
   createSession,
-  validateSession,
-  removeSession,
 } from '@/lib/api/mockAuth';
 import { delay } from '@/utils/async';
 
@@ -216,8 +214,8 @@ export const authService = {
     return {
       success: true,
       data: session,
-  };
-},
+    };
+  },
 
   /**
    * 이메일 인증 코드 검증
@@ -286,126 +284,137 @@ export const authService = {
     };
   },
 
-    /**
-     * 인증 코드 재발송
-     */
-    async resendVerificationCode(userId: string): Promise < ApiResponse<{ email: string }> | ApiError > {
-      await delay(500);
+  /**
+   * 인증 코드 재발송
+   */
+  async resendVerificationCode(userId: string): Promise<ApiResponse<{ email: string }> | ApiError> {
+    await delay(500);
 
     const pendingUser = pendingMfaUsers.get(userId);
-      if(!pendingUser) {
-        return {
-          success: false,
-          error: {
-            code: 'MFA_EXPIRED' as AuthErrorCode,
-            message: '인증 세션이 만료되었습니다. 다시 로그인해주세요.',
-          },
-        };
-      }
+    if (!pendingUser) {
+      return {
+        success: false,
+        error: {
+          code: 'MFA_EXPIRED' as AuthErrorCode,
+          message: '인증 세션이 만료되었습니다. 다시 로그인해주세요.',
+        },
+      };
+    }
 
     const mockUser = mockAuthUsers.find((u) => u.id === userId);
-      if(!mockUser) {
-        return {
-          success: false,
-          error: {
-            code: 'INVALID_CREDENTIALS' as AuthErrorCode,
-            message: '사용자를 찾을 수 없습니다.',
-          },
-        };
-      }
+    if (!mockUser) {
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_CREDENTIALS' as AuthErrorCode,
+          message: '사용자를 찾을 수 없습니다.',
+        },
+      };
+    }
 
     // 새 인증 코드 생성
     const verificationCode = generateVerificationCode();
-      emailVerificationCodes.set(userId, {
-        code: verificationCode,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-        email: mockUser.email,
-      });
+    emailVerificationCodes.set(userId, {
+      code: verificationCode,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      email: mockUser.email,
+    });
 
-      simulateEmailSend(mockUser.email, verificationCode);
+    simulateEmailSend(mockUser.email, verificationCode);
 
-      return {
-        success: true,
-        data: { email: maskEmail(mockUser.email) },
-      };
-    },
-
-      /**
-       * 로그아웃
-       */
-      async logout(token: string): Promise < void> {
-        await delay(100);
-    removeSession(token);
-      },
-
-        /**
-         * 현재 사용자 정보 조회
-         */
-        async getCurrentUser(token: string): Promise < ApiResponse < AuthUser | null >> {
-          await delay(100);
-
-    const session = validateSession(token);
-          if(!session) {
-            return {
-              success: true,
-              data: null,
-            };
-          }
-
-    return {
-            success: true,
-            data: session.user,
-          };
-        },
-
-          /**
-           * 토큰 갱신
-           */
-          async refreshToken(
-            refreshToken: string
-          ): Promise < ApiResponse<AuthSession> | ApiError > {
-            await delay(200);
-
-    // Mock: refreshToken으로 세션 찾기
-    for(const [, session] of Array.from(
-              (await import('@/lib/api/mockAuth')).mockSessions
-            )) {
-  if (session.refreshToken === refreshToken) {
-    const newSession = createSession(session.user);
-    removeSession(session.accessToken);
     return {
       success: true,
-      data: newSession,
+      data: { email: maskEmail(mockUser.email) },
     };
-  }
-}
-
-return {
-  success: false,
-  error: {
-    code: 'SESSION_EXPIRED' as AuthErrorCode,
-    message: '세션이 만료되었습니다. 다시 로그인해주세요.',
-  },
-};
   },
 
-/**
- * 로그인 시도 정보 조회
- */
-getLoginAttemptInfo(email: string): {
-  attempts: number;
-  remainingAttempts: number;
-  isLocked: boolean;
-  lockedUntil: Date | null;
-} {
-  const attempt = getLoginAttempt(email);
-  const lockStatus = isAccountLocked(email);
+  /**
+   * 로그아웃
+   */
+  async logout(): Promise<void> {
+    await delay(100);
+    const { removeSession } = await import('@/lib/api/mockAuth');
+    removeSession();
+  },
 
-  return {
-    attempts: attempt.attempts,
-    remainingAttempts: Math.max(0, MAX_ATTEMPTS - attempt.attempts),
-    isLocked: lockStatus.locked,
-    lockedUntil: attempt.lockedUntil,
-  };
-},
+  /**
+   * 현재 사용자 정보 조회
+   */
+  async getCurrentUser(): Promise<ApiResponse<AuthUser | null>> {
+    await delay(100);
+
+    const { getMockTokenFromCookie, validateSession } = await import('@/lib/api/mockAuth');
+    const token = getMockTokenFromCookie('mock_access_token');
+
+    if (!token) {
+      return {
+        success: true,
+        data: null,
+      };
+    }
+
+    const session = validateSession(token);
+    if (!session) {
+      return {
+        success: true,
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      data: session.user,
+    };
+  },
+
+  /**
+   * 토큰 갱신
+   */
+  async refreshToken(
+    refreshToken: string
+  ): Promise<ApiResponse<AuthSession> | ApiError> {
+    await delay(200);
+
+    // Mock: refreshToken으로 세션 찾기
+    for (const [, session] of Array.from(
+      (await import('@/lib/api/mockAuth')).mockSessions
+    )) {
+      if (session.refreshToken === refreshToken) {
+        (await import('@/lib/api/mockAuth')).mockSessions.delete(session.accessToken);
+        const newSession = createSession(session.user);
+        return {
+          success: true,
+          data: newSession,
+        };
+      }
+    }
+
+    return {
+      success: false,
+      error: {
+        code: 'SESSION_EXPIRED' as AuthErrorCode,
+        message: '세션이 만료되었습니다. 다시 로그인해주세요.',
+      },
+    };
+  },
+
+  /**
+   * 로그인 시도 정보 조회
+   */
+  getLoginAttemptInfo(email: string): {
+    attempts: number;
+    remainingAttempts: number;
+    isLocked: boolean;
+    lockedUntil: Date | null;
+  } {
+    const attempt = getLoginAttempt(email);
+    const lockStatus = isAccountLocked(email);
+
+    return {
+      attempts: attempt.attempts,
+      remainingAttempts: Math.max(0, MAX_ATTEMPTS - attempt.attempts),
+      isLocked: lockStatus.locked,
+      lockedUntil: attempt.lockedUntil,
+    };
+  },
 };

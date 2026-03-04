@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput } from '@/components/ui';
@@ -16,6 +16,7 @@ import { StaffFormModal } from './components/StaffFormModal';
 
 export const HeadquartersStaff: React.FC = () => {
   const toast = useToast();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [keyword, setKeyword] = useState('');
@@ -58,8 +59,7 @@ export const HeadquartersStaff: React.FC = () => {
   };
 
   const handleEdit = (item: StaffAccount) => {
-    setSelectedStaff(item);
-    setIsModalOpen(true);
+    navigate(`/staff/edit/headquarters/${item.id}`);
   };
 
   const handleDelete = async () => {
@@ -111,7 +111,7 @@ export const HeadquartersStaff: React.FC = () => {
             본사 직원 계정을 관리합니다. (총 {pagination?.total || 0}명)
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => navigate('/staff/edit/headquarters/new')}>
           <PlusOutlined className="mr-1" />
           직원 추가
         </Button>
@@ -286,8 +286,8 @@ export const HeadquartersStaff: React.FC = () => {
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
                     className={`w-8 h-8 rounded text-sm ${page === pageNum
-                        ? 'bg-primary text-white'
-                        : 'border border-border hover:bg-bg-hover'
+                      ? 'bg-primary text-white'
+                      : 'border border-border hover:bg-bg-hover'
                       }`}
                   >
                     {pageNum}

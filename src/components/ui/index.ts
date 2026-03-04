@@ -42,6 +42,7 @@ export type { ToastType, ToastProps } from './Toast';
 export { Skeleton } from './skeleton';
 export { ProductImage } from './ProductImage';
 export { Spinner, InlineSpinner } from './Spinner';
+export { PageLoader } from './PageLoader';
 export { BulkEditModal } from './BulkEditModal';
 export { ConfirmDialog } from './ConfirmDialog';
 export { Modal } from './Modal';
