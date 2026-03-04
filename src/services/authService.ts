@@ -184,36 +184,38 @@ export const authService = {
     const authUser = toAuthUser(mockUser);
 
     // 2차 인증 기능 전체 비활성화
-    // if (mockUser.mfaEnabled && !import.meta.env.DEV) {
-    pendingMfaUsers.set(mockUser.id, authUser);
+    /*
+    if (mockUser.mfaEnabled) {
+      pendingMfaUsers.set(mockUser.id, authUser);
 
-    // 인증 코드 생성 및 이메일 발송
-    const verificationCode = generateVerificationCode();
-    emailVerificationCodes.set(mockUser.id, {
-      code: verificationCode,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5분 후 만료
-      email: mockUser.email,
-    });
+      // 인증 코드 생성 및 이메일 발송
+      const verificationCode = generateVerificationCode();
+      emailVerificationCodes.set(mockUser.id, {
+        code: verificationCode,
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5분 후 만료
+        email: mockUser.email,
+      });
 
-    // 이메일 발송 시뮬레이션 (실제로는 이메일 서비스 호출)
-    simulateEmailSend(mockUser.email, verificationCode);
+      // 이메일 발송 시뮬레이션 (실제로는 이메일 서비스 호출)
+      simulateEmailSend(mockUser.email, verificationCode);
 
-    return {
-      success: false,
-      error: {
-        code: 'MFA_REQUIRED' as AuthErrorCode,
-        message: '이메일로 인증 코드가 발송되었습니다.',
-        details: { userId: mockUser.id, email: maskEmail(mockUser.email) },
-      },
-    };
-  }
+      return {
+        success: false,
+        error: {
+          code: 'MFA_REQUIRED' as AuthErrorCode,
+          message: '이메일로 인증 코드가 발송되었습니다.',
+          details: { userId: mockUser.id, email: maskEmail(mockUser.email) },
+        },
+      };
+    }
+    */
 
     // 세션 생성
     const session = createSession(authUser);
 
-  return {
-    success: true,
-    data: session,
+    return {
+      success: true,
+      data: session,
   };
 },
 

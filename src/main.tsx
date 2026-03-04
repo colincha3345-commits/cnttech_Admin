@@ -10,7 +10,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 1,
+      retry: false, // 오류 시 자동 재요청 중복 호출 방지
+      refetchOnWindowFocus: false, // 창 포커스 시 재요청 방지
     },
   },
 });

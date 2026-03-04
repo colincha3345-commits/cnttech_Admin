@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Card, Button, Input } from '@/components/ui';
+import { useToast } from '@/hooks';
 import type { PushNotificationForm, PushType, TriggerType } from '@/types/push';
 
 // 회원 세그먼트 옵션
@@ -9,6 +10,7 @@ const AGE_OPTIONS = ['전체', '10대', '20대', '30대', '40대', '50대', '60�
 const WEEK_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
 export const PushNotificationFormPage = () => {
+    const toast = useToast();
     const [formData, setFormData] = useState<PushNotificationForm>({
         type: 'ad',
         title: '',
@@ -201,10 +203,10 @@ export const PushNotificationFormPage = () => {
             // Mock 백엔드 호출
             // await axios.post('/api/v1/pushes', apiPayload, { headers: { 'Content-Type': 'multipart/form-data' } });
 
-            alert('푸시 발송(예약)이 접수되었습니다! (개발자 도구 Console 확인)');
+            toast.success('푸시 발송(예약)이 접수되었습니다.');
         } catch (error) {
             console.error('푸시 전송 중 에러:', error);
-            alert('전송 중 오류가 발생했습니다.');
+            toast.error('전송 중 오류가 발생했습니다.');
         }
     };
 

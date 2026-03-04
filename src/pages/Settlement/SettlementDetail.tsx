@@ -147,7 +147,7 @@ export function SettlementDetail() {
                         </div>
                         <div className="bg-blue-50 p-4 rounded-lg flex flex-col justify-center">
                             <p className="text-sm font-bold text-blue-600 mb-1">최종 지급 금액</p>
-                            <p className="text-2xl font-bold tracking-tight text-blue-900 font-mono">₩{data.netAmount.toLocaleString()}</p>
+                            <p className="text-2xl font-bold tracking-tight text-blue-900">₩{data.netAmount.toLocaleString()}</p>
                         </div>
                     </div>
                 </CardContent>
@@ -160,7 +160,7 @@ export function SettlementDetail() {
                         <div className="bg-bg-hover px-5 py-4 border-b border-border font-bold text-txt-main">
                             정산 금액 산출 내역
                         </div>
-                        <div className="p-5 space-y-4 text-sm font-mono">
+                        <div className="p-5 space-y-4 text-sm">
                             <div className="flex justify-between items-center pb-2 border-b border-border">
                                 <span className="text-txt-sub">총 주문 건수</span>
                                 <span className="font-bold text-txt-main">{data.orderCount}건</span>
@@ -230,7 +230,7 @@ export function SettlementDetail() {
                                         <tr key={order.orderId} className="hover:bg-bg-hover">
                                             <td className="px-5 py-4 align-top">
                                                 <p className="font-bold text-txt-main">{order.orderNumber}</p>
-                                                <p className="text-xs text-txt-muted font-mono mt-1">
+                                                <p className="text-xs text-txt-muted mt-1">
                                                     {format(new Date(order.orderDate), 'yy.MM.dd HH:mm')}
                                                 </p>
                                                 <Badge variant="secondary" className="mt-2 text-[10px]">
@@ -261,10 +261,10 @@ export function SettlementDetail() {
                                                     ))}
                                                 </div>
                                             </td>
-                                            <td className="px-5 py-4 align-top text-right font-mono text-txt-main">
+                                            <td className="px-5 py-4 align-top text-right text-txt-main">
                                                 ₩{order.totalAmount.toLocaleString()}
                                             </td>
-                                            <td className="px-5 py-4 align-top text-right font-mono font-bold text-blue-600">
+                                            <td className="px-5 py-4 align-top text-right font-bold text-blue-600">
                                                 ₩{order.netAmount.toLocaleString()}
                                             </td>
                                         </tr>

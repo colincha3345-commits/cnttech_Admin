@@ -23,7 +23,8 @@ export function useCategories() {
 
     useEffect(() => {
         fetchCategories();
-    }, [fetchCategories]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const createCategory = async (data: CategoryFormData): Promise<Category | null> => {
         setLoading(true);

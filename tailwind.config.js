@@ -5,7 +5,7 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: 'media', // 시스템 설정 기반
+  darkMode: 'class', // 시스템 설정 무시, 다크모드 미사용
   theme: {
     extend: {
       /* ===== Pizza Brand Colors ===== */

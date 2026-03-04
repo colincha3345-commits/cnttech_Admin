@@ -22,49 +22,78 @@
 :root {
   /* ----- Apple-Inspired Color System ----- */
   /* 블랙 & 다크 그레이 */
-  --black: #000000;           /* Pure Black */
-  --dark-gray-1: #1D1D1F;     /* 헤드라인, 주요 텍스트 */
-  --dark-gray-2: #424245;     /* 서브헤드라인 */
+  --black: #000000;
+  /* Pure Black */
+  --dark-gray-1: #1D1D1F;
+  /* 헤드라인, 주요 텍스트 */
+  --dark-gray-2: #424245;
+  /* 서브헤드라인 */
 
   /* 그레이 */
-  --gray-1: #48484A;          /* 본문 텍스트 - 더 진한 그레이 */
-  --gray-2: #636366;          /* 보조 텍스트 - 진한 그레이 */
+  --gray-1: #48484A;
+  /* 본문 텍스트 - 더 진한 그레이 */
+  --gray-2: #636366;
+  /* 보조 텍스트 - 진한 그레이 */
 
   /* 라이트 그레이 & 실버 */
-  --light-gray-1: #D2D2D7;    /* 테두리 */
-  --light-gray-2: #E8E8ED;    /* 구분선 */
-  --silver: #F5F5F7;          /* 배경 */
-  --white: #FFFFFF;           /* 카드 배경 */
+  --light-gray-1: #D2D2D7;
+  /* 테두리 */
+  --light-gray-2: #E8E8ED;
+  /* 구분선 */
+  --silver: #F5F5F7;
+  /* 배경 */
+  --white: #FFFFFF;
+  /* 카드 배경 */
 
   /* ----- 시맨틱 컬러 (최소화) ----- */
-  --primary: #1D1D1F;         /* 블랙 = Primary */
-  --secondary: #48484A;       /* 진한 그레이 = Secondary */
-  --success: #34C759;         /* Apple Green */
-  --warning: #FF9500;         /* Apple Orange */
-  --critical: #FF3B30;        /* Apple Red */
+  --primary: #1D1D1F;
+  /* 블랙 = Primary */
+  --secondary: #48484A;
+  /* 진한 그레이 = Secondary */
+  --success: #34C759;
+  /* Apple Green */
+  --warning: #FF9500;
+  /* Apple Orange */
+  --critical: #FF3B30;
+  /* Apple Red */
 
   /* ----- 배경 컬러 ----- */
-  --bg-main: #FFFFFF;         /* White - 메인 배경 (요청에 따라 변경) */
-  --bg-card: #FFFFFF;         /* White - 카드 배경 */
-  --bg-input: #FFFFFF;        /* White - 인풋 배경 */
-  --bg-disabled: #F5F5F7;     /* Silver - 비활성화 */
-  --bg-hover: #F5F5F7;        /* Silver - 호버 */
+  --bg-main: #FFFFFF;
+  /* White - 메인 배경 (요청에 따라 변경) */
+  --bg-card: #FFFFFF;
+  /* White - 카드 배경 */
+  --bg-input: #FFFFFF;
+  /* White - 인풋 배경 */
+  --bg-disabled: #F5F5F7;
+  /* Silver - 비활성화 */
+  --bg-hover: #F5F5F7;
+  /* Silver - 호버 */
 
   /* ----- 사이드바 전용 컬러 ----- */
-  --sidebar-bg: #FAFAFA;      /* 약간 어두운 화이트 */
-  --sidebar-active: #E8E8ED;  /* 라이트 그레이 */
-  --sidebar-hover: #F5F5F7;   /* 실버 */
+  --sidebar-bg: #FAFAFA;
+  /* 약간 어두운 화이트 */
+  --sidebar-active: #E8E8ED;
+  /* 라이트 그레이 */
+  --sidebar-hover: #F5F5F7;
+  /* 실버 */
 
   /* ----- 텍스트 컬러 ----- */
-  --text-main: #1D1D1F;       /* 다크 그레이 - 본문 */
-  --text-muted: #48484A;      /* 진한 그레이 - 부가 정보 */
-  --text-disabled: #636366;   /* 중간 그레이 - 비활성화 (입력필드용) */
-  --text-inverse: #FFFFFF;    /* 화이트 - 반전 */
+  --text-main: #1D1D1F;
+  /* 다크 그레이 - 본문 */
+  --text-muted: #48484A;
+  /* 진한 그레이 - 부가 정보 */
+  --text-disabled: #636366;
+  /* 중간 그레이 - 비활성화 (입력필드용) */
+  --text-inverse: #FFFFFF;
+  /* 화이트 - 반전 */
 
   /* ----- 테두리 컬러 ----- */
-  --border-color: #D2D2D7;    /* 라이트 그레이 */
-  --border-focus: #000000;    /* 블랙 - 포커스 */
-  --border-error: #FF3B30;    /* 애플 레드 */
+  --border-color: #D2D2D7;
+  /* 라이트 그레이 */
+  --border-focus: #000000;
+  /* 블랙 - 포커스 */
+  --border-error: #FF3B30;
+  /* 애플 레드 */
 
   /* ----- 그림자 (애플 스타일 - 매우 미묘함) ----- */
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
@@ -77,12 +106,18 @@
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* ----- 글자 크기 (Minor Third Scale) ----- */
-  --text-xs: 0.75rem;   /* 12px */
-  --text-sm: 0.875rem;  /* 14px */
-  --text-base: 1rem;    /* 16px */
-  --text-lg: 1.125rem;  /* 18px */
-  --text-xl: 1.25rem;   /* 20px */
-  --text-2xl: 1.5rem;   /* 24px */
+  --text-xs: 0.75rem;
+  /* 12px */
+  --text-sm: 0.875rem;
+  /* 14px */
+  --text-base: 1rem;
+  /* 16px */
+  --text-lg: 1.125rem;
+  /* 18px */
+  --text-xl: 1.25rem;
+  /* 20px */
+  --text-2xl: 1.5rem;
+  /* 24px */
 
   /* ----- 행간 및 자간 ----- */
   --leading-tight: 1.2;
@@ -90,13 +125,20 @@
   --tracking-tight: -0.01em;
 
   /* ----- 스페이싱 (4px 기반) ----- */
-  --s-1: 0.25rem;  /* 4px */
-  --s-2: 0.5rem;   /* 8px */
-  --s-3: 0.75rem;  /* 12px */
-  --s-4: 1rem;     /* 16px */
-  --s-6: 1.5rem;   /* 24px */
-  --s-8: 2rem;     /* 32px */
-  --s-12: 3rem;    /* 48px */
+  --s-1: 0.25rem;
+  /* 4px */
+  --s-2: 0.5rem;
+  /* 8px */
+  --s-3: 0.75rem;
+  /* 12px */
+  --s-4: 1rem;
+  /* 16px */
+  --s-6: 1.5rem;
+  /* 24px */
+  --s-8: 2rem;
+  /* 32px */
+  --s-12: 3rem;
+  /* 48px */
 
   /* ----- 시맨틱 스페이싱 ----- */
   --layout-padding: var(--s-6);
@@ -324,7 +366,7 @@ body {
   box-shadow: var(--shadow-lg);
 }
 
-/* Dark Mode Card */
+/* Dark Mode Card 
 @media (prefers-color-scheme: dark) {
   .admin-card {
     background: rgba(30, 41, 59, 0.7);
@@ -332,7 +374,7 @@ body {
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
-}
+} */
 
 /* ============================================
    6. MASKED DATA
@@ -351,11 +393,11 @@ body {
   user-select: text;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .masked-data {
     background: var(--bg-input);
   }
-}
+} */
 
 /* Text Highlight Effect */
 .text-highlight {
@@ -851,17 +893,42 @@ body {
    ============================================ */
 
 /* Text Colors - Apple Style */
-.text-primary { color: #1D1D1F; }
-.text-success { color: #34C759; }
-.text-warning { color: #FF9500; }
-.text-critical { color: #FF3B30; }
-.text-muted { color: #86868B; }
-.text-main { color: #1D1D1F; }
+.text-primary {
+  color: #1D1D1F;
+}
+
+.text-success {
+  color: #34C759;
+}
+
+.text-warning {
+  color: #FF9500;
+}
+
+.text-critical {
+  color: #FF3B30;
+}
+
+.text-muted {
+  color: #86868B;
+}
+
+.text-main {
+  color: #1D1D1F;
+}
 
 /* Background Colors */
-.bg-success-soft { background: rgba(16, 185, 129, 0.1); }
-.bg-warning-soft { background: rgba(245, 158, 11, 0.1); }
-.bg-critical-soft { background: rgba(225, 29, 72, 0.1); }
+.bg-success-soft {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.bg-warning-soft {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.bg-critical-soft {
+  background: rgba(225, 29, 72, 0.1);
+}
 
 /* Divider */
 .divider {
@@ -893,13 +960,16 @@ body {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -910,6 +980,7 @@ body {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -926,11 +997,25 @@ body {
 
 /* 신규 주문 행 깜박임 효과 */
 @keyframes rowFlash {
-  0%   { background-color: rgba(251, 191, 36, 0.25); }
-  25%  { background-color: transparent; }
-  50%  { background-color: rgba(251, 191, 36, 0.25); }
-  75%  { background-color: transparent; }
-  100% { background-color: rgba(251, 191, 36, 0.15); }
+  0% {
+    background-color: rgba(251, 191, 36, 0.25);
+  }
+
+  25% {
+    background-color: transparent;
+  }
+
+  50% {
+    background-color: rgba(251, 191, 36, 0.25);
+  }
+
+  75% {
+    background-color: transparent;
+  }
+
+  100% {
+    background-color: rgba(251, 191, 36, 0.15);
+  }
 }
 
 .animate-row-flash {
@@ -949,9 +1034,17 @@ body {
   border-left: 4px solid var(--primary);
 }
 
-.toast-success { border-left-color: var(--success); }
-.toast-warning { border-left-color: var(--warning); }
-.toast-critical { border-left-color: var(--critical); }
+.toast-success {
+  border-left-color: var(--success);
+}
+
+.toast-warning {
+  border-left-color: var(--warning);
+}
+
+.toast-critical {
+  border-left-color: var(--critical);
+}
 
 /* ============================================
    12. LOGIN PAGE
@@ -967,11 +1060,11 @@ body {
   background: #F8FAFC;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .login-container {
     background: #0F172A;
   }
-}
+} */
 
 .login-card {
   width: 100%;
@@ -985,13 +1078,13 @@ body {
   padding: var(--s-8);
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .login-card {
     background: rgba(30, 41, 59, 0.8);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   }
-}
+} */
 
 .login-logo {
   display: flex;
@@ -1098,8 +1191,8 @@ body {
     transition: opacity 0.3s ease;
   }
 
-  .admin-sidebar.mobile-open + .sidebar-overlay,
-  .admin-sidebar.mobile-open ~ .sidebar-overlay {
+  .admin-sidebar.mobile-open+.sidebar-overlay,
+  .admin-sidebar.mobile-open~.sidebar-overlay {
     opacity: 1;
     pointer-events: auto;
   }
@@ -1142,6 +1235,11 @@ body {
   }
 
   /* Adjusted Font Sizes */
-  .text-2xl { font-size: var(--text-xl); }
-  .text-xl { font-size: var(--text-lg); }
+  .text-2xl {
+    font-size: var(--text-xl);
+  }
+
+  .text-xl {
+    font-size: var(--text-lg);
+  }
 }

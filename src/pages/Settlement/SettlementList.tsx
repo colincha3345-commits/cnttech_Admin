@@ -15,6 +15,7 @@ import {
     DataTable,
 } from '@/components/ui';
 import { settlementService } from '@/services/settlementService';
+import { useToast } from '@/hooks';
 
 import type { Settlement, SettlementStatus } from '@/types/settlement';
 
@@ -27,6 +28,7 @@ const SETTLEMENT_STATUS_LABELS: Record<SettlementStatus, string> = {
 
 export function SettlementList() {
     const navigate = useNavigate();
+    const toast = useToast();
     const [keyword, setKeyword] = useState('');
     const [status, setStatus] = useState<SettlementStatus | ''>('');
     const [data, setData] = useState<Settlement[]>([]);
@@ -39,7 +41,7 @@ export function SettlementList() {
             const res = await settlementService.getSettlements({ keyword, status });
             setData(res.data);
         } catch (error) {
-            console.error('Failed to load settlements:', error);
+            toast.error('정산 목록을 불러오는데 실패했습니다.');
         } finally {
             setIsLoading(false);
         }
@@ -54,8 +56,10 @@ export function SettlementList() {
         setIsProcessing(true);
         try {
             const res = await settlementService.runSettlement();
-            alert(res.message);
+            toast.success(res.message);
             loadData();
+        } catch {
+            toast.error('정산 실행에 실패했습니다.');
         } finally {
             setIsProcessing(false);
         }
@@ -83,7 +87,7 @@ export function SettlementList() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-blue-600 mb-1">이번 회차 총 정산액</p>
-                                <h3 className="text-2xl font-bold text-blue-900 font-mono">
+                                <h3 className="text-2xl font-bold text-blue-900">
                                     ₩{totalNet.toLocaleString()}
                                 </h3>
                             </div>
@@ -97,7 +101,7 @@ export function SettlementList() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-txt-muted mb-1">정산 대기건</p>
-                                <h3 className="text-2xl font-bold text-txt-main font-mono">
+                                <h3 className="text-2xl font-bold text-txt-main">
                                     {data.filter(s => s.status === 'pending').length}건
                                 </h3>
                             </div>
@@ -111,7 +115,7 @@ export function SettlementList() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-txt-muted mb-1">정산 완료건 (당월)</p>
-                                <h3 className="text-2xl font-bold text-txt-main font-mono">
+                                <h3 className="text-2xl font-bold text-txt-main">
                                     {data.filter(s => s.status === 'completed').length}건
                                 </h3>
                             </div>
@@ -182,7 +186,7 @@ export function SettlementList() {
                             header: '총 매출액',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm font-medium text-txt-main font-mono whitespace-nowrap">₩{item.totalSales.toLocaleString()}</span>
+                                <span className="text-sm font-medium text-txt-main whitespace-nowrap">₩{item.totalSales.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -190,7 +194,7 @@ export function SettlementList() {
                             header: '배달비용',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-txt-sub font-mono whitespace-nowrap">₩{item.deliveryFee.toLocaleString()}</span>
+                                <span className="text-sm text-txt-sub whitespace-nowrap">₩{item.deliveryFee.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -198,7 +202,7 @@ export function SettlementList() {
                             header: '포인트',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-purple-600 font-mono whitespace-nowrap">₩{item.pointsUsed.toLocaleString()}</span>
+                                <span className="text-sm text-purple-600 whitespace-nowrap">₩{item.pointsUsed.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -206,7 +210,7 @@ export function SettlementList() {
                             header: '쿠폰',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-purple-600 font-mono whitespace-nowrap">₩{item.couponsUsed.toLocaleString()}</span>
+                                <span className="text-sm text-purple-600 whitespace-nowrap">₩{item.couponsUsed.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -214,7 +218,7 @@ export function SettlementList() {
                             header: '교환권',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-txt-sub font-mono whitespace-nowrap">₩{item.vouchersUsed.toLocaleString()}</span>
+                                <span className="text-sm text-txt-sub whitespace-nowrap">₩{item.vouchersUsed.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -222,7 +226,7 @@ export function SettlementList() {
                             header: '할인액(본사)',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-red-500 font-bold font-mono whitespace-nowrap">₩{item.hqSupport.toLocaleString()}</span>
+                                <span className="text-sm text-red-500 font-bold whitespace-nowrap">₩{item.hqSupport.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -230,7 +234,7 @@ export function SettlementList() {
                             header: '할인액(가맹)',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-red-500 font-bold font-mono whitespace-nowrap">₩{(item.promotionDiscount - item.hqSupport).toLocaleString()}</span>
+                                <span className="text-sm text-red-500 font-bold whitespace-nowrap">₩{(item.promotionDiscount - item.hqSupport).toLocaleString()}</span>
                             ),
                         },
                         {
@@ -238,7 +242,7 @@ export function SettlementList() {
                             header: '플랫폼 수수료',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-txt-muted font-mono whitespace-nowrap">-₩{item.platformFee.toLocaleString()}</span>
+                                <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.platformFee.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -246,7 +250,7 @@ export function SettlementList() {
                             header: '정산 대상액',
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm font-bold text-blue-600 font-mono whitespace-nowrap">₩{item.netAmount.toLocaleString()}</span>
+                                <span className="text-sm font-bold text-blue-600 whitespace-nowrap">₩{item.netAmount.toLocaleString()}</span>
                             ),
                         },
                     ]}

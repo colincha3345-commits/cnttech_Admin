@@ -312,7 +312,14 @@ export function LoginPage() {
 
         {/* 푸터 링크 */}
         <div className="login-footer">
-          <a href="#" className="login-link">
+          <a 
+            href="#" 
+            className="login-link"
+            onClick={(e) => {
+              e.preventDefault();
+              window.alert('비밀번호 문의는 it1@cntt.co.kr로 문의해주세요.');
+            }}
+          >
             비밀번호를 잊으셨나요?
           </a>
         </div>

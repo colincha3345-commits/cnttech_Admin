@@ -25,9 +25,11 @@ import {
   Badge,
 } from '@/components/ui';
 import { useCategories } from '@/hooks/useCategories';
+import { useToast } from '@/hooks';
 import type { Category, CategoryFormData } from '@/types/category';
 
 export function Categories() {
+  const toast = useToast();
   const { categories, loading, createCategory, updateCategory, deleteCategory } = useCategories();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['1', '2']));
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -87,11 +89,11 @@ export function Categories() {
   const handleSave = async () => {
     const nameText = formData.name.replace(/<br\s*\/?>/g, '').trim();
     if (!nameText) {
-      alert('카테고리명을 입력해주세요.');
+      toast.error('카테고리명을 입력해주세요.');
       return;
     }
     if (nameText.length > 50) {
-      alert('카테고리명은 50자 이내로 입력해주세요.');
+      toast.error('카테고리명은 50자 이내로 입력해주세요.');
       return;
     }
 

@@ -19,11 +19,13 @@ import {
 } from '@/components/ui';
 import { auditService } from '@/services/auditService';
 import { usePageViewLog } from '@/hooks/useActivityLog';
+import { useToast } from '@/hooks';
 import type { AuditLogEntry, AuditAlarmConfig, AuditAction } from '@/types/audit';
 import { ACTION_DISPLAY_NAMES } from '@/types/audit';
 
 export function AuditLogList() {
     usePageViewLog('audit-logs');
+    const toast = useToast();
     const [logs, setLogs] = useState<AuditLogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchUserId, setSearchUserId] = useState('');
@@ -68,10 +70,10 @@ export function AuditLogList() {
         if (!alarmConfig) return;
         try {
             await auditService.updateAlarmConfig(currentAdminId, alarmConfig);
-            alert('보안 설정이 저장되었습니다.');
+            toast.success('보안 설정이 저장되었습니다.');
             setIsAlarmModalOpen(false);
-        } catch (error) {
-            console.error('Failed to save alarm config', error);
+        } catch {
+            toast.error('보안 설정 저장에 실패했습니다.');
         }
     };
 

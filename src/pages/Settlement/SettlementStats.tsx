@@ -121,7 +121,7 @@ export function SettlementStats() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-txt-muted mb-1">총 매출액 (조회 기간내)</p>
-                                <h3 className="text-2xl font-bold text-txt-main font-mono">
+                                <h3 className="text-2xl font-bold text-txt-main">
                                     ₩{summary.totalSales.toLocaleString()}
                                 </h3>
                             </div>
@@ -134,7 +134,7 @@ export function SettlementStats() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-red-600 mb-1">본사 부담 할인금 (포인트/이벤트)</p>
-                                <h3 className="text-2xl font-bold text-red-900 font-mono">
+                                <h3 className="text-2xl font-bold text-red-900">
                                     ₩{summary.hqDiscount.toLocaleString()}
                                 </h3>
                             </div>
@@ -147,7 +147,7 @@ export function SettlementStats() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-orange-600 mb-1">가맹점 부담 할인금 (쿠폰등)</p>
-                                <h3 className="text-2xl font-bold text-orange-900 font-mono">
+                                <h3 className="text-2xl font-bold text-orange-900">
                                     ₩{summary.storeDiscount.toLocaleString()}
                                 </h3>
                             </div>
@@ -160,7 +160,7 @@ export function SettlementStats() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm font-medium text-blue-600 mb-1">최종 정산 대상액 (조회 기간내)</p>
-                                <h3 className="text-2xl font-bold text-blue-900 font-mono">
+                                <h3 className="text-2xl font-bold text-blue-900">
                                     ₩{summary.netAmount.toLocaleString()}
                                 </h3>
                             </div>
@@ -229,36 +229,36 @@ export function SettlementStats() {
                         <tbody className="divide-y divide-border text-left">
                             {filteredData.map((item) => (
                                 <tr key={item.id} className="hover:bg-bg-hover transition-colors">
-                                    <td className="p-4 whitespace-nowrap text-sm font-mono text-txt-main">{item.dateString}</td>
+                                    <td className="p-4 whitespace-nowrap text-sm text-txt-main">{item.dateString}</td>
                                     <td className="p-4 whitespace-nowrap">
                                         <span className="font-bold text-sm text-txt-main">{item.storeName}</span>
-                                        <span className="block text-xs text-txt-muted font-mono mt-0.5">{item.storeId}</span>
+                                        <span className="block text-xs text-txt-muted mt-0.5">{item.storeId}</span>
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-txt-main">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-txt-main">
                                         ₩{item.totalSales.toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-txt-muted">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-txt-muted">
                                         ₩{item.deliveryFee.toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-blue-500">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-blue-500">
                                         ₩{item.pointsUsed?.toLocaleString() || '0'}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-orange-500">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-orange-500">
                                         ₩{item.couponsUsed?.toLocaleString() || '0'}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-purple-500">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-purple-500">
                                         ₩{item.vouchersUsed?.toLocaleString() || '0'}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-red-600 font-bold bg-red-50/20">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-red-600 font-bold bg-red-50/20">
                                         ₩{item.hqDiscount.toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-orange-600 font-bold bg-orange-50/20">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-orange-600 font-bold bg-orange-50/20">
                                         ₩{item.storeDiscount.toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-txt-muted">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-txt-muted">
                                         -₩{item.platformFee.toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm font-mono text-blue-600 font-bold bg-blue-50/20">
+                                    <td className="p-4 text-right whitespace-nowrap text-sm text-blue-600 font-bold bg-blue-50/20">
                                         ₩{item.netAmount.toLocaleString()}
                                     </td>
                                 </tr>
