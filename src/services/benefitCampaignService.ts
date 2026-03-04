@@ -156,7 +156,7 @@ class BenefitCampaignService {
         daysAfter: formData.birthdayDaysAfter,
         repeatYearly: formData.birthdayRepeatYearly,
       } : undefined,
-      referralCondition: formData.trigger === 'referral' ? {
+      memberGroupCondition: formData.trigger === 'member_group' ? {
         manualIssueTargetType: formData.manualIssueTargetType,
         manualIssueMemberIds: formData.manualIssueMemberIds,
         manualIssueGroupIds: formData.manualIssueGroupIds,

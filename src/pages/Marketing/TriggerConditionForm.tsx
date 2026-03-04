@@ -269,7 +269,7 @@ export function TriggerConditionForm({ formData, onFormChange }: TriggerConditio
         </div>
       );
 
-    case 'referral':
+    case 'member_group':
       return <MemberGroupSelectForm formData={formData} onFormChange={onFormChange} />;
 
     case 'referral_code':

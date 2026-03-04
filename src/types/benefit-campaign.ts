@@ -21,7 +21,7 @@ export type BenefitCampaignTrigger =
   | 'signup'             // 회원 가입 시
   | 'membership_upgrade' // 멤버십 등급 달성 시
   | 'birthday'           // 생일
-  | 'referral'           // 친구 추천 시
+  | 'member_group'       // 회원그룹 발급
   | 'referral_code'      // 추천인 코드 입력 시
   | 'manual_upload'      // 수기 업로드
   | 'promo_code';        // 난수 발행쿠폰
@@ -31,7 +31,7 @@ export const BENEFIT_CAMPAIGN_TRIGGER_LABELS: Record<BenefitCampaignTrigger, str
   signup: '회원 가입 시',
   membership_upgrade: '멤버십 달성 시',
   birthday: '생일',
-  referral: '회원그룹 발급',
+  member_group: '회원그룹 발급',
   referral_code: '추천인 코드 입력 시',
   manual_upload: '수기 업로드',
   promo_code: '난수 발행쿠폰',
@@ -42,7 +42,7 @@ export const BENEFIT_CAMPAIGN_TRIGGER_DESCRIPTIONS: Record<BenefitCampaignTrigge
   signup: '신규 회원 가입 시 자동으로 혜택을 지급합니다.',
   membership_upgrade: '회원 등급이 특정 등급에 도달하면 자동으로 혜택을 지급합니다.',
   birthday: '고객의 생일에 자동으로 혜택을 지급합니다. 생일 전후 지급 시점을 설정할 수 있습니다.',
-  referral: '회원 그룹을 선택하여 해당 그룹 전체에게 즉시 혜택을 일괄 발급합니다.',
+  member_group: '회원 그룹을 선택하여 해당 그룹 전체에게 즉시 혜택을 일괄 발급합니다.',
   referral_code: '추천인 코드를 입력하면 자동으로 혜택을 지급합니다.',
   manual_upload: '회원 세그먼트 리스트(CSV/Excel)를 업로드하여 수기로 혜택을 지급합니다.',
   promo_code: '랜덤 코드를 일괄 생성하거나 외부 코드를 업로드하여, 코드 입력(매칭) 시 쿠폰 또는 포인트를 지급합니다.',
@@ -85,18 +85,13 @@ export const MANUAL_ISSUE_TARGET_TYPE_LABELS: Record<ManualIssueTargetType, stri
 };
 
 /**
- * 회원 수동 발급 조건 (구 referral 트리거)
+ * 회원그룹 발급 트리거 조건
  */
-export interface ReferralTriggerCondition {
-  // 수동 발급 대상
+export interface MemberGroupTriggerCondition {
   manualIssueTargetType: ManualIssueTargetType;
   manualIssueMemberIds: string[];   // 개인 선택 시 회원 ID 목록
   manualIssueGroupIds: string[];    // 그룹 선택 시 그룹 ID 목록
   manualIssueGradeIds: string[];    // 등급 선택 시 등급 ID 목록
-
-  /** @deprecated 기존 필드 (하위 호환) */
-  benefitTarget?: 'referrer' | 'referee' | 'both';
-  maxReferralsPerMember?: number | null;
 }
 
 export interface ReferralCodeTriggerCondition {
@@ -146,12 +141,6 @@ export interface PromoCodeTriggerCondition {
   uploadedFileName: string | null;  // 업로드 파일명
   usageCondition: PromoCodeUsageCondition;
 }
-
-export const REFERRAL_TARGET_LABELS: Record<'referrer' | 'referee' | 'both', string> = {
-  referrer: '추천인',
-  referee: '피추천인',
-  both: '모두',
-};
 
 // ============================================
 // 지급 지연 설정
@@ -239,7 +228,7 @@ export interface BenefitCampaign {
   signupCondition?: SignupTriggerCondition;
   membershipCondition?: MembershipUpgradeTriggerCondition;
   birthdayCondition?: BirthdayTriggerCondition;
-  referralCondition?: ReferralTriggerCondition;
+  memberGroupCondition?: MemberGroupTriggerCondition;
   referralCodeCondition?: ReferralCodeTriggerCondition;
   manualUploadCondition?: ManualUploadTriggerCondition;
   promoCodeCondition?: PromoCodeTriggerCondition;
@@ -285,10 +274,7 @@ export interface BenefitCampaignFormData {
   birthdayDaysAfter: number;
   birthdayRepeatYearly: boolean;
 
-  // referral (회원 수동 발급)
-  referralBenefitTarget: 'referrer' | 'referee' | 'both';
-  referralMaxPerMember: number | null;
-  // 수동 발급 대상 선택
+  // member_group (회원그룹 발급)
   manualIssueTargetType: ManualIssueTargetType;
   manualIssueMemberIds: string[];
   manualIssueGroupIds: string[];
@@ -351,8 +337,6 @@ export const DEFAULT_BENEFIT_CAMPAIGN_FORM: BenefitCampaignFormData = {
   birthdayDaysAfter: 30,
   birthdayRepeatYearly: true,
 
-  referralBenefitTarget: 'both',
-  referralMaxPerMember: null,
   manualIssueTargetType: 'groups',
   manualIssueMemberIds: [],
   manualIssueGroupIds: [],
@@ -438,7 +422,7 @@ export function validateBenefitCampaignForm(data: BenefitCampaignFormData): stri
         errors.push('사용 가능 기간은 1일 이상이어야 합니다.');
       }
       break;
-    case 'referral':
+    case 'member_group':
       if (data.manualIssueGroupIds.length === 0) {
         errors.push('발급 대상 그룹을 1개 이상 선택해주세요.');
       }

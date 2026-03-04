@@ -71,8 +71,8 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
     id: 'bc-5',
     name: 'VIP 그룹 특별 혜택 캠페인',
     description: 'VIP 회원 그룹에 포인트 일괄 발급',
-    trigger: 'referral',
-    referralCondition: {
+    trigger: 'member_group',
+    memberGroupCondition: {
       manualIssueTargetType: 'groups',
       manualIssueMemberIds: [],
       manualIssueGroupIds: ['g-001', 'g-002'],
