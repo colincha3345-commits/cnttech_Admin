@@ -7,26 +7,23 @@ on:
     branches:
       - main
 
-  workflow_dispatch: # 수동 실행 지원
+  workflow_dispatch:
 
 jobs:
   convert-and-upload:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # 2. pandoc 설치
       - name: Install pandoc
         run: |
           sudo apt-get update
           sudo apt-get install -y pandoc
 
-      # 3. 변경된 md 파일 감지 + 전체 변환
       - name: Convert MD to DOCX
         run: |
           mkdir -p docs/docx
@@ -48,10 +45,14 @@ jobs:
           done
           echo "✅ 변환 완료: $(ls docs/docx/*.docx 2>/dev/null | wc -l)개 파일"
 
-      # 4. Google Drive 업로드
-      - name: Upload to Google Drive
+      - name: Setup Google credentials
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+        run: |
+          printenv GOOGLE_SERVICE_ACCOUNT_KEY > /tmp/sa-key.json
+
+      - name: Upload to Google Drive
+        env:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
         run: |
           pip install google-api-python-client google-auth --quiet
@@ -62,19 +63,18 @@ jobs:
           from googleapiclient.discovery import build
           from googleapiclient.http import MediaFileUpload
 
-          # 서비스 계정 인증
-          key_json = os.environ.get('GOOGLE_SERVICE_ACCOUNT_KEY', '')
-          if not key_json:
-              print("⚠️ GOOGLE_SERVICE_ACCOUNT_KEY가 설정되지 않았습니다. 업로드를 건너뜁니다.")
+          key_path = '/tmp/sa-key.json'
+          if not os.path.exists(key_path) or os.path.getsize(key_path) < 10:
+              print("⚠️ GOOGLE_SERVICE_ACCOUNT_KEY가 설정되지 않았습니다.")
               sys.exit(0)
 
           folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
           if not folder_id:
-              print("⚠️ GOOGLE_DRIVE_FOLDER_ID가 설정되지 않았습니다. 업로드를 건너뜁니다.")
+              print("⚠️ GOOGLE_DRIVE_FOLDER_ID가 설정되지 않았습니다.")
               sys.exit(0)
 
-          creds = service_account.Credentials.from_service_account_info(
-              json.loads(key_json),
+          creds = service_account.Credentials.from_service_account_file(
+              key_path,
               scopes=['https://www.googleapis.com/auth/drive.file']
           )
           service = build('drive', 'v3', credentials=creds)
@@ -91,9 +91,11 @@ jobs:
 
               filepath = os.path.join(docx_dir, filename)
 
-              # 기존 파일 검색 (같은 이름이면 업데이트)
               query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
-              results = service.files().list(q=query, fields='files(id)').execute()
+              results = service.files().list(
+                  q=query, fields='files(id)',
+                  supportsAllDrives=True
+              ).execute()
               existing = results.get('files', [])
 
               media = MediaFileUpload(
@@ -102,24 +104,23 @@ jobs:
               )
 
               if existing:
-                  # 기존 파일 업데이트
                   file_id = existing[0]['id']
                   service.files().update(
                       fileId=file_id,
-                      media_body=media
+                      media_body=media,
+                      supportsAllDrives=True
                   ).execute()
                   print(f"📝 업데이트: {filename}")
               else:
-                  # 새 파일 생성
                   file_metadata = {
                       'name': filename,
                       'parents': [folder_id],
-                      'mimeType': 'application/vnd.google-apps.document'  # Google Docs로 변환
                   }
                   service.files().create(
                       body=file_metadata,
                       media_body=media,
-                      fields='id'
+                      fields='id',
+                      supportsAllDrives=True
                   ).execute()
                   print(f"✅ 신규 업로드: {filename}")
 
@@ -128,7 +129,10 @@ jobs:
           print(f"\n🎉 총 {uploaded}개 파일 동기화 완료")
           PYTHON_SCRIPT
 
-      # 5. 변환 결과를 Artifact로 보관 (Drive 미설정 시 다운로드용)
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f /tmp/sa-key.json
+
       - name: Upload docx as artifacts
         uses: actions/upload-artifact@v4
         with:
