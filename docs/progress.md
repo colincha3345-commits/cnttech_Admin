@@ -25,6 +25,7 @@
 
 ## 최근 작업 이력
 
+- 2026-03-05: 상품 채널별 노출 설정 추가 (주문앱/POS/키오스크·테이블오더), POS 전용 필드(posDisplayName, posColor, 12색 팔레트), spec_menu.md 및 product.ts 업데이트
 - 2026-03-04: 미작성 기획 명세서 6건 추가 (spec_point, spec_push, spec_permission, spec_grade, spec_member_segment, spec_dashboard, spec_auth)
 - 2026-03-04: 앱회원 배달지 주소 목록 추가 (DeliveryAddress 인터페이스, MemberInfoTab UI, mockData)
 - 2026-03-04: 팝업 등록 폼 전시설정 우선 배치 (PopupManagement.tsx 리팩토링)

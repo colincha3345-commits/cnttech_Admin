@@ -107,7 +107,8 @@ export interface FavoriteStore {
 export interface DeliveryAddress {
   id: string;
   alias: string;              // 별칭 (집, 회사, 기타)
-  address: string;            // 기본 주소 (도로명/지번)
+  address: string;            // 도로명 주소
+  jibunAddress?: string;      // 지번 주소 (없을 수 있음)
   addressDetail: string;      // 상세 주소
   zipCode: string;            // 우편번호
   lat: number | null;         // 위도

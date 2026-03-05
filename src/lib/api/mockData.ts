@@ -38,8 +38,8 @@ export const mockMembers: Member[] = [
       { storeId: 'store-5', storeName: '판교역점', address: '경기 성남시 분당구 판교역로 235', phone: '031-987-6543', registeredAt: new Date('2025-01-08') },
     ],
     deliveryAddresses: [
-      { id: 'addr-1', alias: '집', address: '서울 강남구 테헤란로 427', addressDetail: '강남파이낸스센터 15층', zipCode: '06159', lat: 37.5058, lng: 127.0593, isDefault: true, lastUsedAt: new Date('2026-02-08'), createdAt: new Date('2024-01-20') },
-      { id: 'addr-2', alias: '회사', address: '서울 서초구 서초대로 398', addressDetail: '플래티넘타워 7층', zipCode: '06619', lat: 37.4917, lng: 127.0078, isDefault: false, lastUsedAt: new Date('2026-01-25'), createdAt: new Date('2024-03-10') },
+      { id: 'addr-1', alias: '집', address: '서울 강남구 테헤란로 427', jibunAddress: '서울 강남구 삼성동 159', addressDetail: '강남파이낸스센터 15층', zipCode: '06159', lat: 37.5058, lng: 127.0593, isDefault: true, lastUsedAt: new Date('2026-02-08'), createdAt: new Date('2024-01-20') },
+      { id: 'addr-2', alias: '회사', address: '서울 서초구 서초대로 398', jibunAddress: '서울 서초구 서초동 1685-8', addressDetail: '플래티넘타워 7층', zipCode: '06619', lat: 37.4917, lng: 127.0078, isDefault: false, lastUsedAt: new Date('2026-01-25'), createdAt: new Date('2024-03-10') },
       { id: 'addr-3', alias: '부모님댁', address: '경기 성남시 분당구 불정로 6', addressDetail: 'NAVER그린팩토리 앞 101동 502호', zipCode: '13561', lat: 37.3595, lng: 127.1054, isDefault: false, lastUsedAt: new Date('2025-12-25'), createdAt: new Date('2024-06-01') },
     ],
   },
@@ -77,8 +77,8 @@ export const mockMembers: Member[] = [
       { storeId: 'store-4', storeName: '잠실역점', address: '서울 송파구 올림픽로 300', phone: '02-4567-8901', registeredAt: new Date('2025-02-01') },
     ],
     deliveryAddresses: [
-      { id: 'addr-4', alias: '집', address: '서울 송파구 올림픽로 300', addressDetail: '잠실엘스 203동 1504호', zipCode: '05551', lat: 37.5133, lng: 127.1001, isDefault: true, lastUsedAt: new Date('2026-02-05'), createdAt: new Date('2024-07-01') },
-      { id: 'addr-5', alias: '회사', address: '서울 강남구 역삼로 180', addressDetail: '마루180 3층', zipCode: '06248', lat: 37.4996, lng: 127.0365, isDefault: false, lastUsedAt: new Date('2026-01-30'), createdAt: new Date('2024-09-15') },
+      { id: 'addr-4', alias: '집', address: '서울 송파구 올림픽로 300', jibunAddress: '서울 송파구 신천동 7-18', addressDetail: '잠실엘스 203동 1504호', zipCode: '05551', lat: 37.5133, lng: 127.1001, isDefault: true, lastUsedAt: new Date('2026-02-05'), createdAt: new Date('2024-07-01') },
+      { id: 'addr-5', alias: '회사', address: '서울 강남구 역삼로 180', jibunAddress: '서울 강남구 역삼동 725-3', addressDetail: '마루180 3층', zipCode: '06248', lat: 37.4996, lng: 127.0365, isDefault: false, lastUsedAt: new Date('2026-01-30'), createdAt: new Date('2024-09-15') },
     ],
   },
   {

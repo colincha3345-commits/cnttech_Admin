@@ -57,6 +57,7 @@ import { PlusOutlined as PlusIcon, MinusOutlined } from '@ant-design/icons';
 import { useProducts, useStores, useOptionGroupList, useToast } from '@/hooks';
 import { useIconBadges } from '@/hooks/useDesign';
 import type { Product, ProductFormData, ProductStatus, BulkEditUpdate, BulkUpdateResult, DisplayOrderUpdate, CategoryPair, NutritionBySize, NutritionInfo } from '@/types/product';
+import { POS_COLOR_PALETTE } from '@/types/product';
 import { multiFieldSearch } from '@/utils/search';
 import { useAuthStore } from '@/stores/authStore';
 import { usePageViewLog } from '@/hooks/useActivityLog';
@@ -125,6 +126,9 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   isVisible: true,
   applyToAll: true,
   storeIds: [],
+  posDisplayName: '',
+  posColor: '',
+  channels: { app: true, pos: true, kiosk: true, tableOrder: true },
   allowCoupon: true,
   allowVoucher: true,
   allowGiftCard: false,
@@ -230,6 +234,9 @@ export function Products() {
       applyToAll: product.applyToAll,
       storeIds: product.storeIds,
       posCode: product.posCode,
+      posDisplayName: product.posDisplayName || '',
+      posColor: product.posColor || '',
+      channels: product.channels || { app: true, pos: true, kiosk: true, tableOrder: true },
       allowCoupon: product.allowCoupon,
       allowVoucher: product.allowVoucher,
       allowGiftCard: product.allowGiftCard,
@@ -955,6 +962,18 @@ export function Products() {
                                 {product.isVisible && (
                                   <Badge variant="info">노출</Badge>
                                 )}
+                                {/* 채널 노출 표시 */}
+                                {(() => {
+                                  const ch = product.channels;
+                                  const labels: string[] = [];
+                                  if (ch?.app ?? true) labels.push('앱');
+                                  if (ch?.pos ?? true) labels.push('POS');
+                                  if (ch?.kiosk ?? true) labels.push('키오스크');
+                                  if (ch?.tableOrder ?? true) labels.push('테이블');
+                                  return labels.length > 0 && labels.length < 4 ? (
+                                    <Badge variant="secondary">{labels.join('·')}</Badge>
+                                  ) : null;
+                                })()}
                                 {(() => {
                                   const periodBadge = getSalesPeriodBadge(
                                     product.salesStartDate,
@@ -1306,6 +1325,87 @@ export function Products() {
                         })}
                       </div>
 
+                      {/* 채널별 노출 설정 */}
+                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
+                        <h3 className="text-sm font-semibold text-txt-main">채널 노출</h3>
+                        <p className="text-xs text-txt-muted">상품이 노출될 채널을 선택합니다</p>
+
+                        {[
+                          { key: 'app' as const, label: '주문앱' },
+                          { key: 'pos' as const, label: 'POS' },
+                          { key: 'kiosk' as const, label: '키오스크' },
+                          { key: 'tableOrder' as const, label: '테이블오더' },
+                        ].map(({ key, label }) => (
+                          <div key={key} className="flex items-center justify-between">
+                            <Label>{label}</Label>
+                            <Switch
+                              checked={formData.channels?.[key] ?? true}
+                              onCheckedChange={(checked) => setFormData({ ...formData, channels: { ...(formData.channels || { app: true, pos: true, kiosk: true, tableOrder: true }), [key]: checked } })}
+                            />
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* POS 전용 설정 */}
+                      {formData.channels?.pos && (
+                        <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
+                          <h3 className="text-sm font-semibold text-txt-main">POS 전용 설정</h3>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="posDisplayName">POS 표시명</Label>
+                            <Input
+                              id="posDisplayName"
+                              value={formData.posDisplayName || ''}
+                              onChange={(e) => setFormData({ ...formData, posDisplayName: e.target.value })}
+                              placeholder="미입력 시 메뉴명 사용"
+                              maxLength={20}
+                            />
+                            <p className="text-xs text-txt-muted">POS 버튼에 표시할 이름 (최대 20자)</p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label>POS 버튼 색상</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {POS_COLOR_PALETTE.map((color) => (
+                                <button
+                                  key={color}
+                                  type="button"
+                                  onClick={() => setFormData({ ...formData, posColor: formData.posColor === color ? '' : color })}
+                                  className={`
+                                    w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
+                                    ${formData.posColor === color
+                                      ? 'border-primary ring-2 ring-primary/30 scale-110'
+                                      : 'border-border hover:border-primary/50'
+                                    }
+                                    ${color === '#FFFFFF' ? 'bg-white' : ''}
+                                  `}
+                                  style={{ backgroundColor: color }}
+                                >
+                                  {formData.posColor === color && (
+                                    <CheckOutlined className={`text-xs ${color === '#FFFFFF' || color === '#FADB14' ? 'text-gray-800' : 'text-white'}`} />
+                                  )}
+                                </button>
+                              ))}
+                            </div>
+                            {formData.posColor && (
+                              <p className="text-xs text-txt-muted">선택: {formData.posColor}</p>
+                            )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="posCode">포스 코드</Label>
+                            <Input
+                              id="posCode"
+                              value={formData.posCode || ''}
+                              onChange={(e) => setFormData({ ...formData, posCode: e.target.value })}
+                              placeholder="예: M001"
+                              maxLength={20}
+                            />
+                            <p className="text-xs text-txt-muted">POS 시스템 연동 식별 코드 (최대 20자)</p>
+                          </div>
+                        </div>
+                      )}
+
                       {/* 판매 설정 */}
                       <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
                         <h3 className="text-sm font-semibold text-txt-main">판매 설정</h3>
@@ -1419,20 +1519,6 @@ export function Products() {
                             }
                           />
                         </div>
-                      </div>
-
-                      {/* 포스 코드 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="posCode">포스 코드</Label>
-                        <Input
-                          id="posCode"
-                          value={formData.posCode || ''}
-                          onChange={(e) => setFormData({ ...formData, posCode: e.target.value })}
-                          placeholder="예: M001"
-                        />
-                        <p className="text-xs text-txt-muted">
-                          가맹점 POS 시스템과 연동되는 메뉴 코드
-                        </p>
                       </div>
 
                       {/* 영양 정보 */}

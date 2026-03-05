@@ -368,19 +368,15 @@ export const MEMBER_LIST_FILTER_LABELS: Record<MemberListFilter, string> = {
  */
 export type MemberDetailTab =
   | 'info'
-  | 'usage_log'
   | 'orders'
   | 'points'
   | 'coupons'
-  | 'vouchers'
-  | 'notifications';
+  | 'vouchers';
 
 export const MEMBER_DETAIL_TAB_LABELS: Record<MemberDetailTab, string> = {
   info: '기본정보',
-  usage_log: '앱 사용 로그',
   orders: '주문 내역',
   points: '포인트',
   coupons: '쿠폰',
   vouchers: '교환권',
-  notifications: '알림 이력',
 };

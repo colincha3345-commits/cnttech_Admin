@@ -305,7 +305,7 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
                     <tr key={addr.id}>
                       <td className="text-center">
                         {idx === 0 ? (
-                          <Badge variant="success">최근</Badge>
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-green-50 text-green-600 border border-green-200">최근</span>
                         ) : addr.isDefault ? (
                           <Badge variant="info">기본</Badge>
                         ) : (
@@ -317,7 +317,12 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
                       </td>
                       <td>
                         <p className="text-sm text-txt-main">{addr.address}</p>
-                        <p className="text-xs text-txt-muted">{addr.addressDetail}</p>
+                        {addr.jibunAddress && (
+                          <p className="text-xs text-txt-muted">(지번) {addr.jibunAddress}</p>
+                        )}
+                        {addr.addressDetail && (
+                          <p className="text-xs text-txt-secondary">{addr.addressDetail}</p>
+                        )}
                       </td>
                       <td>
                         <span className="text-xs text-txt-secondary font-mono">{addr.zipCode}</span>

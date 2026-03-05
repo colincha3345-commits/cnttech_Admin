@@ -3,12 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftOutlined,
   UserOutlined,
-  HistoryOutlined,
   ShoppingOutlined,
   GiftOutlined,
   TagOutlined,
   WalletOutlined,
-  BellOutlined,
 } from '@ant-design/icons';
 
 import { Card, Button, Badge, Spinner } from '@/components/ui';
@@ -20,22 +18,18 @@ import { MEMBER_DETAIL_TAB_LABELS } from '@/types/app-member';
 
 // Tabs
 import { MemberInfoTab } from './tabs/MemberInfoTab';
-import { UsageLogTab } from './tabs/UsageLogTab';
 import { OrderHistoryTab } from './tabs/OrderHistoryTab';
 import { PointHistoryTab } from './tabs/PointHistoryTab';
 import { CouponHistoryTab } from './tabs/CouponHistoryTab';
 import { VoucherHistoryTab } from './tabs/VoucherHistoryTab';
-import { NotificationHistoryTab } from './tabs/NotificationHistoryTab';
 
 // Tab icons
 const TAB_ICONS: Record<MemberDetailTab, React.ReactNode> = {
   info: <UserOutlined />,
-  usage_log: <HistoryOutlined />,
   orders: <ShoppingOutlined />,
   points: <GiftOutlined />,
   coupons: <TagOutlined />,
   vouchers: <WalletOutlined />,
-  notifications: <BellOutlined />,
 };
 
 export const AppMemberDetail: React.FC = () => {
@@ -79,8 +73,6 @@ export const AppMemberDetail: React.FC = () => {
     switch (activeTab) {
       case 'info':
         return <MemberInfoTab member={member} />;
-      case 'usage_log':
-        return <UsageLogTab memberId={member.id} />;
       case 'orders':
         return <OrderHistoryTab memberId={member.id} />;
       case 'points':
@@ -89,8 +81,6 @@ export const AppMemberDetail: React.FC = () => {
         return <CouponHistoryTab memberId={member.id} />;
       case 'vouchers':
         return <VoucherHistoryTab memberId={member.id} />;
-      case 'notifications':
-        return <NotificationHistoryTab memberId={member.id} />;
       default:
         return null;
     }
@@ -98,12 +88,10 @@ export const AppMemberDetail: React.FC = () => {
 
   const tabs: MemberDetailTab[] = [
     'info',
-    'usage_log',
     'orders',
     'points',
     'coupons',
     'vouchers',
-    'notifications',
   ];
 
   return (

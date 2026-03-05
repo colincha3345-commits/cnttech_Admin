@@ -52,6 +52,26 @@ export interface Allergen {
   name: string;
 }
 
+/**
+ * 채널별 노출 설정
+ * 주문앱 / POS / 키오스크 / 테이블오더 각 채널의 노출 여부
+ */
+export interface ProductChannels {
+  app: boolean;              // 주문앱 노출
+  pos: boolean;              // POS 노출
+  kiosk: boolean;            // 키오스크 노출
+  tableOrder: boolean;       // 테이블오더 노출
+}
+
+/**
+ * POS 버튼 색상 팔레트 프리셋
+ */
+export const POS_COLOR_PALETTE = [
+  '#FF6B35', '#FF4D4F', '#FA8C16', '#FADB14',
+  '#52C41A', '#13C2C2', '#1890FF', '#722ED1',
+  '#EB2F96', '#8C8C8C', '#262626', '#FFFFFF',
+] as const;
+
 export interface Product {
   id: string;
   name: string;
@@ -89,6 +109,11 @@ export interface Product {
 
   // 포스 연동
   posCode?: string;
+  posDisplayName?: string;       // POS 표시용 상품명 (미입력 시 name 사용)
+  posColor?: string;             // POS 버튼 색상 (HEX, 예: #FF6B35)
+
+  // 채널별 노출 설정 (미설정 시 전체 채널 노출)
+  channels?: ProductChannels;
 
   // 결제 정책
   allowCoupon: boolean;
@@ -157,6 +182,11 @@ export interface ProductFormData {
 
   // 포스
   posCode?: string;
+  posDisplayName?: string;
+  posColor?: string;
+
+  // 채널별 노출 (미설정 시 전체 채널 노출)
+  channels?: ProductChannels;
 
   // 결제 정책
   allowCoupon: boolean;
