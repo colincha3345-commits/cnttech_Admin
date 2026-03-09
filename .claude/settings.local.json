@@ -6,7 +6,8 @@
       "Bash(npm run dev:*)",
       "Bash(npx tsc --noEmit)",
       "Bash(# 라우팅 확인 - 전체 라우트 구조 파악 grep -n \"\"path:\"\" /Users/colincha/projects/admin-dashboard/src/router.tsx || grep -rn \"\"path.*:\"\" /Users/colincha/projects/admin-dashboard/src/App.tsx || find /Users/colincha/projects/admin-dashboard/src -name \"\"router*\"\" -o -name \"\"routes*\"\")",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(cat /Users/colincha/projects/admin-dashboard/.env*)"
     ]
   }
 }

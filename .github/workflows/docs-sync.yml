@@ -45,12 +45,14 @@ jobs:
           done
           echo "✅ 변환 완료: $(ls docs/docx/*.docx 2>/dev/null | wc -l)개 파일"
 
+      # 4. 서비스 계정 키 파일 생성
       - name: Setup Google credentials
         env:
           GOOGLE_SERVICE_ACCOUNT_KEY: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
         run: |
           printenv GOOGLE_SERVICE_ACCOUNT_KEY > /tmp/sa-key.json
 
+      # 5. Google Drive 업로드
       - name: Upload to Google Drive
         env:
           GOOGLE_DRIVE_FOLDER_ID: ${{ secrets.GOOGLE_DRIVE_FOLDER_ID }}
@@ -63,9 +65,10 @@ jobs:
           from googleapiclient.discovery import build
           from googleapiclient.http import MediaFileUpload
 
+          # 서비스 계정 인증 (파일에서 읽기)
           key_path = '/tmp/sa-key.json'
           if not os.path.exists(key_path) or os.path.getsize(key_path) < 10:
-              print("⚠️ GOOGLE_SERVICE_ACCOUNT_KEY가 설정되지 않았습니다.")
+              print("⚠️ GOOGLE_SERVICE_ACCOUNT_KEY가 설정되지 않았습니다. 업로드를 건너뜁니다.")
               sys.exit(0)
 
           folder_id = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
@@ -112,6 +115,7 @@ jobs:
                   ).execute()
                   print(f"📝 업데이트: {filename}")
               else:
+                  # 새 파일 생성 (docx 그대로 업로드, Drive에서 열 때 Docs로 변환됨)
                   file_metadata = {
                       'name': filename,
                       'parents': [folder_id],
@@ -129,10 +133,12 @@ jobs:
           print(f"\n🎉 총 {uploaded}개 파일 동기화 완료")
           PYTHON_SCRIPT
 
+      # 6. 키 파일 정리
       - name: Cleanup credentials
         if: always()
         run: rm -f /tmp/sa-key.json
 
+      # 7. 변환 결과를 Artifact로 보관 (Drive 미설정 시 다운로드용)
       - name: Upload docx as artifacts
         uses: actions/upload-artifact@v4
         with:
