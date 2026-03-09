@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import {
-    MessageOutlined,
-    ClockCircleOutlined,
     CheckCircleOutlined,
     ExclamationCircleOutlined,
     ArrowLeftOutlined,
@@ -19,16 +17,12 @@ import type { Inquiry, InquiryType, InquiryStatus, InquiryCategory } from '@/typ
 
 const STATUS_LABELS: Record<InquiryStatus, string> = {
     pending: '대기',
-    in_progress: '처리중',
     resolved: '완료',
-    closed: '종료',
 };
 
 const STATUS_VARIANTS: Record<InquiryStatus, 'default' | 'warning' | 'info' | 'success' | 'secondary'> = {
     pending: 'warning',
-    in_progress: 'info',
     resolved: 'success',
-    closed: 'secondary',
 };
 
 const CATEGORY_LABELS: Record<InquiryCategory, string> = {
@@ -52,6 +46,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
     const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
     const [answer, setAnswer] = useState('');
     const [answerStatus, setAnswerStatus] = useState<InquiryStatus>('resolved');
+    const [sendEmail, setSendEmail] = useState(true);
 
     const handleSearch = () => {
         fetchInquiries({ keyword, status: statusFilter || undefined });
@@ -60,7 +55,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
     const handleSelectInquiry = (item: Inquiry) => {
         setSelectedInquiry(item);
         setAnswer(item.answer || '');
-        setAnswerStatus(item.status === 'pending' ? 'resolved' : item.status);
+        setAnswerStatus('resolved');
     };
 
     const handleSubmitAnswer = async () => {
@@ -69,6 +64,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
             category: selectedInquiry.category,
             answer,
             status: answerStatus,
+            sendEmail,
         });
         if (success) setSelectedInquiry(null);
     };
@@ -122,10 +118,22 @@ export function InquiryList({ type, title }: InquiryListProps) {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">처리 상태</label>
                             <select className="form-input w-full md:w-60" value={answerStatus} onChange={e => setAnswerStatus(e.target.value as InquiryStatus)}>
-                                <option value="in_progress">처리중</option>
+                                <option value="pending">대기</option>
                                 <option value="resolved">완료</option>
-                                <option value="closed">종료</option>
                             </select>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="sendEmail"
+                                checked={sendEmail}
+                                onChange={e => setSendEmail(e.target.checked)}
+                                className="w-4 h-4 rounded border-gray-300"
+                            />
+                            <label htmlFor="sendEmail" className="text-sm text-gray-700">
+                                답변을 이메일로 발송 ({selectedInquiry.authorEmail})
+                            </label>
                         </div>
 
                         {selectedInquiry.answeredAt && (
@@ -134,7 +142,9 @@ export function InquiryList({ type, title }: InquiryListProps) {
 
                         <div className="flex justify-end gap-3 pt-4 border-t border-border">
                             <Button variant="outline" onClick={() => setSelectedInquiry(null)}>목록으로</Button>
-                            <Button onClick={handleSubmitAnswer} disabled={!answer.trim()}>답변 저장</Button>
+                            <Button onClick={handleSubmitAnswer} disabled={!answer.trim()}>
+                                {sendEmail ? '답변 저장 및 메일 발송' : '답변 저장'}
+                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -147,14 +157,12 @@ export function InquiryList({ type, title }: InquiryListProps) {
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
 
             {/* 통계 카드 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {(['pending', 'in_progress', 'resolved', 'closed'] as InquiryStatus[]).map(s => (
+            <div className="grid grid-cols-2 gap-4">
+                {(['pending', 'resolved'] as InquiryStatus[]).map(s => (
                     <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setStatusFilter(s); handleSearch(); }}>
                         <CardContent className="p-4 flex items-center gap-3">
                             {s === 'pending' && <ExclamationCircleOutlined className="text-yellow-500 text-xl" />}
-                            {s === 'in_progress' && <ClockCircleOutlined className="text-blue-500 text-xl" />}
                             {s === 'resolved' && <CheckCircleOutlined className="text-green-500 text-xl" />}
-                            {s === 'closed' && <MessageOutlined className="text-gray-400 text-xl" />}
                             <div>
                                 <p className="text-xs text-gray-500">{STATUS_LABELS[s]}</p>
                                 <p className="text-lg font-bold">{inquiries.filter(i => i.status === s).length}</p>

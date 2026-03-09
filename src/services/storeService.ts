@@ -548,7 +548,6 @@ class StoreService {
       pos: {
         posVendor: data.pos.posVendor as IntegrationCodes['pos']['posVendor'],
         posCode: data.pos.posCode,
-        posSerialNumber: data.pos.posSerialNumber,
         isConnected: data.pos.isConnected,
         lastSyncAt: data.pos.isConnected ? new Date() : undefined,
       },
@@ -783,7 +782,6 @@ class StoreService {
         data: {
           posVendor: row.posVendor,
           posCode: row.posCode,
-          posSerialNumber: row.posSerialNumber || '',
         },
       };
     });
@@ -831,7 +829,6 @@ class StoreService {
       store.integrationCodes.pos = {
         posVendor: row.posVendor as IntegrationCodes['pos']['posVendor'],
         posCode: row.posCode,
-        posSerialNumber: row.posSerialNumber,
         isConnected: true,
         lastSyncAt: new Date(),
       };

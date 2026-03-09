@@ -10,7 +10,6 @@ const DEFAULT_FORM_DATA: IntegrationCodesFormData = {
   pos: {
     posVendor: '',
     posCode: '',
-    posSerialNumber: '',
     isConnected: false,
   },
   sk: {
@@ -49,7 +48,6 @@ export const IntegrationCodesEdit: React.FC = () => {
         pos: {
           posVendor: currentData.pos.posVendor || '',
           posCode: currentData.pos.posCode || '',
-          posSerialNumber: currentData.pos.posSerialNumber || '',
           isConnected: currentData.pos.isConnected || false,
         },
         sk: {
@@ -178,19 +176,6 @@ export const IntegrationCodesEdit: React.FC = () => {
                       }))
                     }
                     placeholder="GN001-POS"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-txt-muted mb-1">시리얼 번호</label>
-                  <Input
-                    value={formData.pos.posSerialNumber}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        pos: { ...prev.pos, posSerialNumber: e.target.value },
-                      }))
-                    }
-                    placeholder="SN-2023-001234"
                   />
                 </div>
               </div>

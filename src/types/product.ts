@@ -107,6 +107,9 @@ export interface Product {
   applyToAll: boolean;
   storeIds: string[];
 
+  // 상품코드 (서비스 내 고유 식별 코드)
+  productCode?: string;
+
   // 포스 연동
   posCode?: string;
   posDisplayName?: string;       // POS 표시용 상품명 (미입력 시 name 사용)
@@ -179,6 +182,9 @@ export interface ProductFormData {
   // 가맹점
   applyToAll: boolean;
   storeIds: string[];
+
+  // 상품코드
+  productCode?: string;
 
   // 포스
   posCode?: string;

@@ -126,6 +126,7 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   isVisible: true,
   applyToAll: true,
   storeIds: [],
+  productCode: '',
   posDisplayName: '',
   posColor: '',
   channels: { app: true, pos: true, kiosk: true, tableOrder: true },
@@ -206,7 +207,7 @@ export function Products() {
 
   // 검색된 메뉴 목록 (다중 필드 검색: 이름, 설명, 포스코드)
   const filteredProducts = products.filter((product) =>
-    multiFieldSearch(product, searchTerm, ['name', 'description', 'posCode'])
+    multiFieldSearch(product, searchTerm, ['name', 'description', 'productCode', 'posCode'])
   );
 
   // 메뉴 선택
@@ -233,6 +234,7 @@ export function Products() {
       salesEndDate: product.salesEndDate,
       applyToAll: product.applyToAll,
       storeIds: product.storeIds,
+      productCode: product.productCode || '',
       posCode: product.posCode,
       posDisplayName: product.posDisplayName || '',
       posColor: product.posColor || '',
@@ -403,6 +405,7 @@ export function Products() {
       scheduledAt: undefined,
       applyToAll: product.applyToAll,
       storeIds: product.storeIds,
+      productCode: undefined, // 상품코드는 중복 방지를 위해 제거
       posCode: undefined, // 포스 코드는 중복 방지를 위해 제거
       allowCoupon: product.allowCoupon,
       allowVoucher: product.allowVoucher,
@@ -1390,6 +1393,18 @@ export function Products() {
                             {formData.posColor && (
                               <p className="text-xs text-txt-muted">선택: {formData.posColor}</p>
                             )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="productCode">상품코드</Label>
+                            <Input
+                              id="productCode"
+                              value={formData.productCode || ''}
+                              onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
+                              placeholder="예: PRD-001"
+                              maxLength={20}
+                            />
+                            <p className="text-xs text-txt-muted">서비스 내 상품 식별 코드 (최대 20자)</p>
                           </div>
 
                           <div className="space-y-2">

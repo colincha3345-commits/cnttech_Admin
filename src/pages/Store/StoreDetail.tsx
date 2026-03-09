@@ -813,10 +813,6 @@ export const StoreDetail: React.FC = () => {
                         <label className="text-sm text-txt-muted">POS 코드</label>
                         <p className="mt-1 font-mono">{store.integrationCodes.pos.posCode || '-'}</p>
                       </div>
-                      <div>
-                        <label className="text-sm text-txt-muted">시리얼 번호</label>
-                        <p className="mt-1 font-mono">{store.integrationCodes.pos.posSerialNumber || '-'}</p>
-                      </div>
                     </div>
                   )}
                 </div>

@@ -110,7 +110,7 @@ export const mockStores: Store[] = [
       pos: {
         posVendor: 'okpos',
         posCode: 'GN001-POS',
-        posSerialNumber: 'SN-2023-001234',
+
         isConnected: true,
         lastSyncAt: new Date('2026-02-10T09:00:00'),
       },

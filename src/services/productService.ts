@@ -29,6 +29,7 @@ const mockProducts: Product[] = [
     isVisible: true,
     applyToAll: true,
     storeIds: [],
+    productCode: 'PRD-001',
     posCode: 'M001',
     allowCoupon: true,
     allowVoucher: true,

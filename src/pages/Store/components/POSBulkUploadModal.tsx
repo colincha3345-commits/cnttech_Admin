@@ -139,7 +139,7 @@ export const POSBulkUploadModal: React.FC<POSBulkUploadModalProps> = ({
               <div>
                 <p className="text-sm font-medium">업로드 템플릿</p>
                 <p className="text-xs text-txt-muted mt-1">
-                  매장명, 사업자번호, POS벤더, POS코드, 시리얼번호 컬럼이 필요합니다.
+                  매장명, 사업자번호, POS벤더, POS코드 컬럼이 필요합니다.
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={downloadPOSBulkUploadTemplate}>

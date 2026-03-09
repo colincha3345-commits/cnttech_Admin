@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   MenuOutlined,
   UserOutlined,
   LogoutOutlined,
+  LockOutlined,
 } from '@ant-design/icons';
 
 import { Button } from '@/components/ui/Button';
@@ -10,10 +12,15 @@ import {
   DropdownMenu,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  Input,
+  Label,
+  Spinner,
 } from '@/components/ui';
 import { GlobalSearch } from './GlobalSearch';
 import { NotificationPanel } from './NotificationPanel';
 import { useAuth } from '@/stores/authStore';
+import { useChangePassword } from '@/hooks';
+import { useToast } from '@/hooks/useToast';
 import { USER_ROLE_LABELS } from '@/constants/user';
 import { STAFF_TYPE_LABELS } from '@/types/staff';
 
@@ -25,6 +32,11 @@ interface HeaderProps {
 export function Header({ onMenuClick, title = '대시보드' }: HeaderProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const toast = useToast();
+  const changePasswordMutation = useChangePassword();
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
 
   const handleMyPage = () => {
     if (!user?.id) return;
@@ -37,7 +49,37 @@ export function Header({ onMenuClick, title = '대시보드' }: HeaderProps) {
     navigate('/login');
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user?.id) return;
+    if (!passwordForm.currentPassword.trim()) {
+      toast.error('현재 비밀번호를 입력해주세요.');
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      toast.error('새 비밀번호는 8자 이상이어야 합니다.');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('새 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    try {
+      await changePasswordMutation.mutateAsync({
+        id: user.id,
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      toast.success('비밀번호가 변경되었습니다.');
+      setShowPasswordModal(false);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch {
+      toast.error('비밀번호 변경에 실패했습니다.');
+    }
+  };
+
   return (
+    <>
     <header className="admin-header">
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
@@ -105,6 +147,11 @@ export function Header({ onMenuClick, title = '대시보드' }: HeaderProps) {
               마이페이지
             </DropdownMenuItem>
 
+            <DropdownMenuItem onClick={() => setShowPasswordModal(true)}>
+              <LockOutlined style={{ fontSize: 14 }} />
+              <span>비밀번호 변경</span>
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
 
             <DropdownMenuItem onClick={handleLogout} className="text-critical">
@@ -114,6 +161,55 @@ export function Header({ onMenuClick, title = '대시보드' }: HeaderProps) {
           </DropdownMenu>
         </div>
       </div>
+
     </header>
+
+      {/* 비밀번호 변경 모달 - header 외부에 렌더링 */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40" onClick={() => setShowPasswordModal(false)}>
+          <div className="bg-bg-card rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold text-txt-main mb-4">비밀번호 변경</h2>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <Label required>현재 비밀번호</Label>
+                <Input
+                  type="password"
+                  placeholder="현재 비밀번호"
+                  value={passwordForm.currentPassword}
+                  onChange={e => setPasswordForm(p => ({ ...p, currentPassword: e.target.value }))}
+                  disabled={changePasswordMutation.isPending}
+                />
+              </div>
+              <div>
+                <Label required>새 비밀번호</Label>
+                <Input
+                  type="password"
+                  placeholder="8자 이상"
+                  value={passwordForm.newPassword}
+                  onChange={e => setPasswordForm(p => ({ ...p, newPassword: e.target.value }))}
+                  disabled={changePasswordMutation.isPending}
+                />
+              </div>
+              <div>
+                <Label required>새 비밀번호 확인</Label>
+                <Input
+                  type="password"
+                  placeholder="새 비밀번호 재입력"
+                  value={passwordForm.confirmPassword}
+                  onChange={e => setPasswordForm(p => ({ ...p, confirmPassword: e.target.value }))}
+                  disabled={changePasswordMutation.isPending}
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowPasswordModal(false)}>취소</Button>
+                <Button type="submit" disabled={changePasswordMutation.isPending}>
+                  {changePasswordMutation.isPending ? <Spinner size="sm" /> : '변경'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

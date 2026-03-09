@@ -1,7 +1,7 @@
 /** 고객센터 도메인 타입 */
 
 // 1:1 문의 / 가맹문의 공통
-export type InquiryStatus = 'pending' | 'in_progress' | 'resolved' | 'closed';
+export type InquiryStatus = 'pending' | 'resolved';
 export type InquiryType = 'customer' | 'franchise';
 export type InquiryCategory = 'order' | 'payment' | 'delivery' | 'product' | 'account' | 'etc';
 
@@ -28,6 +28,7 @@ export interface InquiryFormData {
   category: InquiryCategory;
   answer: string;
   status: InquiryStatus;
+  sendEmail?: boolean;
 }
 
 // FAQ

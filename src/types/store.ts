@@ -218,7 +218,6 @@ export interface OperatingInfo {
 export interface PosIntegration {
   posVendor?: 'okcashbag' | 'kcp' | 'unionpos' | 'okpos' | 'other';
   posCode?: string;
-  posSerialNumber?: string;
   isConnected: boolean;
   lastSyncAt?: Date;
 }
@@ -491,7 +490,6 @@ export interface IntegrationCodesFormData {
   pos: {
     posVendor?: string;
     posCode?: string;
-    posSerialNumber?: string;
     isConnected: boolean;
   };
   sk: {
@@ -790,7 +788,6 @@ export interface POSBulkUploadRow {
   businessNumber: string; // 사업자번호
   posVendor: string; // POS 벤더
   posCode: string; // POS 코드
-  posSerialNumber?: string; // 시리얼번호 (선택)
 }
 
 // PG 일괄 업로드 행 데이터

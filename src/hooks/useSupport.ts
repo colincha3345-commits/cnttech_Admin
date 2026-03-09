@@ -28,7 +28,7 @@ export function useInquiries(type: InquiryType) {
         try {
             await supportService.answerInquiry(id, data);
             await fetchInquiries();
-            toast.success('답변이 등록되었습니다.');
+            toast.success(data.sendEmail ? '답변이 등록되고 메일이 발송되었습니다.' : '답변이 등록되었습니다.');
             return true;
         } catch {
             toast.error('답변 등록에 실패했습니다.');

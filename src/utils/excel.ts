@@ -437,7 +437,6 @@ export async function parsePOSBulkUploadExcel(file: File): Promise<POSBulkUpload
     '사업자번호': 'businessNumber',
     'POS벤더': 'posVendor',
     'POS코드': 'posCode',
-    '시리얼번호': 'posSerialNumber',
   };
 
   return parseExcelFile<POSBulkUploadRow>(file, columnMapping);
@@ -468,14 +467,12 @@ export function downloadPOSBulkUploadTemplate(): void {
       '사업자번호': '123-45-67890',
       'POS벤더': 'okpos',
       'POS코드': 'GN001-POS',
-      '시리얼번호': 'SN-2023-001234',
     },
     {
       '매장명': '홍대점',
       '사업자번호': '234-56-78901',
       'POS벤더': 'unionpos',
       'POS코드': 'HD001-POS',
-      '시리얼번호': '',
     },
   ];
 
@@ -487,7 +484,6 @@ export function downloadPOSBulkUploadTemplate(): void {
     { wch: 15 }, // 사업자번호
     { wch: 12 }, // POS벤더
     { wch: 15 }, // POS코드
-    { wch: 18 }, // 시리얼번호
   ];
 
   const workbook = XLSX.utils.book_new();
