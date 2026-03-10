@@ -474,7 +474,15 @@ export const StoreDetail: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="text-sm text-txt-muted">기본 배달비</label>
-                      <p className="mt-1 font-medium">{store.operatingInfo.deliveryFee.toLocaleString()}원</p>
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="font-medium">{store.operatingInfo.deliveryFee.toLocaleString()}원</span>
+                        <button
+                          onClick={() => navigate('/delivery-zones')}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        >
+                          상권관리에서 설정
+                        </button>
+                      </div>
                     </div>
                     {store.operatingInfo.freeDeliveryMinAmount && (
                       <div>
@@ -578,7 +586,15 @@ export const StoreDetail: React.FC = () => {
                           {store.operatingInfo.deliverySettings.minOrderAmount != null && (
                             <div>
                               <label className="text-sm text-txt-muted">최소 주문금액</label>
-                              <p className="mt-1 font-medium">{store.operatingInfo.deliverySettings.minOrderAmount.toLocaleString()}원</p>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="font-medium">{store.operatingInfo.deliverySettings.minOrderAmount.toLocaleString()}원</span>
+                                <button
+                                  onClick={() => navigate('/delivery-zones')}
+                                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  상권관리에서 설정
+                                </button>
+                              </div>
                             </div>
                           )}
                         </>

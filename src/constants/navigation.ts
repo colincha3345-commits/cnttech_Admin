@@ -20,6 +20,7 @@ import {
   ShopOutlined,
   ApartmentOutlined,
   CheckSquareOutlined,
+  EnvironmentOutlined,
   ThunderboltOutlined,
   DollarOutlined,
   ShoppingCartOutlined,
@@ -136,6 +137,7 @@ export const NAV_ITEMS: NavItem[] = [
       { path: '/support/terms', icon: FileProtectOutlined, label: '약관관리' },
     ],
   },
+  { path: '/delivery-zones', icon: EnvironmentOutlined, label: '상권 관리' },
   { path: '/audit-logs', icon: FileTextOutlined, label: '감사 로그' },
   { path: '/permissions', icon: SafetyOutlined, label: '권한 관리' },
   {
@@ -190,6 +192,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/support/franchise-inquiries': '가맹 문의',
   '/support/faq': 'FAQ 관리',
   '/support/terms': '약관관리',
+  '/delivery-zones': '상권 관리',
   '/audit-logs': '감사 로그',
   '/permissions': '권한 관리',
   '/settlement': '정산 내역',

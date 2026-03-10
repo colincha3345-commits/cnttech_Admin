@@ -348,28 +348,38 @@ export const OperatingInfoEdit: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-txt-muted mb-1">최소 주문금액</label>
-              <Input
-                type="number"
-                value={formData.deliverySettings.minOrderAmount ?? ''}
-                onChange={(e) =>
-                  handleDeliveryChange('minOrderAmount', e.target.value ? Number(e.target.value) : 0)
-                }
-                placeholder="15000"
-              />
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {formData.deliverySettings.minOrderAmount
+                    ? `${formData.deliverySettings.minOrderAmount.toLocaleString()}원`
+                    : '미설정'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/delivery-zones')}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  상권관리에서 설정
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-txt-muted mb-1">기본 배달비</label>
-              <Input
-                type="number"
-                value={formData.deliveryFee}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, deliveryFee: Number(e.target.value) }))
-                }
-                placeholder="3000"
-              />
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">
+                  {formData.deliveryFee ? `${formData.deliveryFee.toLocaleString()}원` : '미설정'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate('/delivery-zones')}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  상권관리에서 설정
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm text-txt-muted mb-1">무료배달 최소금액</label>

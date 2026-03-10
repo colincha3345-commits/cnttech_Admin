@@ -17,6 +17,8 @@ import { SettlementList, SettlementDetail, SettlementStats } from '@/pages/Settl
 import { BannerManagement, PopupManagement, IconBadgeManagement, MainScreenManagement } from '@/pages/Design';
 import { InquiryList, FaqManagement, TermsManagement } from '@/pages/Support';
 import { AuditLogList } from '@/pages/AuditLogs';
+import { DeliveryZoneList } from '@/pages/DeliveryZone/DeliveryZoneList';
+import { DeliveryZoneEditor } from '@/pages/DeliveryZone/DeliveryZoneEditor';
 import { AcceptInvitation } from '@/pages/Invitation';
 import { ToastProvider, useSessionTimeout } from '@/hooks';
 
@@ -113,6 +115,11 @@ export default function App() {
           <Route path="support/franchise-inquiries" element={<ProtectedRoute requiredPermissions={[{ resource: 'support', action: 'read' }]}><InquiryList type="franchise" title="가맹 문의" /></ProtectedRoute>} />
           <Route path="support/faq" element={<ProtectedRoute requiredPermissions={[{ resource: 'support', action: 'read' }]}><FaqManagement /></ProtectedRoute>} />
           <Route path="support/terms" element={<ProtectedRoute requiredPermissions={[{ resource: 'support', action: 'read' }]}><TermsManagement /></ProtectedRoute>} />
+
+          {/* 상권 관리 */}
+          <Route path="delivery-zones" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><DeliveryZoneList /></ProtectedRoute>} />
+          <Route path="delivery-zones/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><DeliveryZoneEditor /></ProtectedRoute>} />
+          <Route path="delivery-zones/:id/edit" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><DeliveryZoneEditor /></ProtectedRoute>} />
 
           {/* 감사로그 / 권한관리 / 설정 */}
           <Route path="audit-logs" element={<ProtectedRoute requiredPermissions={[{ resource: 'audit-logs', action: 'read' }]}><AuditLogList /></ProtectedRoute>} />

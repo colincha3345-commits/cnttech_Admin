@@ -166,3 +166,10 @@ export {
   useUnifiedUserStats,
 } from './useUnifiedUsers';
 export { useSessionTimeout } from './useSessionTimeout';
+export {
+  useDeliveryZones,
+  useDeliveryZone,
+  useCreateDeliveryZone,
+  useUpdateDeliveryZone,
+  useDeleteDeliveryZone,
+} from './useDeliveryZones';
