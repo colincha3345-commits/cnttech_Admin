@@ -4,6 +4,18 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/app-members` | 전체 회원 목록 (AppMemberList) | app-members:read |
+| `/app-members/inactive` | 90일 미접속 회원 (AppMemberList filter=inactive_90days) | app-members:read |
+| `/app-members/no-order` | 미주문 회원 (AppMemberList filter=no_order) | app-members:read |
+| `/app-members/:id` | 회원 상세 (AppMemberDetail) | app-members:read |
+
+> **구현 특이사항**: 회원 상세 탭: MemberInfoTab(기본정보/단골매장/배달지), OrderHistoryTab, PointHistoryTab, CouponHistoryTab, VoucherHistoryTab(교환권). PointAdjustModal/CouponAdjustModal로 수동 지급.
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 1. **회원 목록 조회 (List View)**
@@ -62,3 +74,9 @@
   - 매일 자정, `lastLoginAt` 기준 1년 이상 미접속 계정을 `dormant` 상태로 일괄 전환하는 스케줄러가 필수적으로 구동되어야 합니다.
 - **포인트 수정 API (`POST /api/members/{id}/points`)**
   - 관리자의 수기 포인트 조작 시 반드시 해당 사유(reason) 필드를 필수 파라미터로 받아 로그(Audit)에 남기도록 합니다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **휴면 전환 배치** — 매일 자정 대량 UPDATE가 발생한다. 청크(1,000건) 단위 처리 + 인덱스(lastLoginAt) 필수이다.
+- **포인트 동시성** — pointBalance 갱신 시 SELECT FOR UPDATE 또는 optimistic lock을 적용한다. 동시 결제 시 음수 전환 방지 필수이다.
+- **민감정보 마스킹** — 목록 API는 기본 마스킹 반환. unmask 권한이 있는 경우에만 원문 조회 API를 별도 제공한다. 원문 조회 시 감사 로그 기록한다.
+- **엑셀 다운로드** — 1만 건 이상 시 비동기 처리 + 다운로드 링크 반환이다.

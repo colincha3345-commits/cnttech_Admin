@@ -375,6 +375,90 @@ const DrawingHandler: React.FC<{
 };
 
 // ============================================
+// 완료된 드로잉 오버레이 (저장 전까지 지도에 표시)
+// ============================================
+
+const CompletedDrawingOverlay: React.FC<{ drawing: DrawingState }> = ({ drawing }) => {
+  // 반경 완료
+  if (drawing.center && drawing.radius && drawing.radius > 0) {
+    return (
+      <>
+        <Circle
+          center={toLL(drawing.center)}
+          radius={drawing.radius * 1000}
+          pathOptions={{
+            color: drawing.color,
+            fillColor: drawing.color,
+            fillOpacity: 0.15,
+            opacity: 0.8,
+            weight: 2,
+          }}
+        />
+        <CircleMarker
+          center={toLL(drawing.center)}
+          radius={6}
+          pathOptions={{
+            color: '#fff',
+            fillColor: drawing.color,
+            fillOpacity: 1,
+            weight: 2,
+          }}
+        >
+          <Tooltip direction="right" permanent className="measure-tooltip">
+            <span className="font-semibold">반경 {formatDist(drawing.radius)}</span>
+          </Tooltip>
+        </CircleMarker>
+      </>
+    );
+  }
+
+  // 폴리곤 완료
+  if (drawing.polygon && drawing.polygon.length >= 3) {
+    const area = polygonAreaKm2(drawing.polygon);
+    return (
+      <>
+        <LeafletPolygon
+          positions={drawing.polygon.map(toLL)}
+          pathOptions={{
+            color: drawing.color,
+            fillColor: drawing.color,
+            fillOpacity: 0.15,
+            opacity: 0.8,
+            weight: 2,
+          }}
+        />
+        {drawing.polygon.map((coord, i) => (
+          <CircleMarker
+            key={i}
+            center={toLL(coord)}
+            radius={4}
+            pathOptions={{
+              color: drawing.color,
+              fillColor: '#fff',
+              fillOpacity: 1,
+              weight: 2,
+            }}
+          />
+        ))}
+        {area > 0 && (
+          <CircleMarker
+            center={toLL(drawing.polygon[0]!)}
+            radius={0}
+            pathOptions={{ opacity: 0, fillOpacity: 0 }}
+          >
+            <Tooltip direction="right" permanent offset={[10, 0]} className="measure-tooltip">
+              <span className="font-semibold">면적 {formatArea(area)}</span>
+            </Tooltip>
+          </CircleMarker>
+        )}
+      </>
+    );
+  }
+
+  return null;
+};
+
+// ============================================
 // 자동 바운드 맞춤
 // ============================================
 
@@ -465,6 +549,11 @@ export const MapView: React.FC<MapViewProps> = ({
             onUpdate={onDrawUpdate}
             onComplete={onDrawComplete}
           />
+        )}
+
+        {/* 완료된 드로잉 영역 유지 표시 */}
+        {!readOnly && drawing && drawing.mode === 'none' && (
+          <CompletedDrawingOverlay drawing={drawing} />
         )}
 
         <ZoomControls />

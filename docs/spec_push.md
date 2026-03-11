@@ -1,88 +1,108 @@
 # 푸시 알림(Push Notification) 관리 시스템 기획 명세서
 
-본 문서는 관리자 대시보드 내 **푸시 알림 관리** 페이지(`/marketing/push-notifications`)의 프론트엔드 및 백엔드 개발 시 필요한 세부 필수 항목과 페이지 프로세스를 정의한 문서다.
+본 문서는 관리자 대시보드 내 **푸시 알림 관리** 페이지의 프론트엔드 및 백엔드 개발 시 필요한 세부 필수 항목과 페이지 프로세스를 정의한 문서다.
 
 ---
 
-## 1. 페이지 프로세스 (Page Process)
+## 1. 라우트 구조
 
-1. **푸시 목록 조회** (`PushList`) — 상태별(초안/예약/발송중/완료/실패/취소) Badge 표기. 검색, 유형(정보성/광고성) 필터를 제공한다.
-2. **푸시 등록/수정** (`PushForm`) — 알림 유형, 제목/본문, 딥링크, 발송 대상(세그먼트), 예약 설정, 트리거 조건, Android 확장 필드를 입력한다.
-3. **푸시 상세** (`PushDetail`) — 발송 현황 통계(대상 수, 도달률, 클릭률)와 발송 이력을 조회한다.
-4. **세그먼트 설정** — 회원 등급/지역/연령대별 필터로 대상 회원을 선정하며, 예상 발송 수를 실시간으로 표시한다.
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/marketing/push` | 푸시 목록 (PushList) | marketing:read |
+| `/marketing/push/new` | 푸시 등록 (PushForm) | marketing:write |
+| `/marketing/push/:id` | 푸시 상세 (PushDetail) | marketing:read |
 
 ---
 
-## 2. 세부 개발 명세
+## 2. 페이지 프로세스
 
-### 2.1. 프론트엔드 (Frontend) 개발 요건
+1. **푸시 목록** (`PushList`) — 상태별(draft/scheduled/sending/completed/failed/cancelled) Badge 표기. 검색, 유형(info/ad) 필터 제공.
+2. **푸시 등록/수정** (`PushForm`) — 알림 유형, 제목/본문, 딥링크, 발송 대상(세그먼트), 예약 설정, 트리거 조건, Android 확장 필드 입력.
+3. **푸시 상세** (`PushDetail`) — 발송 현황 통계(대상 수, 도달률, 클릭률)와 발송 이력 조회.
+
+---
+
+## 3. 세부 개발 명세
+
+### 3.1. 프론트엔드
 
 #### 푸시 기본 정보
 
-| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
+| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 |
 | :--- | :--- | :---: | :--- | :--- |
-| **알림 유형 (type)** | ToggleButton | Y | `info`/`ad` | 정보성/광고성 구분. 광고성 시 수신 동의 회원만 대상이다. |
+| **알림 유형 (type)** | ToggleButton | Y | `info`/`ad` | 광고성 시 수신 동의 회원만 대상이다. |
 | **제목 (title)** | Input | Y | 2 ~ 50자 | 푸시 알림 제목이다. |
 | **본문 (body)** | Textarea | Y | 최대 200자 | 푸시 알림 내용이다. |
 | **딥링크 (deepLink)** | Input | N | scheme 형식 | 알림 클릭 시 앱 내 이동 경로다. |
 
 #### 발송 대상 (세그먼트)
 
-| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
-| :--- | :--- | :---: | :--- | :--- |
-| **회원 등급** | Multi Checkbox | N | VIP/GOLD/SILVER/BRONZE/전체 | 등급별 필터링이다. |
-| **지역** | Multi Checkbox | N | 17개 시도 + 전체 | 지역별 필터링이다. |
-| **연령대** | Multi Checkbox | N | 10대~60대이상 + 전체 | 연령대별 필터링이다. |
-| **예상 발송 수** | Text (ReadOnly) | - | - | 세그먼트 변경 시 실시간 갱신이다. |
-
-#### 발송 스케줄
-
-| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
-| :--- | :--- | :---: | :--- | :--- |
-| **예약 발송 (isScheduled)** | Toggle | N | Boolean | 활성 시 예약일시 입력이다. |
-| **예약일시 (scheduledAt)** | DateTimePicker | C(예약시) | ISO 8601 | 미래 시점만 허용한다. |
+| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 비고 |
+| :--- | :--- | :---: | :--- |
+| **회원 등급** | Multi Checkbox | N | VIP/GOLD/SILVER/BRONZE/전체이다. |
+| **지역** | Multi Checkbox | N | 17개 시도 + 전체이다. |
+| **연령대** | Multi Checkbox | N | 10대~60대이상 + 전체이다. |
+| **예상 발송 수** | Text (ReadOnly) | - | 세그먼트 변경 시 실시간 갱신이다. |
 
 #### 트리거 조건
 
-| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
-| :--- | :--- | :---: | :--- | :--- |
-| **트리거 유형 (triggerType)** | Select | Y | 7가지 | none(즉시/예약)/cart_abandoned/product_viewed/app_installed/purchase_completed/regular_schedule/time_limit 이다. |
-| **정기 발송 주기** | ToggleButton | C(regular) | daily/weekly | 정기 스케줄 발송 주기다. |
-| **정기 발송 요일** | Multi Checkbox | C(weekly) | 월~일 | 매주 발송 요일 선택이다. |
-| **타임 리밋 이벤트** | Select | C(time_limit) | 이벤트 ID | 연결할 타임 리밋 이벤트 선택이다. |
+| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 비고 |
+| :--- | :--- | :---: | :--- |
+| **트리거 유형 (triggerType)** | Select | Y | none/cart_abandoned/product_viewed/app_installed/purchase_completed/regular_schedule/time_limit 7가지다. |
+| **정기 발송 주기** | ToggleButton | C(regular) | daily/weekly이다. |
+| **정기 발송 요일** | Multi Checkbox | C(weekly) | 월~일 선택이다. |
 
 #### Android 확장 필드
 
-| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
-| :--- | :--- | :---: | :--- | :--- |
-| **확장 제목 (androidExpandedTitle)** | Input | N | 최대 50자 | Android 확장 알림 제목이다. |
-| **확장 본문 (androidExpandedBody)** | Textarea | N | 최대 500자 | Android 확장 알림 본문이다. |
-| **요약 (androidSummary)** | Input | N | 최대 30자 | Android 요약 텍스트다. |
-| **소형 아이콘** | File Upload | N | 이미지 파일 | Android 상태바 아이콘이다. |
-| **대형 이미지** | File Upload | N | 이미지 파일 | Android 확장 시 대문 이미지다. |
+| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 비고 |
+| :--- | :--- | :---: | :--- |
+| **확장 제목** | Input | N | 최대 50자이다. |
+| **확장 본문** | Textarea | N | 최대 500자이다. |
+| **요약** | Input | N | 최대 30자이다. |
+| **소형 아이콘 / 대형 이미지** | File Upload | N | Android 전용이다. |
 
 ---
 
-### 2.2. 백엔드 (Backend) 개발 요건
+### 3.2. 백엔드
 
-| 데이터베이스 필드 | 데이터 타입 | 필수 여부 | 글자수 / 제약조건 | 비고 (API 설계) |
-| :--- | :--- | :---: | :--- | :--- |
-| **id (PK)** | UUID | Y | 36자 | 고유 식별자다. |
-| **type** | Enum | Y | `info`/`ad` | 알림 유형이다. |
-| **title** | String | Y | 2 ~ 50자 | 푸시 제목이다. |
-| **body** | String | Y | 최대 200자 | 푸시 본문이다. |
-| **deepLink** | String | N | scheme 형식 | 앱 내 이동 딥링크다. |
-| **status** | Enum | Y | `draft`/`scheduled`/`sending`/`completed`/`failed`/`cancelled` | 발송 상태다. |
-| **targetCount** | Integer | Y | 0 이상 | 대상 회원 수다. |
-| **triggerType** | Enum | Y | 7가지 | 트리거 유형이다. |
-| **triggerConfig** | JSON | N | - | 트리거별 상세 설정(지연시간 등)이다. |
-| **scheduledAt** | Timestamp | N | - | 예약 발송 시각이다. |
-| **createdAt** | Timestamp | Y | - | 생성 일시다. |
-| **updatedAt** | Timestamp | Y | - | 수정 일시다. |
+#### API 엔드포인트
 
-**[API 및 비즈니스 로직 제약사항]**
-- 광고성(`ad`) 푸시는 마케팅 수신 동의 회원(`marketingAgreed=true` AND `pushEnabled=true`)만 대상으로 발송한다.
-- 정보성(`info`) 푸시는 `pushEnabled=true` 회원 전체를 대상으로 한다.
-- 예약 발송은 스케줄러가 `scheduledAt` 도래 시 상태를 `sending`으로 전환 후 FCM/APNs를 통해 발송한다.
-- 트리거 기반 발송은 이벤트 발생 시점에 조건 충족 회원에게 자동 발송한다.
-- 발송 완료 후 도달률/클릭률 통계를 집계하여 상세 페이지에 노출한다.
+| Method | Path | 설명 |
+| :--- | :--- | :--- |
+| GET | `/api/push-notifications` | 목록 조회. status, type 필터, Pagination이다. |
+| GET | `/api/push-notifications/:id` | 상세 조회(통계 포함)이다. |
+| POST | `/api/push-notifications` | 등록이다. |
+| PUT | `/api/push-notifications/:id` | 수정(draft 상태에서만)이다. |
+| POST | `/api/push-notifications/:id/send` | 즉시 발송이다. |
+| POST | `/api/push-notifications/:id/cancel` | 예약 취소이다. |
+| GET | `/api/push-notifications/estimate-count` | 세그먼트 기반 예상 발송 수 조회이다. |
+
+#### DB 스키마
+
+| 필드 | 타입 | 필수 | 비고 |
+| :--- | :--- | :---: | :--- |
+| **id (PK)** | UUID | Y | 고유 식별자다. |
+| **type** | Enum | Y | 'info'/'ad'이다. |
+| **title** | String | Y | 2~50자이다. |
+| **body** | String | Y | 최대 200자이다. |
+| **deepLink** | String | N | scheme 형식이다. |
+| **status** | Enum | Y | draft/scheduled/sending/completed/failed/cancelled이다. |
+| **targetCount** | Integer | Y | 대상 회원 수다. |
+| **triggerType** | Enum | Y | 7가지이다. |
+| **triggerConfig** | JSON | N | 트리거별 상세 설정이다. |
+| **segment** | JSON | N | {grades, regions, ageRanges} 세그먼트 조건이다. |
+| **androidExtended** | JSON | N | {expandedTitle, expandedBody, summary, smallIconUrl, largeImageUrl}이다. |
+| **scheduledAt** | Timestamp | N | 예약 발송 시각이다. |
+| **sentAt** | Timestamp | N | 실제 발송 완료 시각이다. |
+| **stats** | JSON | N | {deliveredCount, clickCount, deliveryRate, clickRate} 통계다. |
+
+**[비즈니스 로직 제약사항]**
+- **광고성 푸시** — marketingAgreed=true AND pushEnabled=true 회원만 대상이다.
+- **정보성 푸시** — pushEnabled=true 회원 전체 대상이다.
+- **예약 발송** — 스케줄러가 scheduledAt 도래 시 status→sending 전환 후 FCM/APNs 발송한다.
+- **트리거 기반** — 이벤트 발생 시 조건 충족 회원 자동 발송이다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **대량 발송** — 10만 명 이상 대상 시 FCM batch API(500건/요청)로 청크 분할 발송. 발송 큐(Redis/RabbitMQ)를 사용하여 비동기 처리한다.
+- **예상 발송 수 API** — 세그먼트 변경마다 호출되므로 debounce(500ms) 적용 + COUNT 쿼리 최적화(인덱스 활용)가 필요하다.
+- **통계 집계** — FCM delivery receipt은 비동기이므로 별도 Worker가 수집 후 stats JSON을 갱신한다.

@@ -82,7 +82,14 @@ export const DeliveryZoneEditor: React.FC = () => {
       setDrawnCenter(editingZone.center);
       setDrawnRadius(editingZone.radius);
       setDrawnPolygon(editingZone.polygon);
-      setDrawing((d) => ({ ...d, color: editingZone.color }));
+      // 기존 영역을 drawing 상태에 반영하여 지도에 표시
+      setDrawing({
+        mode: 'none',
+        color: editingZone.color,
+        center: editingZone.center,
+        radius: editingZone.radius,
+        polygon: editingZone.polygon,
+      });
     }
   }, [editingZone]);
 
@@ -149,8 +156,9 @@ export const DeliveryZoneEditor: React.FC = () => {
           radius: state.radius,
           center: state.center,
         }));
-      }
-      if (state.mode === 'polygon' && state.polygon && state.polygon.length >= 3) {
+        // 완료 후에도 그려진 영역을 drawing 상태에 유지
+        setDrawing({ mode: 'none', color: formData.color, center: state.center, radius: state.radius });
+      } else if (state.mode === 'polygon' && state.polygon && state.polygon.length >= 3) {
         setDrawnPolygon(state.polygon);
         const avgLat = state.polygon.reduce((s, c) => s + c.lat, 0) / state.polygon.length;
         const avgLng = state.polygon.reduce((s, c) => s + c.lng, 0) / state.polygon.length;
@@ -161,8 +169,10 @@ export const DeliveryZoneEditor: React.FC = () => {
           polygon: state.polygon,
           center: { lat: avgLat, lng: avgLng },
         }));
+        setDrawing({ mode: 'none', color: formData.color, polygon: state.polygon });
+      } else {
+        setDrawing({ mode: 'none', color: formData.color });
       }
-      setDrawing({ mode: 'none', color: formData.color });
       toast.success('상권 영역이 설정되었습니다.');
     },
     [formData.color, toast]
@@ -499,8 +509,8 @@ export const DeliveryZoneEditor: React.FC = () => {
             <label className="text-sm font-medium text-gray-700">활성 여부</label>
             <Switch
               checked={formData.isActive}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, isActive: e.target.checked }))
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({ ...prev, isActive: checked }))
               }
             />
           </div>

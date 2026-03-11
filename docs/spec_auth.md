@@ -4,6 +4,14 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/login` | 로그인 (LoginPage) | 공개 |
+| `/invitation/accept` | 초대 수락 (AcceptInvitation) | 공개 |
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 ### 1.1 로그인 (`/login`)
@@ -76,3 +84,8 @@
 - 초대 토큰은 발급 후 72시간 유효하며, 1회 사용 후 무효화된다.
 - 비밀번호 정책: 최소 6자 이상. 대소문자+숫자 조합 시 "강함" 등급이다.
 - 인증 성공 시 JWT 토큰을 발급하며, 세션 타임아웃은 30분이다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **로그인 시도 제한** — loginAttempts/lockedUntil은 Redis에 저장하여 DB 부하를 줄인다. Key: `login_attempts:{email}`, TTL: 30분.
+- **MFA OTP** — OTP 발송은 이메일 서비스 외부 호출이므로 비동기 큐로 처리한다. 발송 실패 시 재시도 로직이 필요하다.
+- **JWT 세션** — 세션 타임아웃(30분)은 슬라이딩 윈도우로 구현하되, Refresh Token 방식을 권장한다. Access Token TTL: 15분, Refresh Token TTL: 7일.

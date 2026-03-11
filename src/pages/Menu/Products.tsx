@@ -57,7 +57,8 @@ import { PlusOutlined as PlusIcon, MinusOutlined } from '@ant-design/icons';
 import { useProducts, useStores, useOptionGroupList, useToast } from '@/hooks';
 import { useIconBadges } from '@/hooks/useDesign';
 import type { Product, ProductFormData, ProductStatus, BulkEditUpdate, BulkUpdateResult, DisplayOrderUpdate, CategoryPair, NutritionBySize, NutritionInfo } from '@/types/product';
-import { POS_COLOR_PALETTE } from '@/types/product';
+import { POS_COLOR_PALETTE, CHANNEL_LABELS, CHANNEL_STATUS_LABELS, DEFAULT_CHANNELS } from '@/types/product';
+import type { ProductChannels } from '@/types/product';
 import { multiFieldSearch } from '@/utils/search';
 import { useAuthStore } from '@/stores/authStore';
 import { usePageViewLog } from '@/hooks/useActivityLog';
@@ -129,7 +130,7 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   productCode: '',
   posDisplayName: '',
   posColor: '',
-  channels: { app: true, pos: true, kiosk: true, tableOrder: true },
+  channels: { ...DEFAULT_CHANNELS },
   allowCoupon: true,
   allowVoucher: true,
   allowGiftCard: false,
@@ -238,7 +239,7 @@ export function Products() {
       posCode: product.posCode,
       posDisplayName: product.posDisplayName || '',
       posColor: product.posColor || '',
-      channels: product.channels || { app: true, pos: true, kiosk: true, tableOrder: true },
+      channels: product.channels || { ...DEFAULT_CHANNELS },
       allowCoupon: product.allowCoupon,
       allowVoucher: product.allowVoucher,
       allowGiftCard: product.allowGiftCard,
@@ -965,17 +966,24 @@ export function Products() {
                                 {product.isVisible && (
                                   <Badge variant="info">노출</Badge>
                                 )}
-                                {/* 채널 노출 표시 */}
+                                {/* 채널별 판매상태 표시 */}
                                 {(() => {
                                   const ch = product.channels;
-                                  const labels: string[] = [];
-                                  if (ch?.app ?? true) labels.push('앱');
-                                  if (ch?.pos ?? true) labels.push('POS');
-                                  if (ch?.kiosk ?? true) labels.push('키오스크');
-                                  if (ch?.tableOrder ?? true) labels.push('테이블');
-                                  return labels.length > 0 && labels.length < 4 ? (
-                                    <Badge variant="secondary">{labels.join('·')}</Badge>
-                                  ) : null;
+                                  if (!ch) return null;
+                                  const active: string[] = [];
+                                  const partial: string[] = [];
+                                  if (ch.app) { ch.app === 'active' ? active.push('앱') : partial.push('앱'); }
+                                  if (ch.pos) { ch.pos === 'active' ? active.push('POS') : partial.push('POS'); }
+                                  if (ch.kiosk) { ch.kiosk === 'active' ? active.push('키오스크') : partial.push('키오스크'); }
+                                  if (ch.tableOrder) { ch.tableOrder === 'active' ? active.push('테이블') : partial.push('테이블'); }
+                                  const total = active.length + partial.length;
+                                  if (total === 4 && partial.length === 0) return null;
+                                  return (
+                                    <>
+                                      {active.length > 0 && <Badge variant="secondary">{active.join('·')}</Badge>}
+                                      {partial.length > 0 && <Badge variant="warning">{partial.join('·')}</Badge>}
+                                    </>
+                                  );
                                 })()}
                                 {(() => {
                                   const periodBadge = getSalesPeriodBadge(
@@ -1328,25 +1336,45 @@ export function Products() {
                         })}
                       </div>
 
-                      {/* 채널별 노출 설정 */}
+                      {/* 채널별 노출 + 판매상태 */}
                       <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">채널 노출</h3>
-                        <p className="text-xs text-txt-muted">상품이 노출될 채널을 선택합니다</p>
+                        <h3 className="text-sm font-semibold text-txt-main">채널별 판매 설정</h3>
+                        <p className="text-xs text-txt-muted">채널별로 노출 여부와 판매상태를 설정합니다</p>
 
-                        {[
-                          { key: 'app' as const, label: '주문앱' },
-                          { key: 'pos' as const, label: 'POS' },
-                          { key: 'kiosk' as const, label: '키오스크' },
-                          { key: 'tableOrder' as const, label: '테이블오더' },
-                        ].map(({ key, label }) => (
-                          <div key={key} className="flex items-center justify-between">
-                            <Label>{label}</Label>
-                            <Switch
-                              checked={formData.channels?.[key] ?? true}
-                              onCheckedChange={(checked) => setFormData({ ...formData, channels: { ...(formData.channels || { app: true, pos: true, kiosk: true, tableOrder: true }), [key]: checked } })}
-                            />
-                          </div>
-                        ))}
+                        {(Object.keys(CHANNEL_LABELS) as (keyof ProductChannels)[]).map((key) => {
+                          const ch = formData.channels || DEFAULT_CHANNELS;
+                          const value = ch[key];
+                          const isEnabled = value !== false;
+                          return (
+                            <div key={key} className="flex items-center gap-3">
+                              <Switch
+                                checked={isEnabled}
+                                onCheckedChange={(checked) => setFormData({
+                                  ...formData,
+                                  channels: { ...ch, [key]: checked ? 'active' : false },
+                                })}
+                              />
+                              <Label className="w-20 flex-shrink-0">{CHANNEL_LABELS[key]}</Label>
+                              {isEnabled && (
+                                <Select
+                                  value={value as string}
+                                  onChange={(e) => setFormData({
+                                    ...formData,
+                                    channels: { ...ch, [key]: e.target.value as ProductStatus },
+                                  })}
+                                  className="flex-1"
+                                >
+                                  {(Object.entries(CHANNEL_STATUS_LABELS) as [ProductStatus, string][]).map(([v, l]) => (
+                                    <option key={v} value={v}>{l}</option>
+                                  ))}
+                                </Select>
+                              )}
+                              {!isEnabled && (
+                                <span className="text-xs text-txt-muted">비노출</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* POS 전용 설정 */}

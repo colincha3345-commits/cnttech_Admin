@@ -4,6 +4,16 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/design/banners` | 배너 관리 (BannerManagement) | design:read |
+| `/design/popups` | 팝업 관리 (PopupManagement) | design:read |
+| `/design/icon-badges` | 아이콘뱃지 관리 (IconBadgeManagement) | design:read |
+| `/design/main-screen` | 메인화면 관리 (MainScreenManagement) | design:read |
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 ### 1.1 배너 관리 (`/design/banners`)
@@ -129,3 +139,8 @@
 - **배너/팝업 상태 배치** — 매 분 또는 매 시간 단위로 startDate/endDate를 검사하여 status를 active/scheduled/inactive로 자동 전환하는 스케줄러가 필요하다.
 - **앱 메인화면 API** — 사용자 앱에서 메인화면을 요청할 때, 각 섹션의 isVisible=true인 항목만 sortOrder 순으로 반환한다. Redis 캐싱을 권장한다.
 - **이미지 업로드** — presigned URL 방식으로 클라이언트에서 S3에 직접 업로드한다. 서버는 URL만 저장한다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **배너/팝업 상태 배치** — 매 분 또는 매 시간 startDate/endDate를 검사하여 status를 자동 전환한다. 대상 건수가 적으므로 크론잡으로 충분하다.
+- **앱 메인화면 API** — 사용자 앱에서 가장 빈번하게 호출되는 API이다. Redis 캐싱(TTL 1분) 필수. 관리자가 설정 변경 시 캐시 무효화한다.
+- **이미지 업로드** — presigned URL 방식으로 S3 직접 업로드. 서버는 URL만 저장한다.

@@ -4,6 +4,13 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/app-members/grades` | 멤버십 등급 관리 (GradeManagement) | app-members:read |
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 1. **등급 목록 조회** — 좌측 패널에 등급 목록을 순서대로 표시한다. 드래그 앤 드롭(`@dnd-kit`)으로 순서 변경이 가능하다.
@@ -73,3 +80,8 @@
 - 등급 평가 배치: `retentionMonths` 초과 회원의 등급을 재평가하는 스케줄러가 필요하다.
 - 쿠폰 자동 발급: `issueMonthly=true`인 등급의 `monthlyIssueDay`에 해당 등급 회원에게 쿠폰을 발급한다.
 - 프론트엔드 등급 캐시(`initGradeCache`)를 통해 등급 ID → 라벨/Badge 매핑을 전역 관리한다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **등급 평가 배치** — retentionMonths 초과 회원 재평가는 대량 쿼리. 청크 단위 처리 + 인덱스(grade, lastEvaluatedAt) 필수이다.
+- **쿠폰 자동 발급** — monthlyIssueDay에 해당 등급 전체 회원 대상 쿠폰 발급. Message Queue로 비동기 처리한다.
+- **등급 캐시** — 프론트엔드 initGradeCache + 서버 Redis 캐시로 등급 ID→라벨 매핑을 전역 관리한다.

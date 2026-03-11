@@ -4,6 +4,16 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/dashboard` | 대시보드 (Dashboard) | dashboard:read |
+| `/dashboard/ga4` | GA4 통계 (GA4Statistics) | dashboard:read |
+| `/dashboard/ga4/device` | GA4 디바이스 상세 (GA4DeviceDetail) | dashboard:read |
+| `/dashboard/ga4/funnel` | GA4 퍼널 분석 (GA4FunnelDetail) | dashboard:read |
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 1. **기간 필터** — 오늘/어제/최근7일/최근30일/직접입력 프리셋으로 조회 기간을 설정한다.
@@ -47,3 +57,8 @@
 - 대시보드 API는 집계 쿼리 성능을 위해 Redis 캐싱을 권장한다. 캐시 TTL은 기간 프리셋에 따라 차등 설정한다.
 - 엑셀 다운로드는 서버사이드에서 집계 데이터를 생성하여 클라이언트에서 `downloadDashboardExcel` 유틸로 변환한다.
 - 페이지 진입 시 `usePageViewLog`로 접속 이력을 자동 기록한다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **집계 쿼리** — 대시보드 API는 다수의 집계(SUM/COUNT)를 동시에 실행한다. Redis 캐싱(프리셋별 TTL 차등: 오늘=1분, 최근7일=5분, 최근30일=30분)을 권장한다.
+- **GA4 통계** — 외부 GA4 API 호출이므로 서버사이드 프록시 + 캐시(1시간 TTL)를 적용한다. GA4 API 할당량에 주의한다.
+- **엑셀 다운로드** — 서버사이드 집계 데이터 생성 후 클라이언트에서 Excel 변환한다. 대량 데이터 시 서버에서 직접 Excel 생성 후 S3 업로드를 권장한다.

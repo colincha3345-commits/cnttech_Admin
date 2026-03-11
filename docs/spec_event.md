@@ -4,6 +4,15 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/events` | 이벤트 관리 (EventManagement) | events:read |
+
+> **구현 컴포넌트**: EventForm(등록/수정 폼), EventParticipantList(참여자 목록).
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 1. **이벤트 목록 및 현황 노출**
@@ -58,3 +67,8 @@
   - 앱에서의 SNS 공유 호출 시(ShareChannel 이벤트) 어드민에서 입력한 `shareTitle`, `shareImageUrl`이 카카오톡 메시지에 온전히 실릴 수 있도록 별도의 Public 조회 GET 엔드포인트를 열어 카카오 크롤러가 이미지와 라벨을 긁어갈 수 있게 제공해야 합니다.
 - **실시간 통계 증분 동시성 이슈**
   - 고객 클릭, 버튼 이동 시 수집되는 `EventStats` (클릭수/방문자수 등) 기록은 트래픽 스파이크(병목)를 막기 위해 RDB 증가(UPDATE +1) 쿼리 보다는 Redis 카운터 증가 후 특정 지연 시점(Interval)에 Data Base로 Sync 해주는 최적화 구조를 권장합니다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **실시간 통계** — EventStats(클릭수/방문자수)는 Redis 카운터 증가 → 주기적(1분) DB Sync. RDB UPDATE +1 직접 호출은 병목 유발한다.
+- **개인정보 암호화** — 참여자 정보(이름/연락처)는 AES-256 양방향 암호화로 DB 저장한다.
+- **OG 메타** — SNS 공유용 Public GET 엔드포인트는 인증 없이 접근 가능하되, Rate Limiting(100req/분)을 적용한다.

@@ -53,15 +53,44 @@ export interface Allergen {
 }
 
 /**
- * 채널별 노출 설정
- * 주문앱 / POS / 키오스크 / 테이블오더 각 채널의 노출 여부
+ * 채널별 판매상태
+ * false = 비노출, ProductStatus = 해당 채널의 판매상태
+ */
+export type ChannelSaleStatus = ProductStatus | false;
+
+/**
+ * 채널별 노출 + 판매상태 설정
+ * false: 비노출 / 'active': 판매중 / 'inactive': 판매중지 / 'pending': 판매대기
  */
 export interface ProductChannels {
-  app: boolean;              // 주문앱 노출
-  pos: boolean;              // POS 노출
-  kiosk: boolean;            // 키오스크 노출
-  tableOrder: boolean;       // 테이블오더 노출
+  app: ChannelSaleStatus;         // 주문앱
+  pos: ChannelSaleStatus;         // POS
+  kiosk: ChannelSaleStatus;       // 키오스크
+  tableOrder: ChannelSaleStatus;  // 테이블오더
 }
+
+/** 채널 라벨 */
+export const CHANNEL_LABELS: Record<keyof ProductChannels, string> = {
+  app: '주문앱',
+  pos: 'POS',
+  kiosk: '키오스크',
+  tableOrder: '테이블오더',
+};
+
+/** 채널 판매상태 라벨 */
+export const CHANNEL_STATUS_LABELS: Record<ProductStatus, string> = {
+  active: '판매중',
+  inactive: '판매중지',
+  pending: '판매대기',
+};
+
+/** 기본 채널 설정 (전체 판매중) */
+export const DEFAULT_CHANNELS: ProductChannels = {
+  app: 'active',
+  pos: 'active',
+  kiosk: 'active',
+  tableOrder: 'active',
+};
 
 /**
  * POS 버튼 색상 팔레트 프리셋

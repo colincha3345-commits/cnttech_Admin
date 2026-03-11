@@ -8,6 +8,16 @@
 - **프론트엔드 개발 요건**: 입력 형태, 유효성, UI/UX 상호작용 상세 명세
 - **백엔드 개발 요건**: 데이터베이스 스키마, API 설계, 비즈니스 로직 제약사항
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/menu/categories` | 카테고리 관리 (Categories) | menu:read |
+| `/menu/products` | 메뉴(상품) 관리 (Products) | menu:read |
+| `/menu/options` | 옵션 카테고리 관리 (OptionCategories) | menu:read |
+| `/menu/option-groups` | 옵션 그룹 관리 (OptionGroups) | menu:read |
+
+
 ## 핵심 관리 페이지
 1. 카테고리 관리 (`/menu/categories`) - 트리 구조 기반 2depth 관리
 2. 메뉴(상품) 관리 (`/menu/products`) - 상세 속성 및 일괄변경 지원
@@ -211,3 +221,9 @@
 - **이미지 업로드 API** — presigned URL 방식을 권장하며, 파일 크기(5MB)와 확장자(jpg/png/webp)를 서버에서 재검증한다.
 - **채널별 상품 조회 API** — 주문앱(`GET /api/products?channel=app`), POS(`GET /api/products?channel=pos`), 키오스크(`GET /api/products?channel=kiosk`) 각 채널에 맞는 상품만 필터링하여 반환한다. POS 응답에는 posDisplayName, posColor를 포함하고 description, subImageUrls는 제외한다.
 - **채널 필드 기본값** — 상품 생성 시 channels 미전송 시 {app:true, pos:true, kiosk:true}로 기본 설정한다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **채널별 상품 조회** — 주문앱/POS/키오스크 각 채널에서 빈번하게 호출된다. 채널별 응답 필드를 분리하고 Redis 캐싱(TTL 5분)을 적용한다. 상품 변경 시 관련 캐시를 무효화한다.
+- **상품 일괄변경** — 최대 100건 제한. 개별 건의 성공/실패를 배열로 반환한다. 전체 트랜잭션이 아닌 건별 처리로 부분 실패를 허용한다.
+- **이미지 업로드** — presigned URL 방식 S3 직접 업로드. 파일 크기(5MB)와 확장자(jpg/png/webp) 서버 재검증한다.
+- **게시 예약 배치** — 매 분 status=pending이고 scheduledAt 도래한 상품을 active로 전환한다.

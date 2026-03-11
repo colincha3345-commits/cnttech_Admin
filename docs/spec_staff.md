@@ -4,6 +4,20 @@
 
 ---
 
+## 0. 라우트 구조
+
+| 경로 | 페이지 | 권한 |
+| :--- | :--- | :--- |
+| `/staff/headquarters` | 본사 직원 목록 (HeadquartersStaff) | staff:read |
+| `/staff/franchise` | 가맹점 직원 목록 (FranchiseStaff) | staff:read |
+| `/staff/edit/:type/:id` | 직원 등록/수정 (StaffEditPage) | staff:write |
+| `/staff/approvals` | 승인 대기 목록 (StaffApprovals) | staff:write |
+| `/staff/approvals/:id` | 승인 상세 (StaffApprovalDetail) | staff:write |
+| `/staff/teams` | 팀 목록 (Teams) | staff:read |
+| `/staff/teams/new` | 팀 등록 (TeamEditPage) | staff:write |
+| `/staff/teams/:id/edit` | 팀 수정 (TeamEditPage) | staff:write |
+
+
 ## 1. 페이지 프로세스 (Page Process)
 
 ### 1.1 본사 직원 관리 (`/staff/headquarters`)
@@ -107,3 +121,7 @@
 - **비밀번호 초기화 (`POST /api/staff/{id}/reset-password`)** — 임시 비밀번호(8자 랜덤)를 생성하여 반환한다. 감사 로그에 초기화 이력을 기록한다.
 - **비밀번호 변경 (`POST /api/staff/{id}/change-password`)** — 현재 비밀번호 일치 여부를 검증한 후 새 비밀번호로 갱신한다. 복잡도 규칙(8자 이상, 대/소/숫/특수)을 서버에서 재검증한다.
 - **팀 삭제 API** — teamId를 참조하는 직원이 1명 이상일 경우 삭제를 거부하고 409 Conflict를 반환한다.
+
+**[⚠️ 트래픽/성능 검토]**
+- **초대 이메일** — 외부 SMTP 호출이므로 비동기 큐로 처리한다. 발송 실패 시 3회 재시도한다.
+- **비밀번호 해싱** — bcrypt cost factor=12를 권장한다. 로그인 시 해싱 비교가 CPU 집약적이므로 적절한 worker pool을 구성한다.
