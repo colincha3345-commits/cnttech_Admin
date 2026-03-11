@@ -79,11 +79,15 @@
 | **isUsed** | Boolean | Y | - | 사용 완료 여부다. |
 
 **[API 및 비즈니스 로직 제약사항]**
-- 로그인 실패 5회 초과 시 계정을 30분간 잠금한다. 잠금 해제는 시간 경과 또는 관리자 수동 해제다.
+- 로그인 실패 5회 초과 시 계정을 15분간 잠금한다. 잠금 해제는 시간 경과 또는 관리자 수동 해제다.
 - MFA OTP는 이메일로 발송하며 유효시간 5분이다. 재발송 쿨다운은 60초다.
 - 초대 토큰은 발급 후 72시간 유효하며, 1회 사용 후 무효화된다.
-- 비밀번호 정책: 최소 6자 이상. 대소문자+숫자 조합 시 "강함" 등급이다.
+- 비밀번호 정책: 최소 6자 이상. 대소문자+숫자+특수문자 조합 기반 강도 판정(weak/medium/strong)이다.
 - 인증 성공 시 JWT 토큰을 발급하며, 세션 타임아웃은 30분이다.
+- `rememberMe` 옵션 시 장기 세션 유지를 허용한다.
+- AuthUser에는 `staffType`(headquarters/franchise) 필드가 포함된다.
+- AuthErrorCode 확장: `ACCOUNT_INVITED`(초대됨, 비밀번호 미설정), `ACCOUNT_REJECTED`(승인 거절), `INVITATION_EXPIRED`(초대 만료), `INVITATION_NOT_FOUND`(유효하지 않은 초대) 추가.
+- AccountPolicy: `maxInactiveDays`(30일), `sessionConcurrencyLimit`(1), `maxLoginAttempts`(5), `lockoutDurationMinutes`(15) 기본값 적용.
 
 **[⚠️ 트래픽/성능 검토]**
 - **로그인 시도 제한** — loginAttempts/lockedUntil은 Redis에 저장하여 DB 부하를 줄인다. Key: `login_attempts:{email}`, TTL: 30분.

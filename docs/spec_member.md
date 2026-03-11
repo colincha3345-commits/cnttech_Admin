@@ -65,6 +65,16 @@
 | **grade** | String | Y | Enum Value 매핑 | `grade-vip` 등 동적 등급 테이블의 외래키(FK) 형태로 관리합니다. |
 | **status** | Enum | Y | - | 'active', 'inactive', 'dormant', 'withdrawn' 4가지 상태만 허용합니다. |
 | **pointBalance** | Integer | Y | 0 이상 | 음수(-) 가 될 수 없으며 동시성 제어가 필요한 트랜잭션 컬럼입니다. |
+| **birthDate** | String | N | YYYY-MM-DD | 생년월일이다. |
+| **gender** | Enum | N | - | 'male', 'female' 만 허용한다. |
+| **linkedSns** | JSON | N | 배열 | [{snsType(kakao/naver/google/apple/facebook), snsKey(SNS 고유키), connectedAt}] SNS 연동 목록이다. |
+| **termsAgreements** | JSON | N | 배열 | [{termsType(service/privacy/marketing/location/third_party), agreedAt, version}] 약관 동의 이력이다. |
+| **favoriteStores** | JSON | N | 배열, 최대 3개 | [{storeId, storeName, address, phone, registeredAt}] 단골매장이다. |
+| **deliveryAddresses** | JSON | N | 배열, 최대 10개 | [{id, alias, address, jibunAddress, addressDetail, zipCode, lat, lng, isDefault, lastUsedAt, createdAt}] 배달지 목록이다. |
+| **marketingAgreed** | Boolean | Y | - | 마케팅 수신 동의 여부다. |
+| **pushEnabled** | Boolean | Y | - | 푸시 알림 활성화 여부다. |
+| **smsEnabled** | Boolean | Y | - | SMS 수신 동의 여부다. |
+| **emailEnabled** | Boolean | Y | - | 이메일 수신 동의 여부다. |
 
 **[API 및 비즈니스 로직 제약사항]**
 - **조회 API (`GET /api/members`)**

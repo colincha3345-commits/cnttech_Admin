@@ -28,6 +28,7 @@
 
 ## 최근 작업 이력
 
+- 2026-03-11: 코드 vs 기획서 비교 업데이트 — spec_auth(lockout 15분, rememberMe, staffType, AuthErrorCode 확장, AccountPolicy), spec_store(operatingInfo 상세 필드, integrationCodes 4사 연동, paymentMethods 간편결제6종, visibilitySettings 확장), spec_order(API 7개 엔드포인트, discount/cashReceipt/customerRequest/memos DB필드, ECoupon 상세), spec_member(linkedSns/termsAgreements/favoriteStores/deliveryAddresses/marketing 수신동의 DB필드), spec_audit_log(18개 액션 정확 매핑, severity 매핑 명시, sessionId/requestId 필드, AuditAlarmConfig 테이블). docx 파일 5건 재변환 + 테이블 포맷 적용.
 - 2026-03-10: 전체 기획서 21건 구현 코드 기반 전면 수정 — 라우트 구조 추가, 필드 불일치 수정, 백엔드 API 엔드포인트 명세 보강, 트래픽/성능 검토 섹션 추가. 누락 기획서 3건 신규 작성(배달권역, 감사로그, 시스템설정). 매장(store) spec 전면 재작성(영업정보/편의시설/결제수단/노출설정 등 하위 편집 페이지 반영). 고객센터(support) InquiryStatus 2상태로 수정. 푸시(push) 라우트 /marketing/push로 수정. 포인트(point) 라우트 /marketing/points로 수정. 회원추출(member_segment) 라우트 /app-members/extract로 수정.
 - 2026-03-05: 상품 채널별 노출 설정 추가 (주문앱/POS/키오스크·테이블오더), POS 전용 필드(posDisplayName, posColor, 12색 팔레트), spec_menu.md 및 product.ts 업데이트
 - 2026-03-04: 미작성 기획 명세서 6건 추가 (spec_point, spec_push, spec_permission, spec_grade, spec_member_segment, spec_dashboard, spec_auth)

@@ -27,7 +27,7 @@
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 비고 |
 | :--- | :--- | :---: | :--- |
 | **기간 필터** | DateRange | N | 기본 최근 7일이다. |
-| **액션 유형 필터** | Multi Select | N | 12가지 액션 유형이다. |
+| **액션 유형 필터** | Multi Select | N | 18가지 액션 유형이다. |
 | **심각도 필터** | ToggleButton | N | all/info/warning/critical이다. |
 | **수행자 필터** | Search Input | N | 이름/이메일로 검색이다. |
 | **심각도 Badge** | Badge | Y | info=info, warning=warning, critical=critical이다. |
@@ -53,7 +53,7 @@
 | 필드 | 타입 | 필수 | 비고 |
 | :--- | :--- | :---: | :--- |
 | **id (PK)** | UUID | Y | 고유 식별자다. |
-| **action** | Enum | Y | login/logout/create/update/delete/status_change/permission_change/password_reset/export/bulk_update/settings_change/masking_view이다. |
+| **action** | Enum | Y | LOGIN/LOGIN_FAILED/LOGOUT/MFA_VERIFIED/MFA_FAILED/PASSWORD_CHANGED/USER_CREATED/USER_UPDATED/USER_DELETED/USER_STATUS_CHANGE/PERMISSION_CHANGED/UNMASK_DATA/DATA_EXPORT/DATA_DOWNLOAD/DOWNLOAD_HISTORY_VIEW/SESSION_EXPIRED/ACCESS_DENIED/ACCESS_ATTEMPT/SETTINGS_CHANGED (18가지)이다. |
 | **severity** | Enum | Y | 'info', 'warning', 'critical'이다. |
 | **performedBy** | UUID (FK) | Y | 수행자 계정 참조다. |
 | **performerName** | String | Y | 역정규화 조회용이다. |
@@ -65,11 +65,22 @@
 | **newData** | JSON | N | 변경 후 스냅샷이다. |
 | **ipAddress** | String | Y | 접속 IP이다. |
 | **userAgent** | String | N | 브라우저 정보다. |
+| **sessionId** | String | N | 세션 식별자다. |
+| **requestId** | String | N | 요청 추적 ID다. |
 | **createdAt** | Timestamp | Y | 기록 일시다. |
+
+#### 알람 설정 (AuditAlarmConfig)
+
+| 필드 | 타입 | 필수 | 비고 |
+| :--- | :--- | :---: | :--- |
+| **id** | UUID | Y | 관리자 계정 ID다. |
+| **receiveEmail** | Boolean | Y | 이메일 알림 수신 여부다. |
+| **receivePush** | Boolean | Y | 푸시 알림 수신 여부다. |
+| **monitoredActions** | JSON | Y | 알림 대상 액션 배열이다. |
 
 **[비즈니스 로직 제약사항]**
 - 감사 로그는 수정/삭제 불가(Append-only)이다.
-- 민감 작업(permission_change, password_reset, masking_view, export)은 severity=warning 이상으로 기록한다.
+- 심각도 매핑: LOGIN_FAILED/MFA_FAILED/PASSWORD_CHANGED/USER_STATUS_CHANGE/UNMASK_DATA/DATA_EXPORT/SETTINGS_CHANGED=warning, USER_DELETED/PERMISSION_CHANGED/ACCESS_DENIED=critical, 나머지=info이다.
 - 로그인 실패도 기록하되, 비밀번호 원문은 절대 기록하지 않는다.
 
 **[⚠️ 트래픽/성능 검토]**

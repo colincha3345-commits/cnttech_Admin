@@ -100,11 +100,11 @@
 | **businessInfo** | JSON | Y | - | {businessNumber, businessName, representativeName} 사업자 정보이다. |
 | **contractInfo** | JSON | Y | - | {startDate, endDate, status, contractType} 계약 정보이다. |
 | **bankAccountInfo** | JSON | Y | - | {bankName, accountNumber, accountHolder} 계좌 정보이다. |
-| **operatingInfo** | JSON | Y | - | {appOperatingStatus, weekdayHours, weekendHours, holidayHours, dailyHours, regularClosedDays, irregularClosedDays, delivery, pickup, isTemporarilyClosed}이다. |
-| **visibilitySettings** | JSON | N | - | {isPublished, channels: [{channel, isVisible}]} 채널별 노출이다. |
+| **operatingInfo** | JSON | Y | - | {appOperatingStatus, weekdayHours, weekendHours, holidayHours, dailyHours, regularClosedDays, irregularClosedDays, deliveryFee, freeDeliveryMinAmount, deliveryFeeByDistance, isTemporarilyClosed, temporaryCloseReason, temporaryCloseStartDate, temporaryCloseEndDate, isDeliveryAvailable, isPickupAvailable, deliverySettings, pickupSettings, isVisible}이다. |
+| **visibilitySettings** | JSON | N | - | {channels: [{channel, isVisible, priority}], isSearchable, showNewBadge, newBadgeEndDate, showEventBadge, eventBadgeText, isRecommended, recommendedOrder} 노출 설정이다. |
 | **amenities** | JSON | N | - | {hasParking, parkingCapacity, hasDineIn, seatCapacity, hasWifi, wifiPassword}이다. |
-| **paymentMethods** | JSON | N | - | {cash, card, simplePayments: [{type, isEnabled}]}이다. |
-| **pos** | JSON | N | - | POS 연동 정보(vendorName, storeCode, terminalId, apiKey 등)이다. |
+| **paymentMethods** | JSON | N | - | {isCardEnabled, isCashEnabled, isPointEnabled, simplePayments: [{type(kakaopay/naverpay/tosspay/samsungpay/payco/applepay), isEnabled}]}이다. |
+| **integrationCodes** | JSON | N | - | {pos: {posVendor(okcashbag/kcp/unionpos/okpos/other), posCode, isConnected, lastSyncAt}, sk: {storeCode, fullCode, isEnabled}, pg: {pgVendor(smartro/kcp/nicepay/toss/other), mid, apiKey, isTestMode, isEnabled}, voucherVendor: {vendorName, storeCode, isEnabled}}이다. |
 | **deliveryFee** | Integer | Y | 0 이상 | 기본 배달비이다. |
 
 #### API 엔드포인트

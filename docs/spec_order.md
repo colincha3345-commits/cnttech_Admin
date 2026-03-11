@@ -68,7 +68,23 @@
 | **totalAmount** | Integer | Y | 0 이상 | 최종 결제 금액이다. |
 | **paymentMethod** | Enum | Y | 8가지 | 'mixed' 시 payments 배열이 필수다. |
 | **payments** | JSON | N | - | 복합결제 시 [{method, amount, status}] 배열이다. |
-| **cancelInfo** | JSON | N | - | 취소 시 {reason, reasonDetail, cancelledBy, cancelledAt}을 기록한다. |
+| **discount** | JSON | Y | - | {couponId, couponName, couponAmount, pointUsed, discountAmount, productDiscount, affiliateDiscount, eCouponDiscount, eCoupons: [{eCouponId, eCouponName, eCouponType(voucher/exchange), amount, productId, couponCompany, pinNumber}]}이다. |
+| **cashReceipt** | JSON | Y | - | {requested(Boolean), type(income_deduction/expense_proof), number} 현금영수증 정보다. |
+| **cancelInfo** | JSON | N | - | 취소 시 {reason(customer_request/out_of_stock/store_closed/other), reasonDetail, cancelledBy, cancelledAt}을 기록한다. |
+| **customerRequest** | String | N | 최대 200자 | 고객 요청사항(배달 요청 메모 등)이다. |
+| **memos** | JSON | Y | 배열 | [{id, content, createdBy, createdAt}] 관리자 메모 목록이다. |
+
+#### API 엔드포인트
+
+| Method | Path | 설명 |
+| :--- | :--- | :--- |
+| GET | `/api/orders` | 주문 목록 조회. Pagination + dateFrom/dateTo/orderType/status/storeId/keyword 필터이다. |
+| GET | `/api/orders/:id` | 주문 상세 조회이다. |
+| PATCH | `/api/orders/:id/status` | 주문 상태 변경 (FSM 검증)이다. |
+| POST | `/api/orders/:id/cancel` | 주문 전체 취소. 쿠폰/포인트/E쿠폰 자동 환원이다. |
+| POST | `/api/orders/:id/payments/:paymentItemId/cancel` | 복합결제 개별 결제수단 취소다. |
+| POST | `/api/orders/:id/memos` | 관리자 메모 추가다. |
+| POST | `/api/orders/export` | 엑셀 내보내기 (비동기, 선택 컬럼 OrderExportColumn 기반)다. |
 
 **[API 및 비즈니스 로직 제약사항]**
 - **상태 전이 검증** — 서버에서 유효한 상태 전이만 허용한다. pending→confirmed→preparing→ready→completed 순서와, 어느 단계에서든 cancelled 전이가 가능하다.
