@@ -1383,9 +1383,9 @@ export function Products() {
                         })}
                       </div>
 
-                      {/* 채널별 노출 + 판매상태 */}
+                      {/* 판매 설정 */}
                       <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">채널별 판매 설정</h3>
+                        <h3 className="text-sm font-semibold text-txt-main">판매 설정</h3>
                         <p className="text-xs text-txt-muted">채널별로 노출 여부와 판매상태를 설정합니다</p>
 
                         {(Object.keys(CHANNEL_LABELS) as (keyof ProductChannels)[]).map((key) => {
@@ -1422,26 +1422,6 @@ export function Products() {
                             </div>
                           );
                         })}
-                      </div>
-
-
-                      {/* 판매 설정 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">판매 설정</h3>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="status">판매 상태</Label>
-                          <Select
-                            id="status"
-                            value={formData.status}
-                            onChange={(e) =>
-                              setFormData({ ...formData, status: e.target.value as ProductStatus })
-                            }
-                          >
-                            <option value="active">판매중</option>
-                            <option value="soldout">품절</option>
-                          </Select>
-                        </div>
                       </div>
 
                       {/* 판매기간 */}
