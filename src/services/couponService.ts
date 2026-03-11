@@ -102,6 +102,47 @@ class MockCouponService {
     this.coupons = this.coupons.filter((c) => c.id !== id);
   }
 
+  async toggleActive(id: string): Promise<{ data: Coupon }> {
+    await mockDelay();
+    let toggled: Coupon | null = null;
+    this.coupons = this.coupons.map((c) => {
+      if (c.id === id) { toggled = { ...c, isActive: !c.isActive, status: c.isActive ? 'inactive' : 'active', updatedAt: new Date() }; return toggled; }
+      return c;
+    });
+    if (!toggled) throw new Error('쿠폰을 찾을 수 없습니다.');
+    return { data: toggled };
+  }
+
+  async suspendCoupon(id: string, gracePeriodDays: number): Promise<{ data: Coupon }> {
+    await mockDelay();
+    let suspended: Coupon | null = null;
+    const now = new Date();
+    const graceExpiresAt = new Date(now.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000);
+    this.coupons = this.coupons.map((c) => {
+      if (c.id === id) {
+        suspended = { ...c, isActive: false, status: 'suspended', suspendedAt: now, gracePeriodDays, graceExpiresAt, updatedAt: now };
+        return suspended;
+      }
+      return c;
+    });
+    if (!suspended) throw new Error('쿠폰을 찾을 수 없습니다.');
+    return { data: suspended };
+  }
+
+  async activateCoupon(id: string): Promise<{ data: Coupon }> {
+    await mockDelay();
+    let activated: Coupon | null = null;
+    this.coupons = this.coupons.map((c) => {
+      if (c.id === id) {
+        activated = { ...c, isActive: true, status: 'active', suspendedAt: undefined, gracePeriodDays: undefined, graceExpiresAt: undefined, updatedAt: new Date() };
+        return activated;
+      }
+      return c;
+    });
+    if (!activated) throw new Error('쿠폰을 찾을 수 없습니다.');
+    return { data: activated };
+  }
+
   async duplicateCoupon(id: string): Promise<{ data: Coupon }> {
     await mockDelay();
     const original = this.coupons.find((c) => c.id === id);
@@ -141,6 +182,15 @@ class RealCouponService {
   }
   async deleteCoupon(id: string): Promise<void> {
     await apiClient.delete(`${this.BASE}/${id}`);
+  }
+  async toggleActive(id: string): Promise<{ data: Coupon }> {
+    return apiClient.patch<{ data: Coupon }>(`${this.BASE}/${id}/toggle-active`);
+  }
+  async suspendCoupon(id: string, gracePeriodDays: number): Promise<{ data: Coupon }> {
+    return apiClient.patch<{ data: Coupon }>(`${this.BASE}/${id}/suspend`, { gracePeriodDays });
+  }
+  async activateCoupon(id: string): Promise<{ data: Coupon }> {
+    return apiClient.patch<{ data: Coupon }>(`${this.BASE}/${id}/activate`);
   }
   async duplicateCoupon(id: string): Promise<{ data: Coupon }> {
     return apiClient.post<{ data: Coupon }>(`${this.BASE}/${id}/duplicate`);

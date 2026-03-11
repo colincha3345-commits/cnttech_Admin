@@ -113,6 +113,9 @@ export {
   useCreateCoupon,
   useUpdateCoupon,
   useDeleteCoupon,
+  useToggleCouponActive,
+  useSuspendCoupon,
+  useActivateCoupon,
   useDuplicateCoupon,
   useCouponStats,
 } from './useCoupons';

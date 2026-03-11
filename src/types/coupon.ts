@@ -23,6 +23,7 @@ export const COUPON_ORDER_TYPE_LABELS = PROMOTION_ORDER_TYPE_LABELS;
 export type CouponStatus =
   | 'active'      // 활성
   | 'inactive'    // 비활성
+  | 'suspended'   // 정지 (유예기간 중)
   | 'expired'     // 만료됨
   | 'exhausted';  // 소진됨
 
@@ -113,6 +114,11 @@ export interface Coupon {
   status: CouponStatus;
   isActive: boolean;
 
+  // 정지/유예
+  suspendedAt?: Date;       // 정지 시점
+  gracePeriodDays?: number; // 유예기간 (일)
+  graceExpiresAt?: Date;    // 유예 만료일
+
   // 메타데이터
   createdAt: Date;
   updatedAt: Date;
@@ -194,6 +200,10 @@ export function validateCouponForm(data: CouponFormData): string[] {
 
   if (!data.name.trim()) {
     errors.push('쿠폰명을 입력해주세요.');
+  } else if (data.name.length > 30) {
+    errors.push('쿠폰명은 30자 이내로 입력해주세요.');
+  } else if (/[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s]/.test(data.name)) {
+    errors.push('쿠폰명에 특수문자를 사용할 수 없습니다.');
   }
 
   if (data.discountValue <= 0) {

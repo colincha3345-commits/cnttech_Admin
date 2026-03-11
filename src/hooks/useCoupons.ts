@@ -52,6 +52,37 @@ export function useDeleteCoupon() {
   });
 }
 
+export function useToggleCouponActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => couponService.toggleActive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+    },
+  });
+}
+
+export function useSuspendCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, gracePeriodDays }: { id: string; gracePeriodDays: number }) =>
+      couponService.suspendCoupon(id, gracePeriodDays),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+    },
+  });
+}
+
+export function useActivateCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => couponService.activateCoupon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+    },
+  });
+}
+
 export function useDuplicateCoupon() {
   const queryClient = useQueryClient();
   return useMutation({

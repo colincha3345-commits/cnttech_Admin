@@ -51,3 +51,4 @@ export { ProductSelector, type ExcludedProduct } from './ProductSelector';
 export { MemberSelector } from './MemberSelector';
 export { ToggleButtonGroup } from './ToggleButtonGroup';
 export { RichTextEditor } from './RichTextEditor';
+export { IdCell } from './IdCell';

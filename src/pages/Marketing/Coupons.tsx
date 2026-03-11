@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import {
   PlusOutlined,
-  DeleteOutlined,
+  StopOutlined,
+  PlayCircleOutlined,
   GiftOutlined,
   CopyOutlined,
   CheckOutlined,
@@ -31,7 +32,7 @@ import {
   DEFAULT_COUPON_FORM,
   validateCouponForm,
 } from '@/types/coupon';
-import { useToast, useStores, useCouponList, useCreateCoupon, useUpdateCoupon, useDeleteCoupon, useDuplicateCoupon, useCouponStats } from '@/hooks';
+import { useToast, useStores, useCouponList, useCreateCoupon, useUpdateCoupon, useSuspendCoupon, useActivateCoupon, useDuplicateCoupon, useCouponStats } from '@/hooks';
 
 // 요일 라벨
 const DAY_LABELS: Record<number, string> = {
@@ -56,13 +57,19 @@ export function Coupons() {
     couponName: string;
     isNew: boolean;
   }>({ isOpen: false, couponName: '', isNew: true });
+  const [suspendDialog, setSuspendDialog] = useState<{
+    isOpen: boolean;
+    coupon: Coupon | null;
+    gracePeriodDays: number;
+  }>({ isOpen: false, coupon: null, gracePeriodDays: 7 });
 
   // 서버사이드 훅
   const { data: couponListData } = useCouponList({ keyword: searchTerm });
   const { data: statsData } = useCouponStats();
   const createCoupon = useCreateCoupon();
   const updateCouponMutation = useUpdateCoupon();
-  const deleteCouponMutation = useDeleteCoupon();
+  const suspendMutation = useSuspendCoupon();
+  const activateMutation = useActivateCoupon();
   const duplicateCouponMutation = useDuplicateCoupon();
 
   const coupons = couponListData?.data ?? [];
@@ -191,18 +198,37 @@ export function Coupons() {
     }
   };
 
-  // 삭제
-  const handleDelete = (couponId: string) => {
-    deleteCouponMutation.mutate(couponId, {
-      onSuccess: () => {
-        if (selectedCoupon?.id === couponId) {
-          handleCancel();
-        }
-        toast.success('쿠폰이 삭제되었습니다.');
-      },
-      onError: () => toast.error('삭제에 실패했습니다.'),
-    });
+  // 정지 다이얼로그 열기 / 활성화 즉시 실행
+  const handleToggleActive = (coupon: Coupon) => {
+    if (coupon.isActive || coupon.status === 'suspended') {
+      // 활성 → 정지: 유예기간 다이얼로그 표시
+      setSuspendDialog({ isOpen: true, coupon, gracePeriodDays: 7 });
+    } else {
+      // 비활성/정지 → 활성화
+      activateMutation.mutate(coupon.id, {
+        onSuccess: () => toast.success('쿠폰이 활성화되었습니다.'),
+        onError: () => toast.error('활성화에 실패했습니다.'),
+      });
+    }
   };
+
+  // 정지 확정 (유예기간 포함)
+  const handleConfirmSuspend = () => {
+    if (!suspendDialog.coupon) return;
+    suspendMutation.mutate(
+      { id: suspendDialog.coupon.id, gracePeriodDays: suspendDialog.gracePeriodDays },
+      {
+        onSuccess: () => {
+          toast.success(`쿠폰이 정지되었습니다. (유예기간 ${suspendDialog.gracePeriodDays}일)`);
+          setSuspendDialog({ isOpen: false, coupon: null, gracePeriodDays: 7 });
+        },
+        onError: () => toast.error('정지에 실패했습니다.'),
+      },
+    );
+  };
+
+  // 수정 모드 여부 (기존 쿠폰 선택 시)
+  const isEditMode = isFormActive && !!selectedCoupon;
 
   // 성공 다이얼로그 닫기
   const handleCloseSuccessDialog = (addMore: boolean) => {
@@ -310,8 +336,17 @@ export function Coupons() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium text-txt-main truncate">{coupon.name}</h3>
-                          <Badge variant={coupon.isActive ? 'success' : 'secondary'} className="flex-shrink-0">
-                            {coupon.isActive ? '활성' : '비활성'}
+                          <Badge
+                            variant={coupon.status === 'suspended' ? 'warning' : coupon.isActive ? 'success' : 'secondary'}
+                            className="flex-shrink-0"
+                          >
+                            {coupon.status === 'suspended'
+                              ? (() => {
+                                  if (!coupon.graceExpiresAt) return '정지';
+                                  const remaining = Math.ceil((new Date(coupon.graceExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                                  return remaining > 0 ? `정지 (유예 ${remaining}일)` : '정지됨';
+                                })()
+                              : coupon.isActive ? '활성' : '비활성'}
                           </Badge>
                         </div>
                         <p className="text-sm text-txt-muted mt-1">
@@ -325,11 +360,15 @@ export function Coupons() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDelete(coupon.id);
+                          handleToggleActive(coupon);
                         }}
-                        className="p-1.5 hover:bg-critical/10 rounded transition-colors"
+                        className={`p-1.5 rounded transition-colors ${coupon.isActive ? 'hover:bg-warning/10' : 'hover:bg-success/10'}`}
+                        title={coupon.isActive ? '정지' : '활성화'}
                       >
-                        <DeleteOutlined style={{ fontSize: 14 }} className="text-critical" />
+                        {coupon.isActive
+                          ? <StopOutlined style={{ fontSize: 14 }} className="text-warning" />
+                          : <PlayCircleOutlined style={{ fontSize: 14 }} className="text-success" />
+                        }
                       </button>
                     </div>
                   </div>
@@ -394,8 +433,15 @@ export function Coupons() {
                   </div>
                 )}
 
+                {/* 수정 모드 안내 */}
+                {isEditMode && (
+                  <div className="p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm text-warning">
+                    기존 쿠폰은 <strong>가맹점 설정</strong>만 수정 가능합니다.
+                  </div>
+                )}
+
                 {/* 기본 정보 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">기본 정보</h3>
 
                   <div className="space-y-2">
@@ -403,8 +449,13 @@ export function Coupons() {
                     <Input
                       placeholder="예: 첫 주문 할인 쿠폰"
                       value={formData.name}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                      maxLength={30}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(/[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\s]/g, '');
+                        setFormData((prev) => ({ ...prev, name: v }));
+                      }}
                     />
+                    <span className="text-xs text-txt-muted">{formData.name.length}/30</span>
                   </div>
 
                   <div className="space-y-2">
@@ -428,7 +479,7 @@ export function Coupons() {
                 </div>
 
                 {/* 할인 정보 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">할인 정보</h3>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -518,7 +569,7 @@ export function Coupons() {
                 </div>
 
                 {/* 적용 범위 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">적용 범위</h3>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -568,7 +619,7 @@ export function Coupons() {
                 </div>
 
                 {/* 정산 비율 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">정산 비율</h3>
 
                   <div className="space-y-4">
@@ -619,7 +670,7 @@ export function Coupons() {
                 </div>
 
                 {/* 유효 기간 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">유효 기간</h3>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -643,7 +694,7 @@ export function Coupons() {
                 </div>
 
                 {/* 사용 제한 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">사용 제한</h3>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -721,7 +772,7 @@ export function Coupons() {
                 </div>
 
                 {/* 사용 가능 스케줄 */}
-                <div className="space-y-4">
+                <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">사용 가능 스케줄</h3>
 
                   <div className="space-y-3">
@@ -864,6 +915,41 @@ export function Coupons() {
                   </Button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 정지 확인 다이얼로그 */}
+      {suspendDialog.isOpen && suspendDialog.coupon && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-bg-card rounded-xl shadow-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-txt-main mb-2">쿠폰 정지</h3>
+            <p className="text-sm text-txt-muted mb-4">
+              "{suspendDialog.coupon.name}" 쿠폰을 정지합니다.<br />
+              이미 발급된 쿠폰은 유예기간 후 사용 불가됩니다.
+            </p>
+            <div className="space-y-2 mb-6">
+              <Label>유예기간 (일)</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={suspendDialog.gracePeriodDays}
+                  onChange={(e) => setSuspendDialog((prev) => ({ ...prev, gracePeriodDays: Math.max(0, Math.min(30, Number(e.target.value))) }))}
+                  className="w-24"
+                />
+                <span className="text-sm text-txt-muted">0~30일 (0: 즉시 정지)</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setSuspendDialog({ isOpen: false, coupon: null, gracePeriodDays: 7 })}>
+                취소
+              </Button>
+              <Button variant="danger" className="flex-1" onClick={handleConfirmSuspend}>
+                정지
+              </Button>
             </div>
           </div>
         </div>
