@@ -105,7 +105,7 @@ const mockProducts: Product[] = [
     subCategoryIds: [],
     subCategoryNames: [],
     optionGroups: [],
-    status: 'inactive',
+    status: 'soldout',
     isVisible: false,
     applyToAll: true,
     storeIds: [],

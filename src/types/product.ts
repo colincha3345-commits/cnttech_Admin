@@ -1,6 +1,6 @@
 // 메뉴 관리 타입 정의
 
-export type ProductStatus = 'active' | 'inactive' | 'pending';
+export type ProductStatus = 'active' | 'soldout';
 
 export interface ProductTag {
   code: string;
@@ -60,7 +60,7 @@ export type ChannelSaleStatus = ProductStatus | false;
 
 /**
  * 채널별 노출 + 판매상태 설정
- * false: 비노출 / 'active': 판매중 / 'inactive': 판매중지 / 'pending': 판매대기
+ * false: 비노출 / 'active': 판매중 / 'soldout': 품절
  */
 export interface ProductChannels {
   app: ChannelSaleStatus;         // 주문앱
@@ -80,8 +80,7 @@ export const CHANNEL_LABELS: Record<keyof ProductChannels, string> = {
 /** 채널 판매상태 라벨 */
 export const CHANNEL_STATUS_LABELS: Record<ProductStatus, string> = {
   active: '판매중',
-  inactive: '판매중지',
-  pending: '판매대기',
+  soldout: '품절',
 };
 
 /** 기본 채널 설정 (전체 판매중) */
@@ -262,7 +261,7 @@ export interface ApplyResult {
 /**
  * 일괄변경 타입 정의
  */
-export type BulkEditType = 'status' | 'price' | 'stock';
+export type BulkEditType = 'status' | 'price';
 
 export interface BulkPriceUpdate {
   changeType: 'fixed' | 'percentage';
@@ -273,14 +272,9 @@ export interface BulkStatusUpdate {
   status: ProductStatus;
 }
 
-export interface BulkStockUpdate {
-  isVisible: boolean;
-}
-
 export type BulkEditUpdate =
   | { type: 'status'; data: BulkStatusUpdate }
-  | { type: 'price'; data: BulkPriceUpdate }
-  | { type: 'stock'; data: BulkStockUpdate };
+  | { type: 'price'; data: BulkPriceUpdate };
 
 /**
  * 일괄변경 결과

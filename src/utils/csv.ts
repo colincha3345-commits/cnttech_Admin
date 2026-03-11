@@ -3,7 +3,7 @@
  * 메뉴 데이터의 CSV 가져오기/내보내기
  */
 
-import type { Product, ProductFormData } from '@/types/product';
+import type { Product, ProductFormData, ProductStatus } from '@/types/product';
 
 /**
  * CSV 헤더 정의
@@ -80,7 +80,7 @@ export const csvRowToProductFormData = (row: string[]): ProductFormData => {
     mainCategoryId,
     subCategoryIds: row[6] ? row[6].split('|').filter(Boolean) : [],
     optionGroupIds: [],
-    status: (row[7] || 'inactive') as 'active' | 'inactive' | 'pending',
+    status: (row[7] === 'active' ? 'active' : 'soldout') as ProductStatus,
     isVisible: row[8] === 'Y',
     applyToAll: true,
     storeIds: [],

@@ -28,22 +28,13 @@ interface UseProductsReturn {
 const checkSalesPeriodStatus = (product: Product): ProductStatus | null => {
   const now = new Date();
 
-  // 판매 시작 시간 체크 (pending → active)
-  if (
-    product.salesStartDate &&
-    product.status === 'pending' &&
-    now >= product.salesStartDate
-  ) {
-    return 'active';
-  }
-
-  // 판매 종료 시간 체크 (active → inactive)
+  // 판매 종료 시간 체크 (active → soldout)
   if (
     product.salesEndDate &&
     product.status === 'active' &&
     now >= product.salesEndDate
   ) {
-    return 'inactive';
+    return 'soldout';
   }
 
   return null;

@@ -25,7 +25,6 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
   const [status, setStatus] = useState<ProductStatus>('active');
   const [priceChangeType, setPriceChangeType] = useState<'fixed' | 'percentage'>('fixed');
   const [priceValue, setPriceValue] = useState<string>('');
-  const [isOutOfStock, setIsOutOfStock] = useState<boolean>(false);
 
   if (!isOpen) return null;
 
@@ -51,12 +50,6 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
           };
         }
         break;
-      case 'stock':
-        update = {
-          type: 'stock',
-          data: { isVisible: !isOutOfStock },
-        };
-        break;
     }
 
     if (update) {
@@ -70,7 +63,6 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
     setStatus('active');
     setPriceChangeType('fixed');
     setPriceValue('');
-    setIsOutOfStock(false);
     onClose();
   };
 
@@ -108,8 +100,8 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
             변경할 항목
           </label>
           <div className="flex gap-2">
-            {(['status', 'price', 'stock'] as BulkEditType[]).map((type) => {
-              const labels = { status: '판매상태', price: '판매가', stock: '품절여부' };
+            {(['status', 'price'] as BulkEditType[]).map((type) => {
+              const labels = { status: '판매상태', price: '판매가' };
               return (
                 <button
                   key={type}
@@ -140,8 +132,7 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
                 className="w-full rounded-input border border-border bg-white px-4 py-2.5 text-sm text-txt-main focus:border-border-focus focus:outline-none focus:ring-2 focus:ring-primary/10 transition-all"
               >
                 <option value="active">판매중</option>
-                <option value="inactive">판매중지</option>
-                <option value="pending">게시예약</option>
+                <option value="soldout">품절</option>
               </select>
             </div>
           )}
@@ -202,35 +193,6 @@ export const BulkEditModal: React.FC<BulkEditModalProps> = ({
             </div>
           )}
 
-          {editType === 'stock' && (
-            <div>
-              <label className="mb-2 block text-sm font-medium text-txt-main">
-                품절 상태
-              </label>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsOutOfStock(false)}
-                  className={`flex-1 rounded-button px-4 py-3 text-sm font-medium transition-all ${
-                    !isOutOfStock
-                      ? 'bg-success/10 text-success ring-1 ring-success'
-                      : 'bg-silver text-txt-main hover:bg-light-gray-1'
-                  }`}
-                >
-                  판매 가능
-                </button>
-                <button
-                  onClick={() => setIsOutOfStock(true)}
-                  className={`flex-1 rounded-button px-4 py-3 text-sm font-medium transition-all ${
-                    isOutOfStock
-                      ? 'bg-critical/10 text-critical ring-1 ring-critical'
-                      : 'bg-silver text-txt-main hover:bg-light-gray-1'
-                  }`}
-                >
-                  품절
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 액션 버튼 */}

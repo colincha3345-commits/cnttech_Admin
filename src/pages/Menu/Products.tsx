@@ -45,7 +45,6 @@ import {
   CategoryFilter,
   DraggableProductItem,
   OptionGroupSelector,
-  DateTimePicker,
   SalesPeriodPicker,
   SearchInput,
   ProductImage,
@@ -69,8 +68,7 @@ import { auditService } from '@/services/auditService';
 
 const statusMap = {
   active: { label: '판매중', color: 'success' as const },
-  inactive: { label: '판매 중지', color: 'critical' as const },
-  pending: { label: '판매 대기', color: 'warning' as const },
+  soldout: { label: '품절', color: 'critical' as const },
 };
 
 /**
@@ -401,7 +399,7 @@ export function Products() {
       mainCategoryId: product.mainCategoryId,
       subCategoryIds: product.subCategoryIds,
       optionGroupIds: product.optionGroups.map((og) => og.id),
-      status: 'inactive', // 복사본은 기본적으로 판매 중지
+      status: 'soldout', // 복사본은 기본적으로 품절
       isVisible: false, // 복사본은 기본적으로 노출 안함
       scheduledAt: undefined,
       applyToAll: product.applyToAll,
@@ -580,9 +578,6 @@ export function Products() {
               updateData = { price: newPrice };
               break;
 
-            case 'stock':
-              updateData = { isVisible: update.data.isVisible };
-              break;
           }
 
           await updateProduct(productId, updateData);
@@ -963,9 +958,6 @@ export function Products() {
                                 <Badge variant={statusMap[product.status].color}>
                                   {statusMap[product.status].label}
                                 </Badge>
-                                {product.isVisible && (
-                                  <Badge variant="info">노출</Badge>
-                                )}
                                 {/* 채널별 판매상태 표시 */}
                                 {(() => {
                                   const ch = product.channels;
@@ -1131,6 +1123,45 @@ export function Products() {
                         </p>
                       </div>
 
+                      {/* POS 표시명 (메뉴명 하단) */}
+                      <div className="space-y-2">
+                        <Label htmlFor="posDisplayName">POS 표시명</Label>
+                        <Input
+                          id="posDisplayName"
+                          value={formData.posDisplayName || ''}
+                          onChange={(e) => setFormData({ ...formData, posDisplayName: e.target.value })}
+                          placeholder={formData.name ? `미입력 시 "${formData.name.replace(/<br\s*\/?>/g, ' ')}" 사용` : '미입력 시 메뉴명 사용'}
+                          maxLength={20}
+                        />
+                        <p className="text-xs text-txt-muted">POS 버튼에 표시할 이름 (최대 20자) · 미입력 시 메뉴명 사용</p>
+                      </div>
+
+                      {/* 상품코드 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="productCode">상품코드</Label>
+                        <Input
+                          id="productCode"
+                          value={formData.productCode || ''}
+                          onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
+                          placeholder="예: PRD-001"
+                          maxLength={20}
+                        />
+                        <p className="text-xs text-txt-muted">서비스 내 상품 식별 코드 (최대 20자)</p>
+                      </div>
+
+                      {/* 포스 코드 */}
+                      <div className="space-y-2">
+                        <Label htmlFor="posCode">포스 코드</Label>
+                        <Input
+                          id="posCode"
+                          value={formData.posCode || ''}
+                          onChange={(e) => setFormData({ ...formData, posCode: e.target.value })}
+                          placeholder="예: M001"
+                          maxLength={20}
+                        />
+                        <p className="text-xs text-txt-muted">POS 시스템 연동 식별 코드 (최대 20자)</p>
+                      </div>
+
                       {/* 가격 */}
                       <div className="space-y-2">
                         <Label htmlFor="price" required>가격</Label>
@@ -1150,6 +1181,36 @@ export function Products() {
                         />
                       </div>
 
+                      {/* POS 버튼 색상 (가격 하단) */}
+                      <div className="space-y-2">
+                        <Label>POS 버튼 색상</Label>
+                        <div className="flex flex-wrap gap-2">
+                          {POS_COLOR_PALETTE.map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, posColor: formData.posColor === color ? '' : color })}
+                              className={`
+                                w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
+                                ${formData.posColor === color
+                                  ? 'border-primary ring-2 ring-primary/30 scale-110'
+                                  : 'border-border hover:border-primary/50'
+                                }
+                                ${color === '#FFFFFF' ? 'bg-white' : ''}
+                              `}
+                              style={{ backgroundColor: color }}
+                            >
+                              {formData.posColor === color && (
+                                <CheckOutlined className={`text-xs ${color === '#FFFFFF' || color === '#FADB14' ? 'text-gray-800' : 'text-white'}`} />
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        {formData.posColor && (
+                          <p className="text-xs text-txt-muted">선택: {formData.posColor}</p>
+                        )}
+                      </div>
+
                       {/* 메뉴 설명 */}
                       <div className="space-y-2">
                         <Label htmlFor="description" required>메뉴 설명</Label>
@@ -1164,20 +1225,6 @@ export function Products() {
                         <p className="text-xs text-txt-muted">{formData.description.length}/500자</p>
                       </div>
 
-                      {/* 속성 태그 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="tags">속성 태그</Label>
-                        <Select
-                          id="tags"
-                          value={formData.tags[0] || 'MAIN'}
-                          onChange={(e) => setFormData({ ...formData, tags: [e.target.value] })}
-                        >
-                          <option value="MAIN">메인</option>
-                          <option value="SIDE">사이드</option>
-                          <option value="DRINK">음료</option>
-                          <option value="DESSERT">디저트</option>
-                        </Select>
-                      </div>
 
                       {/* 아이콘뱃지 설정 */}
                       <div className="space-y-2">
@@ -1377,77 +1424,6 @@ export function Products() {
                         })}
                       </div>
 
-                      {/* POS 전용 설정 */}
-                      {formData.channels?.pos && (
-                        <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                          <h3 className="text-sm font-semibold text-txt-main">POS 전용 설정</h3>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="posDisplayName">POS 표시명</Label>
-                            <Input
-                              id="posDisplayName"
-                              value={formData.posDisplayName || ''}
-                              onChange={(e) => setFormData({ ...formData, posDisplayName: e.target.value })}
-                              placeholder="미입력 시 메뉴명 사용"
-                              maxLength={20}
-                            />
-                            <p className="text-xs text-txt-muted">POS 버튼에 표시할 이름 (최대 20자)</p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>POS 버튼 색상</Label>
-                            <div className="flex flex-wrap gap-2">
-                              {POS_COLOR_PALETTE.map((color) => (
-                                <button
-                                  key={color}
-                                  type="button"
-                                  onClick={() => setFormData({ ...formData, posColor: formData.posColor === color ? '' : color })}
-                                  className={`
-                                    w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
-                                    ${formData.posColor === color
-                                      ? 'border-primary ring-2 ring-primary/30 scale-110'
-                                      : 'border-border hover:border-primary/50'
-                                    }
-                                    ${color === '#FFFFFF' ? 'bg-white' : ''}
-                                  `}
-                                  style={{ backgroundColor: color }}
-                                >
-                                  {formData.posColor === color && (
-                                    <CheckOutlined className={`text-xs ${color === '#FFFFFF' || color === '#FADB14' ? 'text-gray-800' : 'text-white'}`} />
-                                  )}
-                                </button>
-                              ))}
-                            </div>
-                            {formData.posColor && (
-                              <p className="text-xs text-txt-muted">선택: {formData.posColor}</p>
-                            )}
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="productCode">상품코드</Label>
-                            <Input
-                              id="productCode"
-                              value={formData.productCode || ''}
-                              onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
-                              placeholder="예: PRD-001"
-                              maxLength={20}
-                            />
-                            <p className="text-xs text-txt-muted">서비스 내 상품 식별 코드 (최대 20자)</p>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="posCode">포스 코드</Label>
-                            <Input
-                              id="posCode"
-                              value={formData.posCode || ''}
-                              onChange={(e) => setFormData({ ...formData, posCode: e.target.value })}
-                              placeholder="예: M001"
-                              maxLength={20}
-                            />
-                            <p className="text-xs text-txt-muted">POS 시스템 연동 식별 코드 (최대 20자)</p>
-                          </div>
-                        </div>
-                      )}
 
                       {/* 판매 설정 */}
                       <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
@@ -1463,30 +1439,9 @@ export function Products() {
                             }
                           >
                             <option value="active">판매중</option>
-                            <option value="inactive">판매 중지</option>
-                            <option value="pending">판매 대기</option>
+                            <option value="soldout">품절</option>
                           </Select>
                         </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="isVisible">앱 노출</Label>
-                          <Switch
-                            id="isVisible"
-                            checked={formData.isVisible}
-                            onCheckedChange={(checked) => setFormData({ ...formData, isVisible: checked })}
-                          />
-                        </div>
-
-                        {/* 게시 예약 */}
-                        {formData.status === 'pending' && (
-                          <div>
-                            <DateTimePicker
-                              label="게시 예약 시간"
-                              value={formData.scheduledAt}
-                              onChange={(date) => setFormData({ ...formData, scheduledAt: date })}
-                            />
-                          </div>
-                        )}
                       </div>
 
                       {/* 판매기간 */}
