@@ -14,7 +14,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
       couponBenefits: [{ couponId: '1', couponName: '첫 주문 쿠폰 (20% 할인)' }],
       pointBenefits: [{ earnType: 'percentage' as const, pointAmount: 0, percentageRate: 5, maxEarnPoints: 5000, pointValidityDays: 90, pointDescription: '첫 주문 감사 포인트 (주문금액의 5%)' }],
     },
-    isAlwaysOn: false,
+
     startDate: '2026-01-01', endDate: '2026-12-31', status: 'active',
     totalIssuedCount: 342, totalBeneficiaryCount: 342,
     createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-02-01'), createdBy: 'admin',
@@ -32,7 +32,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
       ],
       pointBenefits: [{ earnType: 'fixed' as const, pointAmount: 500, percentageRate: 0, maxEarnPoints: null, pointValidityDays: 30, pointDescription: '가입 환영 포인트' }],
     },
-    isAlwaysOn: true,
+
     startDate: '2026-01-01', endDate: null, status: 'active',
     totalIssuedCount: 523, totalBeneficiaryCount: 523,
     createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-15'), createdBy: 'admin',
@@ -47,7 +47,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
       couponBenefits: [{ couponId: '2', couponName: '생일 축하 쿠폰 (5,000원 할인)' }],
       pointBenefits: [{ earnType: 'fixed' as const, pointAmount: 2000, percentageRate: 0, maxEarnPoints: null, pointValidityDays: 30, pointDescription: '생일 축하 포인트' }],
     },
-    isAlwaysOn: true,
+
     startDate: '2026-01-01', endDate: null, status: 'active',
     totalIssuedCount: 128, totalBeneficiaryCount: 64,
     createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-02-01'), createdBy: 'admin',
@@ -62,7 +62,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
       couponBenefits: [{ couponId: '4', couponName: 'VIP 전용 쿠폰 (30% 할인)' }],
       pointBenefits: [],
     },
-    isAlwaysOn: true,
+
     startDate: '2026-01-01', endDate: null, status: 'draft',
     totalIssuedCount: 0, totalBeneficiaryCount: 0,
     createdAt: new Date('2026-02-05'), updatedAt: new Date('2026-02-05'), createdBy: 'admin',
@@ -82,7 +82,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
       couponBenefits: [],
       pointBenefits: [{ earnType: 'fixed' as const, pointAmount: 5000, percentageRate: 0, maxEarnPoints: null, pointValidityDays: 90, pointDescription: 'VIP 그룹 특별 포인트' }],
     },
-    isAlwaysOn: false,
+
     startDate: '2026-02-01', endDate: '2026-06-30', status: 'active',
     totalIssuedCount: 46, totalBeneficiaryCount: 28,
     createdAt: new Date('2026-02-01'), updatedAt: new Date('2026-02-08'), createdBy: 'admin',
@@ -113,7 +113,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
       couponBenefits: [{ couponId: '5', couponName: '프로모션 코드 (3,000원 할인)' }],
       pointBenefits: [],
     },
-    isAlwaysOn: false,
+
     startDate: '2026-02-01', endDate: '2026-04-30', status: 'active',
     totalIssuedCount: 4, totalBeneficiaryCount: 4,
     createdAt: new Date('2026-02-01'), updatedAt: new Date('2026-02-10'), createdBy: 'admin',

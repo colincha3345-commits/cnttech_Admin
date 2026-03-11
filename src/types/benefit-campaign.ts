@@ -235,7 +235,6 @@ export interface BenefitCampaign {
 
   benefitConfig: BenefitConfig;
 
-  isAlwaysOn: boolean;
   startDate: string;
   endDate: string | null;
   status: BenefitCampaignStatus;
@@ -310,7 +309,6 @@ export interface BenefitCampaignFormData {
   benefitDelayMinute: number;
 
   // 기간
-  isAlwaysOn: boolean;
   startDate: string;
   endDate: string;
 }
@@ -366,7 +364,6 @@ export const DEFAULT_BENEFIT_CAMPAIGN_FORM: BenefitCampaignFormData = {
   benefitDelayHour: 0,
   benefitDelayMinute: 0,
 
-  isAlwaysOn: false,
   startDate: '',
   endDate: '',
 };
@@ -385,13 +382,11 @@ export function validateBenefitCampaignForm(data: BenefitCampaignFormData): stri
   if (!data.startDate) {
     errors.push('시작일을 입력해주세요.');
   }
-  if (!data.isAlwaysOn) {
-    if (!data.endDate) {
-      errors.push('종료일을 입력해주세요.');
-    }
-    if (data.startDate && data.endDate && data.startDate > data.endDate) {
-      errors.push('종료일은 시작일 이후여야 합니다.');
-    }
+  if (!data.endDate) {
+    errors.push('종료일을 입력해주세요.');
+  }
+  if (data.startDate && data.endDate && data.startDate > data.endDate) {
+    errors.push('종료일은 시작일 이후여야 합니다.');
   }
 
   // 트리거별 검증

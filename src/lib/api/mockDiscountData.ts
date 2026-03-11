@@ -10,7 +10,7 @@ export const mockDiscounts: Discount[] = [
     discountType: 'company',
     method: 'percentage',
     value: 10,
-    periodType: 'always',
+    periodType: 'period',
     target: { type: 'all' },
     applyToAll: true,
     storeIds: [],
@@ -81,7 +81,7 @@ export const mockDiscounts: Discount[] = [
     discountType: 'gift',
     method: 'percentage',
     value: 0,
-    periodType: 'always',
+    periodType: 'period',
     target: { type: 'all' },
     giftCondition: {
       type: 'n_plus_one',

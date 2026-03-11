@@ -57,6 +57,7 @@ class OptionGroupService {
     const newGroup: OptionGroup = {
       id: `grp-${Date.now()}`,
       name: formData.name,
+      selectionType: formData.selectionType,
       isRequired: formData.isRequired,
       minSelection: formData.minSelection,
       maxSelection: formData.maxSelection,
@@ -79,6 +80,7 @@ class OptionGroupService {
         updated = {
           ...g,
           name: formData.name,
+          selectionType: formData.selectionType,
           isRequired: formData.isRequired,
           minSelection: formData.minSelection,
           maxSelection: formData.maxSelection,

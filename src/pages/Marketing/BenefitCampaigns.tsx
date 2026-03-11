@@ -140,7 +140,6 @@ export function BenefitCampaigns() {
       benefitDelayDays: campaign.benefitConfig.delay?.days ?? 1,
       benefitDelayHour: campaign.benefitConfig.delay?.hour ?? 0,
       benefitDelayMinute: campaign.benefitConfig.delay?.minute ?? 0,
-      isAlwaysOn: campaign.isAlwaysOn,
       startDate: campaign.startDate,
       endDate: campaign.endDate ?? '',
     });
@@ -389,7 +388,7 @@ export function BenefitCampaigns() {
                           )}
                         </div>
                         <p className="text-sm text-txt-muted mt-1">
-                          {campaign.isAlwaysOn ? '상시' : `${campaign.startDate} ~ ${campaign.endDate}`}
+                          {`${campaign.startDate} ~ ${campaign.endDate || '미설정'}`}
                           {' · '}
                           지급 {formatCurrency(campaign.totalIssuedCount)}건
                         </p>
@@ -781,24 +780,7 @@ export function BenefitCampaigns() {
                 {/* 캠페인 기간 */}
                 <div className="space-y-4">
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">캠페인 기간</h3>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.isAlwaysOn}
-                      onChange={(e) => setFormData((prev) => ({
-                        ...prev,
-                        isAlwaysOn: e.target.checked,
-                        startDate: e.target.checked && !prev.startDate
-                          ? new Date().toISOString().split('T')[0] ?? ''
-                          : prev.startDate,
-                        endDate: e.target.checked ? '' : prev.endDate,
-                      }))}
-                      className="w-4 h-4 rounded border-border text-primary focus:ring-primary/20"
-                    />
-                    <span className="text-sm font-medium text-txt-main">상시 운영</span>
-                    <span className="text-xs text-txt-muted">(종료일 없이 계속 운영)</span>
-                  </label>
-                  <div className={`grid gap-4 ${formData.isAlwaysOn ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                  <div className="grid gap-4 grid-cols-2">
                     <div className="space-y-2">
                       <Label required>시작일</Label>
                       <Input
@@ -807,16 +789,14 @@ export function BenefitCampaigns() {
                         onChange={(e) => setFormData((prev) => ({ ...prev, startDate: e.target.value }))}
                       />
                     </div>
-                    {!formData.isAlwaysOn && (
-                      <div className="space-y-2">
-                        <Label required>종료일</Label>
-                        <Input
-                          type="date"
-                          value={formData.endDate}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
-                        />
-                      </div>
-                    )}
+                    <div className="space-y-2">
+                      <Label required>종료일</Label>
+                      <Input
+                        type="date"
+                        value={formData.endDate}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
+                      />
+                    </div>
                   </div>
                 </div>
 

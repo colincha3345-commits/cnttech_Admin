@@ -188,9 +188,8 @@ class BenefitCampaignService {
         couponBenefits: formData.couponBenefits,
         pointBenefits: formData.pointBenefits,
       },
-      isAlwaysOn: formData.isAlwaysOn,
       startDate: formData.startDate,
-      endDate: formData.isAlwaysOn ? null : formData.endDate,
+      endDate: formData.endDate || null,
       status: existingStatus ?? 'draft',
     };
   }

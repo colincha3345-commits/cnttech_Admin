@@ -34,7 +34,8 @@ import {
   useAvailableOptions,
   useAvailableProducts,
 } from '@/hooks';
-import type { OptionGroup, OptionGroupItem, OptionGroupFormData, OptionPriceType } from '@/types/product';
+import type { OptionGroup, OptionGroupItem, OptionGroupFormData, OptionPriceType, SelectionType } from '@/types/product';
+import { SELECTION_TYPE_LABELS } from '@/types/product';
 
 // 다이얼로그 상태 타입
 interface DialogState {
@@ -66,6 +67,7 @@ export function OptionGroups() {
   const [searchQuery, setSearchQuery] = useState('');
   const [formData, setFormData] = useState({
     name: '',
+    selectionType: 'single' as SelectionType,
     isRequired: false,
     minSelection: 0,
     maxSelection: 1,
@@ -151,6 +153,7 @@ export function OptionGroups() {
     setSelectedGroup(group);
     setFormData({
       name: group.name,
+      selectionType: group.selectionType || (group.maxSelection === 1 ? 'single' : 'multi'),
       isRequired: group.isRequired,
       minSelection: group.minSelection,
       maxSelection: group.maxSelection,
@@ -168,6 +171,7 @@ export function OptionGroups() {
     setSelectedGroup(null);
     setFormData({
       name: '',
+      selectionType: 'single',
       isRequired: false,
       minSelection: 0,
       maxSelection: 1,
@@ -205,6 +209,7 @@ export function OptionGroups() {
     const isNewGroup = !selectedGroup;
     const submitData: OptionGroupFormData = {
       name: formData.name,
+      selectionType: formData.selectionType,
       isRequired: formData.isRequired,
       minSelection: formData.minSelection,
       maxSelection: formData.maxSelection,
@@ -249,6 +254,7 @@ export function OptionGroups() {
       referenceId,
       priceType: type === 'product' ? 'override' : 'original',
       overridePrice: 0,
+      maxQuantity: formData.selectionType === 'multi' ? 10 : 1,
       displayOrder: formData.items.length + 1,
     };
 
@@ -494,12 +500,18 @@ export function OptionGroups() {
                         <Badge variant={group.isRequired ? 'warning' : 'secondary'} className="flex-shrink-0">
                           {group.isRequired ? '필수' : '선택'}
                         </Badge>
+                        <Badge variant={(group.selectionType || (group.maxSelection === 1 ? 'single' : 'multi')) === 'single' ? 'info' : 'default'} className="flex-shrink-0">
+                          {(group.selectionType || (group.maxSelection === 1 ? 'single' : 'multi')) === 'single' ? '단일' : '다수'}
+                        </Badge>
                         <Badge variant={group.isVisible ? 'success' : 'secondary'} className="flex-shrink-0">
                           {group.isVisible ? '노출' : '숨김'}
                         </Badge>
                       </div>
                       <div className="text-sm text-txt-muted mt-1 truncate">
-                        선택: {group.minSelection}~{group.maxSelection}개 | 아이템{' '}
+                        {(group.selectionType || (group.maxSelection === 1 ? 'single' : 'multi')) === 'single'
+                          ? '1개 선택'
+                          : `${group.minSelection}~${group.maxSelection}개`
+                        } | 아이템{' '}
                         {(group.items?.length || group.optionIds?.length || 0)}개
                       </div>
                     </div>
@@ -603,56 +615,113 @@ export function OptionGroups() {
                   </Badge>
                 </div>
 
-                {/* 선택 수량 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label required>최소 선택 수량</Label>
-                    <Input
-                      type="number"
-                      min={formData.isRequired ? 1 : 0}
-                      max={99}
-                      value={formData.minSelection}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (!isNaN(val) && val >= 0 && val <= 99) {
-                          setFormData({ ...formData, minSelection: val });
-                        }
-                      }}
-                      disabled={!isEditing && !!selectedGroup}
-                    />
-                    <p className="text-xs text-txt-muted">
-                      {formData.isRequired ? '필수 그룹은 최소 1개' : '0 = 선택 안해도 됨'}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label required>최대 선택 수량</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={99}
-                      value={formData.maxSelection}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (!isNaN(val) && val >= 1 && val <= 99) {
-                          setFormData({ ...formData, maxSelection: val });
-                        }
-                      }}
-                      disabled={!isEditing && !!selectedGroup}
-                    />
-                    <p className="text-xs text-txt-muted">고객이 선택할 수 있는 최대 개수</p>
+                {/* 선택 타입 (단일/다수) */}
+                <div className="space-y-3">
+                  <Label required>선택 방식</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['single', 'multi'] as SelectionType[]).map((type) => {
+                      const isSelected = formData.selectionType === type;
+                      const isDisabled = !isEditing && !!selectedGroup;
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          onClick={() => {
+                            if (isDisabled) return;
+                            const isSingle = type === 'single';
+                            setFormData({
+                              ...formData,
+                              selectionType: type,
+                              maxSelection: isSingle ? 1 : Math.max(formData.maxSelection, 2),
+                              minSelection: formData.isRequired
+                                ? 1
+                                : isSingle ? 0 : formData.minSelection,
+                            });
+                          }}
+                          className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                            isSelected
+                              ? type === 'single'
+                                ? 'border-primary bg-primary/5'
+                                : 'border-warning bg-warning/5'
+                              : 'border-border hover:border-border-hover'
+                          } ${isDisabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          {/* 라디오 인디케이터 */}
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            isSelected
+                              ? type === 'single' ? 'border-primary' : 'border-warning'
+                              : 'border-gray-300'
+                          }`}>
+                            {isSelected && (
+                              <div className={`w-2.5 h-2.5 rounded-full ${
+                                type === 'single' ? 'bg-primary' : 'bg-warning'
+                              }`} />
+                            )}
+                          </div>
+                          <span className={`text-sm font-medium ${
+                            isSelected ? 'text-txt-main' : 'text-txt-muted'
+                          }`}>
+                            {SELECTION_TYPE_LABELS[type]}
+                          </span>
+                          <span className="text-xs text-txt-muted text-center">
+                            {type === 'single' ? '1개만 선택 (예: 사이즈)' : '여러 개 선택 + 수량 (예: 토핑)'}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
+
+                {/* 다수 선택 시 수량 설정 */}
+                {formData.selectionType === 'multi' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label required>최소 선택</Label>
+                      <Input
+                        type="number"
+                        min={formData.isRequired ? 1 : 0}
+                        max={99}
+                        value={formData.minSelection}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 0 && val <= 99) {
+                            setFormData({ ...formData, minSelection: val });
+                          }
+                        }}
+                        disabled={!isEditing && !!selectedGroup}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label required>최대 선택</Label>
+                      <Input
+                        type="number"
+                        min={2}
+                        max={99}
+                        value={formData.maxSelection}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (!isNaN(val) && val >= 2 && val <= 99) {
+                            setFormData({ ...formData, maxSelection: val });
+                          }
+                        }}
+                        disabled={!isEditing && !!selectedGroup}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* 선택 규칙 미리보기 */}
                 <div className="p-3 bg-info-light rounded-lg border border-info/20">
                   <p className="text-sm text-info font-medium">선택 규칙 미리보기</p>
                   <p className="text-sm text-txt-muted mt-1">
                     {formData.isRequired ? '필수 선택 • ' : '선택 사항 • '}
-                    {formData.minSelection === formData.maxSelection
-                      ? `정확히 ${formData.maxSelection}개 선택`
-                      : formData.minSelection === 0
-                        ? `최대 ${formData.maxSelection}개 선택 가능`
-                        : `${formData.minSelection}~${formData.maxSelection}개 선택`}
+                    {formData.selectionType === 'single'
+                      ? '1개만 선택 (라디오)'
+                      : formData.minSelection === formData.maxSelection
+                        ? `정확히 ${formData.maxSelection}개 선택`
+                        : formData.minSelection === 0
+                          ? `최대 ${formData.maxSelection}개 선택 가능 (수량 조절)`
+                          : `${formData.minSelection}~${formData.maxSelection}개 선택 (수량 조절)`}
                   </p>
                 </div>
 
@@ -857,6 +926,31 @@ export function OptionGroups() {
                                 <span className="text-sm font-medium text-primary">
                                   {getCalculatedPriceText(item)}
                                 </span>
+                                {/* 다수 선택 시 아이템별 최대 수량 */}
+                                {formData.selectionType === 'multi' && (
+                                  <div className="flex items-center gap-1 bg-bg-main rounded px-1.5 py-0.5">
+                                    <span className="text-[10px] text-txt-muted">수량</span>
+                                    <Input
+                                      type="number"
+                                      min={1}
+                                      max={99}
+                                      value={item.maxQuantity || 1}
+                                      onChange={(e) => {
+                                        const val = parseInt(e.target.value);
+                                        if (!isNaN(val) && val >= 1 && val <= 99) {
+                                          setFormData({
+                                            ...formData,
+                                            items: formData.items.map((it) =>
+                                              it.id === item.id ? { ...it, maxQuantity: val } : it
+                                            ),
+                                          });
+                                        }
+                                      }}
+                                      className="w-14 h-6 text-xs text-center"
+                                      disabled={!isEditing && !!selectedGroup}
+                                    />
+                                  </div>
+                                )}
                                 {(isEditing || !selectedGroup) && (
                                   <>
                                     <Button

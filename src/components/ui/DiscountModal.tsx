@@ -52,7 +52,7 @@ export function DiscountModal({
       discountType: 'company',
       method: 'percentage',
       value: 0,
-      periodType: 'always',
+      periodType: 'period',
       target: { type: 'all' },
       applyToAll: true,
       storeIds: [],
@@ -74,7 +74,7 @@ export function DiscountModal({
         discountType: 'company',
         method: 'percentage',
         value: 0,
-        periodType: 'always',
+        periodType: 'period',
         target: { type: 'all' },
         applyToAll: true,
         storeIds: [],
@@ -299,7 +299,7 @@ export function DiscountModal({
           <div>
             <Label required>기간 설정</Label>
             <div className="mt-2 flex gap-2">
-              {(['always', 'period', 'schedule'] as DiscountPeriodType[]).map((type) => (
+              {(['period', 'schedule'] as DiscountPeriodType[]).map((type) => (
                 <button
                   key={type}
                   type="button"
@@ -310,7 +310,7 @@ export function DiscountModal({
                       : 'bg-bg-hover text-txt-muted border-border hover:border-primary'
                   }`}
                 >
-                  {type === 'always' ? '상시' : type === 'period' ? '기간' : '특정 시간/요일'}
+                  {type === 'period' ? '기간' : '특정 시간/요일'}
                 </button>
               ))}
             </div>

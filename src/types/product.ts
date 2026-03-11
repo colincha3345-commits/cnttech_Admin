@@ -349,6 +349,19 @@ export type OptionItemType = 'option' | 'product';
 export type OptionPriceType = 'original' | 'override' | 'differential';
 
 /**
+ * 선택 타입
+ * - single: 단일 선택 (라디오, 예: 사이즈)
+ * - multi: 다수 선택 (체크박스, 예: 토핑)
+ */
+export type SelectionType = 'single' | 'multi';
+
+/** 선택 타입 라벨 */
+export const SELECTION_TYPE_LABELS: Record<SelectionType, string> = {
+  single: '단일 선택',
+  multi: '다수 선택',
+};
+
+/**
  * 옵션 그룹 아이템
  * 옵션 또는 상품을 옵션 그룹에 연결할 때 사용
  */
@@ -359,6 +372,7 @@ export interface OptionGroupItem {
   priceType: OptionPriceType;        // 가격 계산 방식
   overridePrice: number;             // priceType이 'override'일 때 적용 가격
   differentialBaseId?: string;       // priceType이 'differential'일 때 기준 상품 ID
+  maxQuantity: number;               // 아이템별 최대 수량 (다수 선택 시)
   displayOrder: number;              // 그룹 내 표시 순서
 }
 
@@ -370,6 +384,7 @@ export interface OptionGroupItem {
 export interface OptionGroup {
   id: string;
   name: string;              // 그룹명
+  selectionType: SelectionType; // 단일/다수 선택
   isRequired: boolean;       // 필수/선택 여부
   minSelection: number;      // 최소 선택 수량
   maxSelection: number;      // 최대 선택 수량
@@ -383,6 +398,7 @@ export interface OptionGroup {
 
 export interface OptionGroupFormData {
   name: string;
+  selectionType: SelectionType; // 단일/다수 선택
   isRequired: boolean;
   minSelection: number;
   maxSelection: number;

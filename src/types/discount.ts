@@ -71,11 +71,10 @@ export interface GiftReward {
 
 /**
  * 기간 설정 타입
- * - always: 상시
  * - period: 특정 기간
  * - schedule: 특정 시간/요일
  */
-export type DiscountPeriodType = 'always' | 'period' | 'schedule';
+export type DiscountPeriodType = 'period' | 'schedule';
 
 /**
  * 스케줄 설정 (특정 요일/시간)
@@ -247,7 +246,7 @@ export const DEFAULT_DISCOUNT_FORM: DiscountFormData = {
   discountType: 'company',
   method: 'percentage',
   value: 0,
-  periodType: 'always',
+  periodType: 'period',
   target: { type: 'all' },
   applyToAll: true,
   storeIds: [],

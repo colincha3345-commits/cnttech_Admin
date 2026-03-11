@@ -150,8 +150,6 @@ export function Discounts() {
   // 기간 표시 텍스트
   const getPeriodText = (discount: Discount) => {
     switch (discount.periodType) {
-      case 'always':
-        return '상시';
       case 'period':
         if (discount.startDate && discount.endDate) {
           return `${formatDate(discount.startDate)} ~ ${formatDate(discount.endDate)}`;
@@ -840,7 +838,7 @@ export function Discounts() {
                     <div className="space-y-2">
                       <Label required>기간 타입</Label>
                       <div className="flex gap-2">
-                        {(['always', 'period', 'schedule'] as DiscountPeriodType[]).map((type) => (
+                        {(['period', 'schedule'] as DiscountPeriodType[]).map((type) => (
                           <button
                             key={type}
                             type="button"
@@ -850,7 +848,7 @@ export function Discounts() {
                               : 'bg-bg-card text-txt-muted border-border hover:border-primary'
                               }`}
                           >
-                            {type === 'always' ? '상시' : type === 'period' ? '기간' : '시간/요일'}
+                            {type === 'period' ? '기간' : '시간/요일'}
                           </button>
                         ))}
                       </div>
