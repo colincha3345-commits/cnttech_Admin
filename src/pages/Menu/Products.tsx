@@ -116,13 +116,11 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   imageUrl: '',
   subImageUrls: [],
   subImageFiles: [],
-  tags: ['MAIN'],
   categoryPairs: [{ id: `pair-${Date.now()}`, mainCategoryId: '', subCategoryId: '' }],
   mainCategoryId: '1',
   subCategoryIds: [],
   optionGroupIds: [],
   status: 'active',
-  isVisible: true,
   applyToAll: true,
   storeIds: [],
   productCode: '',
@@ -132,6 +130,8 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   allowCoupon: true,
   allowVoucher: true,
   allowGiftCard: false,
+  allowOwnDiscount: true,
+  allowPartnerDiscount: true,
   origin: [],
   nutrition: {
     calories: 0,
@@ -219,7 +219,6 @@ export function Products() {
       imageUrl: product.imageUrl,
       subImageUrls: product.subImageUrls || [],
       subImageFiles: [],
-      tags: product.tags.map((t) => t.code),
       categoryPairs: product.categoryPairs || [
         { id: `pair-${Date.now()}`, mainCategoryId: product.mainCategoryId, subCategoryId: product.subCategoryIds[0] || '' }
       ],
@@ -227,8 +226,6 @@ export function Products() {
       subCategoryIds: product.subCategoryIds,
       optionGroupIds: product.optionGroups.map((og) => og.id),
       status: product.status,
-      isVisible: product.isVisible,
-      scheduledAt: product.scheduledAt,
       salesStartDate: product.salesStartDate,
       salesEndDate: product.salesEndDate,
       applyToAll: product.applyToAll,
@@ -241,6 +238,8 @@ export function Products() {
       allowCoupon: product.allowCoupon,
       allowVoucher: product.allowVoucher,
       allowGiftCard: product.allowGiftCard,
+      allowOwnDiscount: product.allowOwnDiscount ?? true,
+      allowPartnerDiscount: product.allowPartnerDiscount ?? true,
       origin: product.origin,
       nutrition: product.nutrition,
       nutritionBySize: product.nutritionBySize || [],
@@ -392,7 +391,6 @@ export function Products() {
       imageUrl: product.imageUrl,
       subImageUrls: product.subImageUrls || [],
       subImageFiles: [],
-      tags: product.tags.map((t) => t.code),
       categoryPairs: product.categoryPairs || [
         { id: `pair-${Date.now()}`, mainCategoryId: product.mainCategoryId, subCategoryId: product.subCategoryIds[0] || '' }
       ],
@@ -400,8 +398,6 @@ export function Products() {
       subCategoryIds: product.subCategoryIds,
       optionGroupIds: product.optionGroups.map((og) => og.id),
       status: 'soldout', // 복사본은 기본적으로 품절
-      isVisible: false, // 복사본은 기본적으로 노출 안함
-      scheduledAt: undefined,
       applyToAll: product.applyToAll,
       storeIds: product.storeIds,
       productCode: undefined, // 상품코드는 중복 방지를 위해 제거
@@ -409,6 +405,8 @@ export function Products() {
       allowCoupon: product.allowCoupon,
       allowVoucher: product.allowVoucher,
       allowGiftCard: product.allowGiftCard,
+      allowOwnDiscount: product.allowOwnDiscount ?? true,
+      allowPartnerDiscount: product.allowPartnerDiscount ?? true,
       origin: product.origin,
       nutrition: product.nutrition,
       nutritionBySize: product.nutritionBySize || [],
@@ -1494,6 +1492,26 @@ export function Products() {
                             checked={formData.allowGiftCard}
                             onCheckedChange={(checked) =>
                               setFormData({ ...formData, allowGiftCard: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label>자사할인 허용</Label>
+                          <Switch
+                            checked={formData.allowOwnDiscount}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, allowOwnDiscount: checked })
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label>제휴할인 허용</Label>
+                          <Switch
+                            checked={formData.allowPartnerDiscount}
+                            onCheckedChange={(checked) =>
+                              setFormData({ ...formData, allowPartnerDiscount: checked })
                             }
                           />
                         </div>

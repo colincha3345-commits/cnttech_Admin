@@ -52,8 +52,7 @@ export interface SubZone {
   polygon?: Coordinate[];
   radius?: number;
   center?: Coordinate;
-  deliveryFee: number;
-  minOrderAmount?: number;
+  deliveryFee: number; // 추가배달비
   isActive: boolean;
   color: string;
   priority: number;

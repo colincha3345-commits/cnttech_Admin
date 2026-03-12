@@ -1,11 +1,22 @@
 /**
- * 이벤트 폼 컴포넌트 (3탭 구조)
- * 기본정보 / 버튼&공유 / 참여자&통계
+ * 이벤트 폼 컴포넌트 (스텝 플로우)
+ * 1단계: 기본정보 / 2단계: 버튼&공유 / 3단계: 참여자&통계 (참여이벤트만)
  */
-import { useState } from 'react';
-import { EyeOutlined, BarChartOutlined, TeamOutlined, FormOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
+import {
+  EyeOutlined,
+  BarChartOutlined,
+  TeamOutlined,
+  FormOutlined,
+  CheckOutlined,
+  SaveOutlined,
+  DeleteOutlined,
+  CopyOutlined,
+  ArrowLeftOutlined,
+  ArrowRightOutlined,
+} from '@ant-design/icons';
 
-import { Input, Label, Switch, Textarea } from '@/components/ui';
+import { Input, Label, Switch, Textarea, Button } from '@/components/ui';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DateTimePicker } from '@/components/ui/DateTimePicker';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
@@ -23,7 +34,6 @@ import {
   PARTICIPANT_FORM_FIELD_LABELS,
   SHARE_CHANNEL_LABELS,
 } from '@/types/event';
-import type { EventFormTab } from '@/constants/event';
 import { EVENT_FORM_TABS, PROMO_LINK_BASE } from '@/constants/event';
 import { EventParticipantList } from './EventParticipantList';
 
@@ -33,6 +43,11 @@ interface EventFormProps {
   disabled: boolean;
   eventId?: string;
   stats?: EventStats;
+  onSave?: () => void;
+  onCancel?: () => void;
+  onDelete?: () => void;
+  onDuplicate?: () => void;
+  isEditMode?: boolean;
 }
 
 const formatNumber = (value: number) => new Intl.NumberFormat('ko-KR').format(value);
@@ -42,8 +57,8 @@ const ALL_COLLECTION_MODES: ParticipantCollectionMode[] = ['auto', 'form_input']
 const ALL_FORM_FIELDS: ParticipantFormField[] = ['name', 'phone', 'email', 'address'];
 const ALL_SHARE_CHANNELS: ShareChannel[] = ['kakao', 'facebook', 'instagram', 'twitter', 'link_copy'];
 
-export function EventForm({ formData, onFormChange, disabled, eventId, stats }: EventFormProps) {
-  const [activeTab, setActiveTab] = useState<EventFormTab>('basic');
+export function EventForm({ formData, onFormChange, disabled, eventId, stats, onSave, onCancel, onDelete, onDuplicate, isEditMode }: EventFormProps) {
+  const [currentStep, setCurrentStep] = useState(0);
 
   const handleImageChange = (field: keyof EventFormData) => (file: File | null) => {
     if (file) {
@@ -69,32 +84,67 @@ export function EventForm({ formData, onFormChange, disabled, eventId, stats }: 
     onFormChange({ shareChannels: channels });
   };
 
-  // 참여이벤트일 때만 참여자 탭 표시
-  const visibleTabs = formData.eventType === 'participation'
+  // 참여이벤트일 때만 참여자 스텝 표시
+  const visibleSteps = formData.eventType === 'participation'
     ? EVENT_FORM_TABS
     : EVENT_FORM_TABS.filter((t) => t.value !== 'participant');
 
+  // eventType 변경 시 currentStep 보정
+  useEffect(() => {
+    if (currentStep >= visibleSteps.length) {
+      setCurrentStep(visibleSteps.length - 1);
+    }
+  }, [visibleSteps.length, currentStep]);
+
+  const safeStep = Math.min(currentStep, visibleSteps.length - 1);
+  const currentStepKey = visibleSteps[safeStep]?.value;
+  const isFirstStep = safeStep === 0;
+  const isLastStep = safeStep === visibleSteps.length - 1;
+
   return (
-    <div className="space-y-4">
-      {/* 탭 헤더 */}
-      <div className="flex border-b border-border">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveTab(tab.value)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.value
-              ? 'border-primary text-primary'
-              : 'border-transparent text-txt-muted hover:text-txt-main'
-              }`}
-          >
-            {tab.label}
-          </button>
+    <div className="space-y-6">
+      {/* 스텝 인디케이터 */}
+      <div className="flex items-center">
+        {visibleSteps.map((step, index) => (
+          <div key={step.value} className="flex items-center flex-1 last:flex-initial">
+            <div className="flex items-center gap-2">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+                  index < safeStep
+                    ? 'bg-primary text-white'
+                    : index === safeStep
+                      ? 'bg-primary text-white ring-4 ring-primary/20'
+                      : 'bg-bg-hover text-txt-muted border border-border'
+                }`}
+              >
+                {index < safeStep ? (
+                  <CheckOutlined style={{ fontSize: 14 }} />
+                ) : (
+                  index + 1
+                )}
+              </div>
+              <span
+                className={`text-sm whitespace-nowrap ${
+                  index === safeStep ? 'font-semibold text-txt-main' : 'text-txt-muted'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+            {index < visibleSteps.length - 1 && (
+              <div
+                className={`flex-1 h-0.5 mx-4 min-w-[40px] ${
+                  index < safeStep ? 'bg-primary' : 'bg-border'
+                }`}
+              />
+            )}
+          </div>
         ))}
       </div>
 
-      {/* 탭 내용 */}
+      {/* 스텝 내용 */}
       <div className="space-y-4">
-        {activeTab === 'basic' && (
+        {currentStepKey === 'basic' && (
           <BasicInfoTab
             formData={formData}
             onFormChange={onFormChange}
@@ -105,7 +155,7 @@ export function EventForm({ formData, onFormChange, disabled, eventId, stats }: 
             eventId={eventId}
           />
         )}
-        {activeTab === 'share' && (
+        {currentStepKey === 'share' && (
           <ButtonShareTab
             formData={formData}
             onFormChange={onFormChange}
@@ -114,7 +164,7 @@ export function EventForm({ formData, onFormChange, disabled, eventId, stats }: 
             handleImageChange={handleImageChange}
           />
         )}
-        {activeTab === 'participant' && formData.eventType === 'participation' && (
+        {currentStepKey === 'participant' && formData.eventType === 'participation' && (
           <ParticipantStatsTab
             formData={formData}
             onFormChange={onFormChange}
@@ -123,6 +173,51 @@ export function EventForm({ formData, onFormChange, disabled, eventId, stats }: 
             stats={stats}
           />
         )}
+      </div>
+
+      {/* 하단 네비게이션 */}
+      <div className="flex justify-between pt-4 border-t border-border">
+        <div className="flex gap-2">
+          {isEditMode && onDuplicate && (
+            <Button variant="outline" onClick={onDuplicate}>
+              <CopyOutlined style={{ fontSize: 14, marginRight: 6 }} />
+              복제
+            </Button>
+          )}
+          {isEditMode && onDelete && (
+            <Button variant="danger" onClick={onDelete}>
+              <DeleteOutlined style={{ fontSize: 14, marginRight: 6 }} />
+              삭제
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-3">
+          {isFirstStep ? (
+            onCancel && (
+              <Button variant="outline" onClick={onCancel}>
+                취소
+              </Button>
+            )
+          ) : (
+            <Button variant="outline" onClick={() => setCurrentStep(safeStep - 1)}>
+              <ArrowLeftOutlined style={{ fontSize: 14, marginRight: 6 }} />
+              이전
+            </Button>
+          )}
+          {isLastStep ? (
+            onSave && (
+              <Button onClick={onSave}>
+                <SaveOutlined style={{ fontSize: 14, marginRight: 6 }} />
+                {isEditMode ? '수정' : '등록'}
+              </Button>
+            )
+          ) : (
+            <Button onClick={() => setCurrentStep(safeStep + 1)}>
+              다음
+              <ArrowRightOutlined style={{ fontSize: 14, marginLeft: 6 }} />
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

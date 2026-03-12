@@ -37,7 +37,24 @@ export type ErrorCode =
   // Network Errors
   | 'NETWORK_ERROR'
   | 'TIMEOUT_ERROR'
-  | 'CONNECTION_ERROR';
+  | 'CONNECTION_ERROR'
+
+  // Promotion / Discount / Coupon / Point Errors
+  | 'DISCOUNT_COUPON_CONFLICT'
+  | 'DISCOUNT_POINT_CONFLICT'
+  | 'DUPLICATE_COUPON'
+  | 'MIN_ORDER_AMOUNT_NOT_MET'
+  | 'PRODUCT_NOT_APPLICABLE'
+  | 'CHANNEL_NOT_APPLICABLE'
+  | 'ORDER_TYPE_NOT_APPLICABLE'
+  | 'STORE_NOT_APPLICABLE'
+  | 'SCHEDULE_NOT_APPLICABLE'
+  | 'COUPON_EXHAUSTED'
+  | 'COUPON_EXPIRED'
+  | 'COUPON_SUSPENDED'
+  | 'POINT_INSUFFICIENT'
+  | 'POINT_MIN_USE_NOT_MET'
+  | 'POINT_MAX_USE_EXCEEDED';
 
 /**
  * 에러 메시지 매핑
@@ -75,6 +92,23 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   NETWORK_ERROR: '네트워크 연결에 실패했습니다',
   TIMEOUT_ERROR: '요청 시간이 초과되었습니다',
   CONNECTION_ERROR: '서버에 연결할 수 없습니다',
+
+  // Promotion
+  DISCOUNT_COUPON_CONFLICT: '할인 상품이 포함되어 쿠폰을 사용할 수 없습니다',
+  DISCOUNT_POINT_CONFLICT: '할인/쿠폰 적용 중에는 포인트를 사용할 수 없습니다',
+  DUPLICATE_COUPON: '쿠폰은 1건만 적용할 수 있습니다',
+  MIN_ORDER_AMOUNT_NOT_MET: '최소 주문 금액을 충족하지 않습니다',
+  PRODUCT_NOT_APPLICABLE: '해당 상품에 적용할 수 없는 쿠폰입니다',
+  CHANNEL_NOT_APPLICABLE: '현재 채널에서 사용할 수 없는 쿠폰입니다',
+  ORDER_TYPE_NOT_APPLICABLE: '해당 주문 유형에 사용할 수 없는 쿠폰입니다',
+  STORE_NOT_APPLICABLE: '해당 매장에서 사용할 수 없는 쿠폰입니다',
+  SCHEDULE_NOT_APPLICABLE: '현재 시간에 사용할 수 없는 쿠폰입니다',
+  COUPON_EXHAUSTED: '쿠폰이 모두 소진되었습니다',
+  COUPON_EXPIRED: '유효기간이 만료된 쿠폰입니다',
+  COUPON_SUSPENDED: '정지된 쿠폰입니다',
+  POINT_INSUFFICIENT: '포인트 잔액이 부족합니다',
+  POINT_MIN_USE_NOT_MET: '최소 사용 포인트를 충족하지 않습니다',
+  POINT_MAX_USE_EXCEEDED: '최대 사용 가능 포인트를 초과했습니다',
 };
 
 /**
@@ -117,6 +151,23 @@ export const ERROR_STATUS_CODES: Record<ErrorCode, number> = {
   NETWORK_ERROR: 0,
   TIMEOUT_ERROR: 408,
   CONNECTION_ERROR: 0,
+
+  // Promotion (all 409 Conflict)
+  DISCOUNT_COUPON_CONFLICT: 409,
+  DISCOUNT_POINT_CONFLICT: 409,
+  DUPLICATE_COUPON: 409,
+  MIN_ORDER_AMOUNT_NOT_MET: 400,
+  PRODUCT_NOT_APPLICABLE: 400,
+  CHANNEL_NOT_APPLICABLE: 400,
+  ORDER_TYPE_NOT_APPLICABLE: 400,
+  STORE_NOT_APPLICABLE: 400,
+  SCHEDULE_NOT_APPLICABLE: 400,
+  COUPON_EXHAUSTED: 409,
+  COUPON_EXPIRED: 410,
+  COUPON_SUSPENDED: 403,
+  POINT_INSUFFICIENT: 400,
+  POINT_MIN_USE_NOT_MET: 400,
+  POINT_MAX_USE_EXCEEDED: 400,
 };
 
 /**

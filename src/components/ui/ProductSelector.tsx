@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ShoppingOutlined, CloseOutlined, SearchOutlined, StopOutlined } from '@ant-design/icons';
 import { Skeleton } from './skeleton';
 
@@ -92,6 +92,18 @@ export const ProductSelector: React.FC<ProductSelectorProps> = ({
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('ko-KR').format(price);
   };
+
+  // 유효하지 않은 상품 ID 자동 제거 (상품 속성 변경·삭제·품절 시)
+  const validProductIds = useMemo(() => {
+    const allIds = new Set(mockProducts.map((p) => p.id));
+    return selectedProductIds.filter((id) => allIds.has(id));
+  }, [selectedProductIds]);
+
+  useEffect(() => {
+    if (validProductIds.length !== selectedProductIds.length && !disabled) {
+      onChange(validProductIds);
+    }
+  }, [validProductIds, selectedProductIds, disabled, onChange]);
 
   const canSelectMore = !maxSelect || selectedProductIds.length < maxSelect;
 

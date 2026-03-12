@@ -150,7 +150,8 @@ export interface DeliverySettings {
   isAvailable: boolean;
   availableStartTime?: string; // HH:mm
   availableEndTime?: string; // HH:mm
-  minOrderAmount?: number; // 배달 최소주문금액
+  /** 배달 최소주문금액 (읽기전용 — 상권관리 메인상권에서 설정) */
+  minOrderAmount?: number;
   isReservationAvailable?: boolean; // 예약기능 온/오프
   reservationLeadTimeMinutes?: number; // 예약 가능 (현재 시간 + n분부터)
 }

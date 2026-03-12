@@ -87,6 +87,8 @@ export interface TermsAgreement {
   termsType: TermsType;
   agreedAt: Date;
   version: string;
+  revokedAt?: Date | null;       // 동의 철회 시점 (개인정보보호법 준수)
+  revokeReason?: string;         // 철회 사유
 }
 
 /**

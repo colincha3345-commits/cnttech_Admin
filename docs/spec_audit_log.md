@@ -88,3 +88,55 @@
 - **조회 인덱스** — (createdAt DESC, action, severity) 복합 인덱스 필수. 기간 필터 조회가 가장 빈번하다.
 - **데이터 보관** — 로그 데이터가 무한 증가하므로 90일 이상 된 로그는 Cold Storage(S3)로 아카이빙하고 DB에서 삭제하는 정책을 권장한다.
 - **알림 설정** — AuditAlarmConfig를 통해 critical 로그 발생 시 Slack/이메일 알림을 발송할 수 있다.
+
+---
+
+## 4. 정상작동 시나리오
+
+### 시나리오 1: 감사 로그 조회
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 감사 로그 페이지 진입 | 최근 로그 목록 로드 | 최신순 정렬, 페이지네이션 |
+| 2 | 필터: 액션="LOGIN_FAILED" + 기간 설정 | 필터 적용 → 목록 갱신 | 복합 필터 AND |
+| 3 | 로그 행 클릭 | 상세 모달: IP, User-Agent, 요청 본문 | sessionId, requestId 표시 |
+
+### 시나리오 2: 알림 설정
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 알림 설정 탭 진입 | 현재 알림 설정 로드 | AuditAlarmConfig |
+| 2 | 모니터링 액션 선택 (ACCESS_DENIED 등) | 체크박스 선택 | monitoredActions 배열 |
+| 3 | 알림 채널: 이메일 ON, 푸시 ON | 토글 스위치 | receiveEmail, receivePush |
+| 4 | [저장] | 설정 저장 → 해당 액션 발생 시 알림 발송 | 실시간 알림 동작 |
+
+---
+
+## 5. 개발자용 정책 설명
+
+### 5.1. 감사 로그 보존 정책
+
+```
+보존 기간: 최소 1년 (법적 요건에 따라 연장 가능)
+삭제: 자동 삭제 불가. 관리자도 삭제 권한 없음 (append-only)
+아카이브: 6개월 경과 로그는 별도 아카이브 테이블로 이동 가능
+```
+
+### 5.2. severity 매핑
+
+```
+CRITICAL: LOGIN_FAILED, ACCESS_DENIED, ACCESS_ATTEMPT, MFA_FAILED
+HIGH: USER_DELETED, PERMISSION_CHANGED, PASSWORD_CHANGED, UNMASK_DATA
+MEDIUM: USER_CREATED, USER_UPDATED, USER_STATUS_CHANGE, DATA_EXPORT, DATA_DOWNLOAD, SETTINGS_CHANGED
+LOW: LOGIN, LOGOUT, MFA_VERIFIED, SESSION_EXPIRED, DOWNLOAD_HISTORY_VIEW
+```
+
+### 5.3. 알림 트리거 정책
+
+```
+monitoredActions에 포함된 액션 발생 시:
+  - receiveEmail=true → 이메일 발송 (비동기 큐)
+  - receivePush=true → 관리자 앱 푸시 발송
+CRITICAL 액션: 알림 설정과 무관하게 항상 발송 (강제)
+```
+

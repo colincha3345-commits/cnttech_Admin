@@ -13,6 +13,9 @@ import {
     CardContent,
     Button,
     Badge,
+    Input,
+    Select,
+    Textarea,
     SearchInput,
     DataTable,
     ConfirmDialog,
@@ -109,30 +112,18 @@ export function FaqManagement() {
                 <Card>
                     <CardContent className="p-6 space-y-5">
                         <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">카테고리 *</label>
-                                <select className="form-input w-full" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value as FaqCategory })}>
-                                    {Object.entries(CATEGORY_LABELS).map(([v, l]) => (
-                                        <option key={v} value={v}>{l}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">정렬 순서</label>
-                                <input type="number" className="form-input w-full" value={formData.sortOrder} onChange={e => setFormData({ ...formData, sortOrder: Number(e.target.value) })} min={0} />
-                            </div>
+                            <Select label="카테고리 *" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value as FaqCategory })}>
+                                {Object.entries(CATEGORY_LABELS).map(([v, l]) => (
+                                    <option key={v} value={v}>{l}</option>
+                                ))}
+                            </Select>
+                            <Input label="정렬 순서" type="number" value={formData.sortOrder} onChange={e => setFormData({ ...formData, sortOrder: Number(e.target.value) })} min={0} />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">질문 *</label>
-                            <input type="text" className="form-input w-full" value={formData.question} onChange={e => setFormData({ ...formData, question: e.target.value })} placeholder="자주 묻는 질문을 입력하세요" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">답변 *</label>
-                            <textarea className="form-input w-full min-h-[200px]" value={formData.answer} onChange={e => setFormData({ ...formData, answer: e.target.value })} placeholder="답변을 입력하세요" />
-                        </div>
+                        <Input label="질문 *" value={formData.question} onChange={e => setFormData({ ...formData, question: e.target.value })} placeholder="자주 묻는 질문을 입력하세요" />
+                        <Textarea label="답변 *" className="min-h-[200px]" value={formData.answer} onChange={e => setFormData({ ...formData, answer: e.target.value })} placeholder="답변을 입력하세요" />
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" checked={formData.isPublished} onChange={e => setFormData({ ...formData, isPublished: e.target.checked })} className="accent-primary" />
-                            <span className="text-sm text-gray-700">공개 여부</span>
+                            <span className="text-sm text-txt-main">공개 여부</span>
                         </label>
                         <div className="flex justify-end gap-3 pt-4 border-t border-border">
                             <Button variant="outline" onClick={() => setIsFormOpen(false)}>취소</Button>

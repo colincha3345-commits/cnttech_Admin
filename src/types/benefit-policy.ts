@@ -35,7 +35,7 @@ export interface StackingRule {
 /**
  * 기본 중복 적용 규칙
  * - 다른 유형 간: 중복 적용 가능
- * - 같은 유형 내: 최대 혜택 1개만 적용
+ * - 같은 유형 내: 할인/증정은 무제한 중복 가능, 쿠폰은 1개만
  */
 export const DEFAULT_STACKING_RULES: StackingRule[] = [
   // 본사할인 + 증정할인: 가능
@@ -44,9 +44,9 @@ export const DEFAULT_STACKING_RULES: StackingRule[] = [
   { type1: 'company_discount', type2: 'coupon', canStack: true },
   // 증정할인 + 쿠폰: 가능
   { type1: 'gift_discount', type2: 'coupon', canStack: true },
-  // 같은 유형끼리: 불가 (최대 혜택 1개만)
-  { type1: 'company_discount', type2: 'company_discount', canStack: false },
-  { type1: 'gift_discount', type2: 'gift_discount', canStack: false },
+  // 같은 유형끼리: 할인/증정 무제한, 쿠폰 1개만
+  { type1: 'company_discount', type2: 'company_discount', canStack: true },
+  { type1: 'gift_discount', type2: 'gift_discount', canStack: true },
   { type1: 'coupon', type2: 'coupon', canStack: false },
 ];
 
@@ -93,8 +93,6 @@ export interface AppliedBenefit {
  * 혜택 적용 가능 여부 확인
  */
 export function canStackBenefits(type1: BenefitType, type2: BenefitType): boolean {
-  if (type1 === type2) return false;  // 같은 유형은 중복 불가
-
   const rule = DEFAULT_STACKING_RULES.find(
     (r) =>
       (r.type1 === type1 && r.type2 === type2) ||
@@ -106,13 +104,18 @@ export function canStackBenefits(type1: BenefitType, type2: BenefitType): boolea
 
 /**
  * 혜택 적용 순서 정렬
+ * 1차: 유형 우선순위 (company_discount → gift → coupon)
+ * 2차: 할인 금액 큰 것부터 (고객 혜택 최대화)
  */
-export function sortBenefitsByPriority<T extends { type: BenefitType }>(
+export function sortBenefitsByPriority<T extends { type: BenefitType; discountAmount?: number }>(
   benefits: T[]
 ): T[] {
-  return [...benefits].sort(
-    (a, b) => BENEFIT_PRIORITY[a.type] - BENEFIT_PRIORITY[b.type]
-  );
+  return [...benefits].sort((a, b) => {
+    const priorityDiff = BENEFIT_PRIORITY[a.type] - BENEFIT_PRIORITY[b.type];
+    if (priorityDiff !== 0) return priorityDiff;
+    // 같은 유형 내에서 할인 금액 큰 것부터
+    return (b.discountAmount ?? 0) - (a.discountAmount ?? 0);
+  });
 }
 
 /**
@@ -200,22 +203,37 @@ export function calculateBenefits(
 }
 
 /**
- * 같은 유형 중 최대 혜택 선택
+ * 같은 유형 중복 적용 정책에 따라 혜택 선택
+ * - canStack=true: 같은 유형 모두 적용 (할인/증정)
+ * - canStack=false: 같은 유형 중 최대 혜택 1개만 (쿠폰)
  */
 function selectBestBenefitsByType<T extends { type: BenefitType; discountAmount: number }>(
   benefits: T[]
 ): T[] {
-  const bestByType = new Map<BenefitType, T>();
+  const grouped = new Map<BenefitType, T[]>();
 
   benefits.forEach((benefit) => {
-    const existing = bestByType.get(benefit.type);
-    if (!existing || benefit.discountAmount > existing.discountAmount) {
-      bestByType.set(benefit.type, benefit);
+    const list = grouped.get(benefit.type) ?? [];
+    list.push(benefit);
+    grouped.set(benefit.type, list);
+  });
+
+  const result: T[] = [];
+  grouped.forEach((list, type) => {
+    if (canStackBenefits(type, type)) {
+      // 같은 유형 중복 허용 → 전부 적용
+      result.push(...list);
+    } else {
+      // 같은 유형 중 최대 혜택 1개만
+      const best = list.reduce((a, b) => (a.discountAmount >= b.discountAmount ? a : b));
+      result.push(best);
     }
   });
 
-  // 우선순위 순서대로 반환
-  return Array.from(bestByType.values()).sort(
-    (a, b) => BENEFIT_PRIORITY[a.type] - BENEFIT_PRIORITY[b.type]
-  );
+  // 우선순위 + 할인 금액 큰 것부터 반환
+  return result.sort((a, b) => {
+    const priorityDiff = BENEFIT_PRIORITY[a.type] - BENEFIT_PRIORITY[b.type];
+    if (priorityDiff !== 0) return priorityDiff;
+    return b.discountAmount - a.discountAmount;
+  });
 }

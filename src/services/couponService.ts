@@ -11,6 +11,7 @@ interface Pagination { page: number; limit: number; total: number; totalPages: n
 
 export interface CouponListParams {
   keyword?: string;
+  status?: import('@/types/coupon').CouponStatus;
   page?: number;
   limit?: number;
 }
@@ -18,11 +19,12 @@ export interface CouponListParams {
 export interface CouponStats {
   total: number;
   active: number;
+  totalIssued: number;
   totalUsed: number;
 }
 
 // helper
-function formToCoupon(formData: CouponFormData): Omit<Coupon, 'id' | 'usedCount' | 'status' | 'isActive' | 'createdAt' | 'updatedAt' | 'createdBy'> {
+function formToCoupon(formData: CouponFormData): Omit<Coupon, 'id' | 'issuedCount' | 'usedCount' | 'status' | 'isActive' | 'createdAt' | 'updatedAt' | 'createdBy'> {
   return {
     name: formData.name,
     description: formData.description,
@@ -33,6 +35,7 @@ function formToCoupon(formData: CouponFormData): Omit<Coupon, 'id' | 'usedCount'
     maxDiscountAmount: formData.maxDiscountAmount,
     applyScope: formData.applyScope,
     orderType: formData.orderType,
+    channel: formData.channel,
     startDate: formData.startDate || null,
     endDate: formData.endDate || null,
     autoDelete: formData.autoDelete,
@@ -63,9 +66,10 @@ class MockCouponService {
 
   async getCoupons(params?: CouponListParams): Promise<{ data: Coupon[]; pagination: Pagination }> {
     await mockDelay();
-    const { keyword = '', page = 1, limit = 50 } = params ?? {};
+    const { keyword = '', status, page = 1, limit = 50 } = params ?? {};
     let result = [...this.coupons];
     if (keyword) result = result.filter((c) => c.name.toLowerCase().includes(keyword.toLowerCase()));
+    if (status) result = result.filter((c) => c.status === status);
     result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     const total = result.length;
     const startIndex = (page - 1) * limit;
@@ -81,7 +85,7 @@ class MockCouponService {
 
   async createCoupon(formData: CouponFormData): Promise<{ data: Coupon }> {
     await mockDelay();
-    const newCoupon: Coupon = { id: `coupon-${Date.now()}`, ...formToCoupon(formData), usedCount: 0, status: 'active', isActive: true, createdAt: new Date(), updatedAt: new Date(), createdBy: 'admin' };
+    const newCoupon: Coupon = { id: `coupon-${Date.now()}`, ...formToCoupon(formData), issuedCount: 0, usedCount: 0, status: 'active', createdAt: new Date(), updatedAt: new Date(), createdBy: 'admin' };
     this.coupons = [...this.coupons, newCoupon];
     return { data: newCoupon };
   }
@@ -97,30 +101,15 @@ class MockCouponService {
     return { data: updated };
   }
 
-  async deleteCoupon(id: string): Promise<void> {
-    await mockDelay();
-    this.coupons = this.coupons.filter((c) => c.id !== id);
-  }
-
-  async toggleActive(id: string): Promise<{ data: Coupon }> {
-    await mockDelay();
-    let toggled: Coupon | null = null;
-    this.coupons = this.coupons.map((c) => {
-      if (c.id === id) { toggled = { ...c, isActive: !c.isActive, status: c.isActive ? 'inactive' : 'active', updatedAt: new Date() }; return toggled; }
-      return c;
-    });
-    if (!toggled) throw new Error('쿠폰을 찾을 수 없습니다.');
-    return { data: toggled };
-  }
-
   async suspendCoupon(id: string, gracePeriodDays: number): Promise<{ data: Coupon }> {
     await mockDelay();
     let suspended: Coupon | null = null;
     const now = new Date();
     const graceExpiresAt = new Date(now.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000);
+    const autoDeleteAt = new Date(graceExpiresAt.getTime() + 7 * 24 * 60 * 60 * 1000);
     this.coupons = this.coupons.map((c) => {
       if (c.id === id) {
-        suspended = { ...c, isActive: false, status: 'suspended', suspendedAt: now, gracePeriodDays, graceExpiresAt, updatedAt: now };
+        suspended = { ...c, status: 'suspended', suspendedAt: now, gracePeriodDays, graceExpiresAt, autoDeleteAt, updatedAt: now };
         return suspended;
       }
       return c;
@@ -134,7 +123,7 @@ class MockCouponService {
     let activated: Coupon | null = null;
     this.coupons = this.coupons.map((c) => {
       if (c.id === id) {
-        activated = { ...c, isActive: true, status: 'active', suspendedAt: undefined, gracePeriodDays: undefined, graceExpiresAt: undefined, updatedAt: new Date() };
+        activated = { ...c, status: 'active', suspendedAt: undefined, gracePeriodDays: undefined, graceExpiresAt: undefined, autoDeleteAt: undefined, updatedAt: new Date() };
         return activated;
       }
       return c;
@@ -143,18 +132,23 @@ class MockCouponService {
     return { data: activated };
   }
 
+  async deleteCoupon(id: string): Promise<void> {
+    await mockDelay();
+    this.coupons = this.coupons.filter((c) => c.id !== id);
+  }
+
   async duplicateCoupon(id: string): Promise<{ data: Coupon }> {
     await mockDelay();
     const original = this.coupons.find((c) => c.id === id);
     if (!original) throw new Error('쿠폰을 찾을 수 없습니다.');
-    const duplicate: Coupon = { ...original, id: `coupon-${Date.now()}`, name: `${original.name} (복사본)`, usedCount: 0, status: 'active', isActive: true, createdAt: new Date(), updatedAt: new Date() };
+    const duplicate: Coupon = { ...original, id: `coupon-${Date.now()}`, name: `${original.name} (복사본)`, issuedCount: 0, usedCount: 0, status: 'active', createdAt: new Date(), updatedAt: new Date() };
     this.coupons = [...this.coupons, duplicate];
     return { data: duplicate };
   }
 
   async getStats(): Promise<{ data: CouponStats }> {
     await mockDelay(100);
-    return { data: { total: this.coupons.length, active: this.coupons.filter((c) => c.isActive).length, totalUsed: this.coupons.reduce((sum, c) => sum + c.usedCount, 0) } };
+    return { data: { total: this.coupons.length, active: this.coupons.filter((c) => c.status === 'active').length, totalIssued: this.coupons.reduce((sum, c) => sum + c.issuedCount, 0), totalUsed: this.coupons.reduce((sum, c) => sum + c.usedCount, 0) } };
   }
 }
 
@@ -167,6 +161,7 @@ class RealCouponService {
   async getCoupons(params?: CouponListParams): Promise<{ data: Coupon[]; pagination: Pagination }> {
     const query = new URLSearchParams();
     if (params?.keyword) query.set('keyword', params.keyword);
+    if (params?.status) query.set('status', params.status);
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     return apiClient.get<{ data: Coupon[]; pagination: Pagination }>(`${this.BASE}?${query.toString()}`);
@@ -180,17 +175,14 @@ class RealCouponService {
   async updateCoupon(id: string, formData: CouponFormData): Promise<{ data: Coupon }> {
     return apiClient.put<{ data: Coupon }>(`${this.BASE}/${id}`, formData);
   }
-  async deleteCoupon(id: string): Promise<void> {
-    await apiClient.delete(`${this.BASE}/${id}`);
-  }
-  async toggleActive(id: string): Promise<{ data: Coupon }> {
-    return apiClient.patch<{ data: Coupon }>(`${this.BASE}/${id}/toggle-active`);
-  }
   async suspendCoupon(id: string, gracePeriodDays: number): Promise<{ data: Coupon }> {
     return apiClient.patch<{ data: Coupon }>(`${this.BASE}/${id}/suspend`, { gracePeriodDays });
   }
   async activateCoupon(id: string): Promise<{ data: Coupon }> {
     return apiClient.patch<{ data: Coupon }>(`${this.BASE}/${id}/activate`);
+  }
+  async deleteCoupon(id: string): Promise<void> {
+    return apiClient.delete(`${this.BASE}/${id}`);
   }
   async duplicateCoupon(id: string): Promise<{ data: Coupon }> {
     return apiClient.post<{ data: Coupon }>(`${this.BASE}/${id}/duplicate`);

@@ -112,10 +112,9 @@ export {
   useCoupon,
   useCreateCoupon,
   useUpdateCoupon,
-  useDeleteCoupon,
-  useToggleCouponActive,
   useSuspendCoupon,
   useActivateCoupon,
+  useDeleteCoupon,
   useDuplicateCoupon,
   useCouponStats,
 } from './useCoupons';
@@ -151,6 +150,7 @@ export {
   useCancelPaymentItem,
   useUpdateOrderStatus,
   useAddOrderMemo,
+  useCancelDiscountItem,
   useOrdersForExport,
 } from './useOrders';
 export {

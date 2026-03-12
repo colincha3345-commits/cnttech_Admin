@@ -1,8 +1,9 @@
-import { useState, type HTMLAttributes } from 'react';
+import { useState, useCallback, type HTMLAttributes } from 'react';
 import { EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { clsx } from 'clsx';
 
 import { Button } from './Button';
+import { Input } from './Input';
 import { auditService } from '@/services/auditService';
 import { useAuthStore } from '@/stores/authStore';
 import { hasPermission } from '@/utils/permissionChecker';
@@ -13,6 +14,8 @@ interface MaskedDataProps extends HTMLAttributes<HTMLSpanElement> {
   canUnmask?: boolean;
   onUnmask?: () => void | Promise<void>;
   resource?: string;
+  /** 열람 사유 입력 필수 여부 (개인정보보호법 준수) */
+  requireReason?: boolean;
 }
 
 export function MaskedData({
@@ -22,11 +25,14 @@ export function MaskedData({
   onUnmask,
   className,
   resource = 'app-members',
+  requireReason = true,
   ...props
 }: MaskedDataProps) {
   const { user } = useAuthStore();
   const [isRevealed, setIsRevealed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [reason, setReason] = useState('');
 
   // 권한 확인 (명시적으로 전달되지 않은 경우 app-members의 unmask 권한 확인)
   const allowed = canUnmask !== undefined
@@ -35,54 +41,105 @@ export function MaskedData({
 
   const displayValue = maskedValue || maskValue(value);
 
+  const performUnmask = useCallback(async (unmaskReason: string) => {
+    if (onUnmask) {
+      setIsLoading(true);
+      try {
+        await onUnmask();
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    // 감사 로그 기록 (사유 포함)
+    if (user) {
+      auditService.log({
+        action: 'UNMASK_DATA',
+        resource,
+        userId: user.id,
+        details: {
+          field: props['aria-label'] || 'masked_field',
+          reason: unmaskReason,
+        },
+      });
+    }
+
+    setIsRevealed(true);
+  }, [onUnmask, user, resource, props]);
+
   const handleToggle = async () => {
     if (!isRevealed) {
-      if (onUnmask) {
-        setIsLoading(true);
-        try {
-          await onUnmask();
-        } finally {
-          setIsLoading(false);
-        }
+      if (requireReason) {
+        setShowReasonModal(true);
+        return;
       }
-
-      // 감사 로그 기록
-      if (user) {
-        auditService.log({
-          action: 'UNMASK_DATA',
-          resource,
-          userId: user.id,
-          details: { field: props['aria-label'] || 'masked_field', value: isRevealed ? value : '[HIDDEN]' },
-        });
-      }
-
-      setIsRevealed(true);
+      await performUnmask('');
     } else {
       setIsRevealed(false);
     }
   };
 
+  const handleReasonSubmit = async () => {
+    if (!reason.trim()) return;
+    setShowReasonModal(false);
+    await performUnmask(reason.trim());
+    setReason('');
+  };
+
   return (
-    <span className={clsx('inline-flex items-center gap-2', className)} {...props}>
-      <span className={clsx(
-        'masked-data',
-        isRevealed && 'revealed'
-      )}>
-        {isRevealed ? value : displayValue}
+    <>
+      <span className={clsx('inline-flex items-center gap-2', className)} {...props}>
+        <span className={clsx(
+          'masked-data',
+          isRevealed && 'revealed'
+        )}>
+          {isRevealed ? value : displayValue}
+        </span>
+        {allowed && (
+          <Button
+            variant="unmask"
+            size="sm"
+            onClick={handleToggle}
+            isLoading={isLoading}
+            className="btn-icon !p-1.5"
+            aria-label={isRevealed ? '마스킹 적용' : '마스킹 해제'}
+          >
+            {isRevealed ? <EyeInvisibleOutlined style={{ fontSize: 16 }} /> : <EyeOutlined style={{ fontSize: 16 }} />}
+          </Button>
+        )}
       </span>
-      {allowed && (
-        <Button
-          variant="unmask"
-          size="sm"
-          onClick={handleToggle}
-          isLoading={isLoading}
-          className="btn-icon !p-1.5"
-          aria-label={isRevealed ? '마스킹 적용' : '마스킹 해제'}
-        >
-          {isRevealed ? <EyeInvisibleOutlined style={{ fontSize: 16 }} /> : <EyeOutlined style={{ fontSize: 16 }} />}
-        </Button>
+
+      {/* 개인정보 열람 사유 입력 모달 */}
+      {showReasonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-bg-card rounded-xl shadow-lg p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-txt-main mb-2">개인정보 열람</h3>
+            <p className="text-sm text-txt-muted mb-4">
+              개인정보보호법에 따라 열람 사유를 기록합니다.
+            </p>
+            <Input
+              placeholder="열람 사유를 입력하세요"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && reason.trim()) {
+                  handleReasonSubmit();
+                }
+              }}
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" size="sm" onClick={() => { setShowReasonModal(false); setReason(''); }}>
+                취소
+              </Button>
+              <Button size="sm" onClick={handleReasonSubmit} disabled={!reason.trim()}>
+                확인
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
-    </span>
+    </>
   );
 }
 

@@ -3,13 +3,14 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { orderService } from '@/services/orderService';
-import type { OrderSearchFilter, OrderCancelRequest, OrderMemoRequest, PaymentItemCancelRequest } from '@/types/order';
+import type { OrderSearchFilter, OrderCancelRequest, OrderMemoRequest, PaymentItemCancelRequest, DiscountCancelType } from '@/types/order';
 import type { OrderStatus } from '@/types/app-member';
 
-export function useOrderList(params?: OrderSearchFilter) {
+export function useOrderList(params?: OrderSearchFilter, options?: { refetchInterval?: number | false }) {
   return useQuery({
     queryKey: ['orders', 'list', params],
     queryFn: () => orderService.getOrders(params),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -68,6 +69,18 @@ export function useCancelPaymentItem() {
   return useMutation({
     mutationFn: ({ orderId, request }: { orderId: string; request: PaymentItemCancelRequest }) =>
       orderService.cancelPaymentItem(orderId, request),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] });
+    },
+  });
+}
+
+export function useCancelDiscountItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ orderId, type }: { orderId: string; type: DiscountCancelType }) =>
+      orderService.cancelDiscountItem(orderId, type),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] });

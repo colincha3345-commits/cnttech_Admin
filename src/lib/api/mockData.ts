@@ -20,6 +20,7 @@ export const mockMembers: Member[] = [
       { termsType: 'service', agreedAt: new Date('2024-01-15'), version: '1.0' },
       { termsType: 'privacy', agreedAt: new Date('2024-01-15'), version: '1.0' },
       { termsType: 'marketing', agreedAt: new Date('2024-01-15'), version: '1.0' },
+      { termsType: 'location', agreedAt: new Date('2024-02-01'), version: '1.0', revokedAt: new Date('2025-06-10'), revokeReason: '위치정보 수집 원치 않음' },
     ],
     orderCount: 156,
     totalOrderAmount: 4850000,

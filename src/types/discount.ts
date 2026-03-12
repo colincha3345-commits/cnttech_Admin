@@ -69,21 +69,15 @@ export interface GiftReward {
   maxPerOrder?: number; // 주문당 최대 증정 횟수
 }
 
-/**
- * 기간 설정 타입
- * - period: 특정 기간
- * - schedule: 특정 시간/요일
- */
+/** @deprecated 기간+요일/시간 통합으로 더 이상 사용하지 않음 */
 export type DiscountPeriodType = 'period' | 'schedule';
 
 /**
- * 스케줄 설정 (특정 요일/시간)
+ * 스케줄 설정 (적용 요일/시간)
  */
 export interface DiscountSchedule {
   days: DayOfWeek[]; // 적용 요일
   timeSlots: TimeSlot[]; // 적용 시간대
-  startDate?: string; // 스케줄 시작일 (선택)
-  endDate?: string; // 스케줄 종료일 (선택)
 }
 
 /**
@@ -159,10 +153,10 @@ export interface Discount {
   giftReward?: GiftReward; // 증정 상품
 
   // 기간 설정
-  periodType: DiscountPeriodType;
-  startDate?: string; // periodType이 'period'일 때
-  endDate?: string; // periodType이 'period'일 때
-  schedule?: DiscountSchedule; // periodType이 'schedule'일 때
+  periodType: DiscountPeriodType; // @deprecated 하위 호환용
+  startDate?: string;
+  endDate?: string;
+  schedule?: DiscountSchedule; // 적용 요일/시간
 
   // 적용 대상
   target: DiscountTarget;
@@ -209,7 +203,6 @@ export interface DiscountFormData {
   giftCondition?: GiftCondition;
   giftReward?: GiftReward;
 
-  periodType: DiscountPeriodType;
   startDate?: string;
   endDate?: string;
   schedule?: DiscountSchedule;
@@ -238,6 +231,9 @@ export interface DiscountFormData {
   description?: string;
 }
 
+/** 전체 요일 기본값 */
+const ALL_DAYS: DayOfWeek[] = [1, 2, 3, 4, 5, 6, 0];
+
 /**
  * 기본 폼 데이터
  */
@@ -246,7 +242,10 @@ export const DEFAULT_DISCOUNT_FORM: DiscountFormData = {
   discountType: 'company',
   method: 'percentage',
   value: 0,
-  periodType: 'period',
+  schedule: {
+    days: ALL_DAYS,
+    timeSlots: [{ startTime: '00:00', endTime: '23:59' }],
+  },
   target: { type: 'all' },
   applyToAll: true,
   storeIds: [],

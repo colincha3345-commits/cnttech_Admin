@@ -10,6 +10,7 @@ import type {
   OrderMemoRequest,
   PaymentItemCancelRequest,
   PaymentItemStatus,
+  DiscountCancelType,
 } from '@/types/order';
 import type { OrderStatus } from '@/types/app-member';
 
@@ -245,6 +246,44 @@ class OrderService {
     };
 
     this.orders = this.orders.map((o) => (o.id === id ? updatedOrder : o));
+    return { data: updatedOrder };
+  }
+
+  /** 쿠폰/제휴할인 취소 */
+  async cancelDiscountItem(
+    orderId: string,
+    type: DiscountCancelType
+  ): Promise<{ data: Order }> {
+    await this.delay();
+    const order = this.orders.find((o) => o.id === orderId);
+    if (!order) throw new Error('주문을 찾을 수 없습니다.');
+    if (order.status === 'cancelled') throw new Error('취소된 주문은 할인 취소가 불가능합니다.');
+
+    const now = new Date();
+    const discount = { ...order.discount };
+
+    if (type === 'coupon') {
+      if (discount.couponCancelled) throw new Error('이미 쿠폰 할인이 취소되었습니다.');
+      discount.couponCancelled = true;
+      discount.couponCancelledAt = now;
+      discount.couponCancelledBy = '관리자';
+    } else {
+      if (discount.affiliateDiscountCancelled) throw new Error('이미 제휴할인이 취소되었습니다.');
+      discount.affiliateDiscountCancelled = true;
+      discount.affiliateDiscountCancelledAt = now;
+      discount.affiliateDiscountCancelledBy = '관리자';
+    }
+
+    // 할인 취소분 총결제금액에 반영
+    const cancelledAmount = type === 'coupon' ? discount.couponAmount : (discount.affiliateDiscount ?? 0);
+    const updatedOrder: Order = {
+      ...order,
+      discount,
+      totalAmount: order.totalAmount + cancelledAmount,
+      updatedAt: now,
+    };
+
+    this.orders = this.orders.map((o) => (o.id === orderId ? updatedOrder : o));
     return { data: updatedOrder };
   }
 

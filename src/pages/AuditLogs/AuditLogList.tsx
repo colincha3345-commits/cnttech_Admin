@@ -4,7 +4,8 @@ import {
     BellOutlined,
     HistoryOutlined,
     WarningOutlined,
-    ExclamationCircleOutlined
+    ExclamationCircleOutlined,
+    FilterOutlined,
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 
@@ -20,8 +21,32 @@ import {
 import { auditService } from '@/services/auditService';
 import { usePageViewLog } from '@/hooks/useActivityLog';
 import { useToast } from '@/hooks';
-import type { AuditLogEntry, AuditAlarmConfig, AuditAction } from '@/types/audit';
+import type { AuditLogEntry, AuditAlarmConfig, AuditAction, ChangedField } from '@/types/audit';
 import { ACTION_DISPLAY_NAMES } from '@/types/audit';
+
+// 액션 필터 그룹
+const ACTION_FILTER_GROUPS: { label: string; actions: AuditAction[] }[] = [
+    {
+        label: '인증',
+        actions: ['LOGIN', 'LOGIN_FAILED', 'LOGOUT', 'MFA_VERIFIED', 'MFA_FAILED', 'PASSWORD_CHANGED', 'SESSION_EXPIRED'],
+    },
+    {
+        label: 'CRUD',
+        actions: ['RECORD_CREATED', 'RECORD_UPDATED', 'RECORD_DELETED', 'RECORD_STATUS_CHANGE', 'BULK_ACTION'],
+    },
+    {
+        label: '데이터',
+        actions: ['UNMASK_DATA', 'DATA_EXPORT', 'DATA_DOWNLOAD', 'DOWNLOAD_HISTORY_VIEW', 'PAGE_VIEW'],
+    },
+    {
+        label: '사용자/권한',
+        actions: ['USER_CREATED', 'USER_UPDATED', 'USER_DELETED', 'USER_STATUS_CHANGE', 'PERMISSION_CHANGED'],
+    },
+    {
+        label: '기타',
+        actions: ['SETTINGS_CHANGED', 'ACCESS_DENIED', 'ACCESS_ATTEMPT'],
+    },
+];
 
 export function AuditLogList() {
     usePageViewLog('audit-logs');
@@ -29,6 +54,11 @@ export function AuditLogList() {
     const [logs, setLogs] = useState<AuditLogEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchUserId, setSearchUserId] = useState('');
+    const [actionFilter, setActionFilter] = useState<AuditAction[]>([]);
+    const [showFilters, setShowFilters] = useState(false);
+
+    // 상세 모달
+    const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
 
     // Alarm settings state
     const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
@@ -44,10 +74,13 @@ export function AuditLogList() {
     const loadLogs = async (userIdFilter?: string) => {
         setIsLoading(true);
         try {
-            const res = await auditService.getLogs(userIdFilter ? { userId: userIdFilter } : {});
+            const filter: Record<string, unknown> = {};
+            if (userIdFilter) filter.userId = userIdFilter;
+            if (actionFilter.length > 0) filter.action = actionFilter;
+            const res = await auditService.getLogs(filter as Parameters<typeof auditService.getLogs>[0]);
             setLogs(res.data);
-        } catch (error) {
-            console.error('Failed to load logs', error);
+        } catch {
+            toast.error('로그를 불러오는 데 실패했습니다.');
         } finally {
             setIsLoading(false);
         }
@@ -57,14 +90,20 @@ export function AuditLogList() {
         try {
             const res = await auditService.getAlarmConfig(currentAdminId);
             setAlarmConfig(res.data);
-        } catch (error) {
-            console.error('Failed to load alarm config', error);
+        } catch {
+            // silent
         }
     };
 
     const handleSearch = () => {
         loadLogs(searchUserId);
     };
+
+    // 액션 필터 변경 시 재조회
+    useEffect(() => {
+        loadLogs(searchUserId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [actionFilter]);
 
     const handleSaveAlarmConfig = async () => {
         if (!alarmConfig) return;
@@ -89,6 +128,12 @@ export function AuditLogList() {
                     : [...prev.monitoredActions, action]
             };
         });
+    };
+
+    const toggleActionFilter = (action: AuditAction) => {
+        setActionFilter(prev =>
+            prev.includes(action) ? prev.filter(a => a !== action) : [...prev, action]
+        );
     };
 
     const stats = useMemo(() => {
@@ -157,23 +202,69 @@ export function AuditLogList() {
                 </Card>
             </div>
 
-            {/* 내부 검색 필터 */}
+            {/* 검색 필터 */}
             <Card>
-                <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-end">
-                    <div className="flex-1">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">관리자 ID</label>
-                        <SearchInput
-                            placeholder="관리자 계정 ID를 입력하세요"
-                            value={searchUserId}
-                            onChange={(val) => setSearchUserId(val)}
-                            onSearch={handleSearch}
-                        />
+                <CardContent className="p-4 space-y-3">
+                    <div className="flex flex-col md:flex-row gap-4 items-end">
+                        <div className="flex-1">
+                            <label className="block text-xs font-medium text-gray-500 mb-1">수정자 ID</label>
+                            <SearchInput
+                                placeholder="관리자 계정 ID를 입력하세요"
+                                value={searchUserId}
+                                onChange={(val) => setSearchUserId(val)}
+                                onSearch={handleSearch}
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="h-10"
+                            >
+                                <FilterOutlined /> 액션 필터
+                                {actionFilter.length > 0 && (
+                                    <Badge variant="info" className="ml-1">{actionFilter.length}</Badge>
+                                )}
+                            </Button>
+                            <Button variant="primary" onClick={handleSearch} className="h-10">
+                                <SearchOutlined /> 조회
+                            </Button>
+                        </div>
                     </div>
-                    <div>
-                        <Button variant="primary" onClick={handleSearch} className="h-10">
-                            <SearchOutlined /> 조회
-                        </Button>
-                    </div>
+
+                    {/* 액션 필터 패널 */}
+                    {showFilters && (
+                        <div className="border-t border-border pt-3 space-y-2">
+                            {ACTION_FILTER_GROUPS.map(group => (
+                                <div key={group.label} className="flex items-start gap-2">
+                                    <span className="text-xs font-medium text-txt-muted w-20 pt-1.5 flex-shrink-0">{group.label}</span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {group.actions.map(action => (
+                                            <button
+                                                key={action}
+                                                onClick={() => toggleActionFilter(action)}
+                                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                                    actionFilter.includes(action)
+                                                        ? 'bg-primary text-white'
+                                                        : 'bg-bg-muted text-txt-muted hover:bg-bg-hover'
+                                                }`}
+                                            >
+                                                {ACTION_DISPLAY_NAMES[action]}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            {actionFilter.length > 0 && (
+                                <button
+                                    onClick={() => setActionFilter([])}
+                                    className="text-xs text-danger hover:underline"
+                                >
+                                    필터 초기화
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -184,17 +275,23 @@ export function AuditLogList() {
                         {
                             key: 'createdAt',
                             header: '발생 시각',
-                            render: (item) => <span className="text-sm text-txt-main">{format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm:ss')}</span>,
+                            render: (item) => (
+                                <span className="text-sm text-txt-main whitespace-nowrap">
+                                    {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+                                </span>
+                            ),
                         },
                         {
-                            key: 'userId',
-                            header: '대상 관리자',
+                            key: 'userName',
+                            header: '수정자 ID',
                             render: (item) => (
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-bold">
-                                        {item.userId.charAt(0).toUpperCase()}
+                                    <div className="w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                        {(item.userName ?? item.userId).charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-sm font-medium text-txt-main">{item.userId}</span>
+                                    <span className="text-sm font-medium text-txt-main truncate max-w-[140px]" title={item.userName ?? item.userId}>
+                                        {item.userName ?? item.userId}
+                                    </span>
                                 </div>
                             ),
                         },
@@ -202,37 +299,49 @@ export function AuditLogList() {
                             key: 'action',
                             header: '행위',
                             render: (item) => (
-                                <div className="flex flex-col gap-1 items-start">
-                                    <Badge
-                                        variant={
-                                            item.severity === 'critical' ? 'critical' :
-                                                item.severity === 'warning' ? 'warning' : 'info'
-                                        }
-                                    >
-                                        {ACTION_DISPLAY_NAMES[item.action] || item.action}
-                                    </Badge>
-                                    {item.details && (
-                                        <span className="text-xs text-txt-muted font-mono truncate max-w-[200px]" title={JSON.stringify(item.details)}>
-                                            {JSON.stringify(item.details)}
-                                        </span>
+                                <Badge
+                                    variant={
+                                        item.severity === 'critical' ? 'critical' :
+                                            item.severity === 'warning' ? 'warning' : 'info'
+                                    }
+                                >
+                                    {ACTION_DISPLAY_NAMES[item.action] || item.action}
+                                </Badge>
+                            ),
+                        },
+                        {
+                            key: 'pagePath',
+                            header: '페이지 경로',
+                            render: (item) => (
+                                <span className="px-2 py-1 bg-bg-muted rounded text-xs text-txt-main font-mono border border-border">
+                                    {item.pagePath ?? '-'}
+                                </span>
+                            ),
+                        },
+                        {
+                            key: 'resource',
+                            header: '대상 리소스',
+                            render: (item) => (
+                                <div className="flex flex-col gap-0.5">
+                                    <span className="text-sm text-txt-main font-mono">{item.resource}</span>
+                                    {item.details && typeof item.details === 'object' && 'targetName' in item.details && (
+                                        <span className="text-xs text-txt-muted">{String(item.details.targetName)}</span>
                                     )}
                                 </div>
                             ),
                         },
                         {
-                            key: 'resource',
-                            header: '리소스 경로',
+                            key: 'changedFields',
+                            header: '수정 항목',
                             render: (item) => (
-                                <span className="px-2 py-1 bg-bg-muted rounded text-xs text-txt-main font-mono border border-border">
-                                    {item.resource}
-                                </span>
+                                <ChangedFieldsBadges fields={item.changedFields} onClickDetail={() => setSelectedLog(item)} />
                             ),
                         },
                         {
                             key: 'ipAddress',
-                            header: '접속 IP',
+                            header: 'IP',
                             className: 'text-right',
-                            render: (item) => <span className="text-sm text-txt-muted font-mono">{item.ipAddress}</span>,
+                            render: (item) => <span className="text-xs text-txt-muted font-mono">{item.ipAddress}</span>,
                         },
                     ]}
                     data={logs}
@@ -241,6 +350,57 @@ export function AuditLogList() {
                     emptyMessage="로그가 존재하지 않습니다."
                 />
             </Card>
+
+            {/* 상세 모달 */}
+            {selectedLog && (
+                <Modal
+                    isOpen={!!selectedLog}
+                    onClose={() => setSelectedLog(null)}
+                    title="감사 로그 상세"
+                >
+                    <div className="space-y-4 py-2 text-sm">
+                        <DetailRow label="발생 시각" value={format(new Date(selectedLog.createdAt), 'yyyy-MM-dd HH:mm:ss')} />
+                        <DetailRow label="수정자 ID" value={selectedLog.userName ?? selectedLog.userId} />
+                        <DetailRow label="행위" value={ACTION_DISPLAY_NAMES[selectedLog.action]} />
+                        <DetailRow label="페이지 경로" value={selectedLog.pagePath ?? '-'} mono />
+                        <DetailRow label="대상 리소스" value={selectedLog.resource} mono />
+                        <DetailRow label="접속 IP" value={selectedLog.ipAddress} mono />
+
+                        {selectedLog.changedFields && selectedLog.changedFields.length > 0 && (
+                            <div>
+                                <p className="text-xs font-semibold text-txt-muted mb-2">수정 항목</p>
+                                <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+                                    <thead>
+                                        <tr className="bg-bg-muted">
+                                            <th className="text-left px-3 py-2 text-xs font-medium text-txt-muted">항목</th>
+                                            <th className="text-left px-3 py-2 text-xs font-medium text-txt-muted">변경 전</th>
+                                            <th className="text-left px-3 py-2 text-xs font-medium text-txt-muted">변경 후</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedLog.changedFields.map((cf, idx) => (
+                                            <tr key={idx} className="border-t border-border">
+                                                <td className="px-3 py-2 font-medium">{cf.label}</td>
+                                                <td className="px-3 py-2 text-txt-muted line-through">{cf.before ?? '-'}</td>
+                                                <td className="px-3 py-2 text-primary font-medium">{cf.after ?? '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {selectedLog.details && Object.keys(selectedLog.details).length > 0 && (
+                            <div>
+                                <p className="text-xs font-semibold text-txt-muted mb-1">상세 데이터</p>
+                                <pre className="bg-bg-muted rounded-lg p-3 text-xs font-mono text-txt-main overflow-x-auto">
+                                    {JSON.stringify(selectedLog.details, null, 2)}
+                                </pre>
+                            </div>
+                        )}
+                    </div>
+                </Modal>
+            )}
 
             {/* 알림 설정 모달 */}
             {alarmConfig && (
@@ -306,6 +466,38 @@ export function AuditLogList() {
                     </div>
                 </Modal>
             )}
+        </div>
+    );
+}
+
+/** 수정 항목 뱃지 */
+function ChangedFieldsBadges({ fields, onClickDetail }: { fields?: ChangedField[]; onClickDetail: () => void }) {
+    if (!fields || fields.length === 0) {
+        return <span className="text-xs text-txt-muted">-</span>;
+    }
+
+    return (
+        <button onClick={onClickDetail} className="flex flex-wrap gap-1 text-left hover:opacity-80">
+            {fields.slice(0, 3).map((cf, idx) => (
+                <span key={idx} className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-[11px] font-medium">
+                    {cf.label}
+                </span>
+            ))}
+            {fields.length > 3 && (
+                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded text-[11px]">
+                    +{fields.length - 3}
+                </span>
+            )}
+        </button>
+    );
+}
+
+/** 상세 모달 행 */
+function DetailRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+    return (
+        <div className="flex gap-4">
+            <span className="text-xs font-semibold text-txt-muted w-24 flex-shrink-0">{label}</span>
+            <span className={`text-sm text-txt-main ${mono ? 'font-mono' : ''}`}>{value}</span>
         </div>
     );
 }

@@ -5,9 +5,6 @@
 import { useState, useMemo } from 'react';
 import {
   PlusOutlined,
-  DeleteOutlined,
-  CopyOutlined,
-  SaveOutlined,
   CalendarOutlined,
   CheckOutlined,
 } from '@ant-design/icons';
@@ -253,42 +250,18 @@ export function EventManagement() {
               </h2>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                <EventForm
-                  formData={formData}
-                  onFormChange={handleFormChange}
-                  disabled={false}
-                  eventId={selectedEvent?.id}
-                  stats={selectedEvent?.stats}
-                />
-
-                {/* 액션 버튼 */}
-                <div className="flex justify-between pt-4 border-t border-border">
-                  <div>
-                    {selectedEvent && (
-                      <Button variant="outline" onClick={handleDuplicate}>
-                        <CopyOutlined style={{ fontSize: 14, marginRight: 6 }} />
-                        복제
-                      </Button>
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    {selectedEvent && (
-                      <Button variant="danger" onClick={handleDelete}>
-                        <DeleteOutlined style={{ fontSize: 14, marginRight: 6 }} />
-                        삭제
-                      </Button>
-                    )}
-                    <Button variant="outline" onClick={handleCancel}>
-                      취소
-                    </Button>
-                    <Button onClick={handleSave}>
-                      <SaveOutlined style={{ fontSize: 14, marginRight: 6 }} />
-                      {selectedEvent ? '수정' : '등록'}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <EventForm
+                formData={formData}
+                onFormChange={handleFormChange}
+                disabled={false}
+                eventId={selectedEvent?.id}
+                stats={selectedEvent?.stats}
+                onSave={handleSave}
+                onCancel={handleCancel}
+                onDelete={selectedEvent ? handleDelete : undefined}
+                onDuplicate={selectedEvent ? handleDuplicate : undefined}
+                isEditMode={!!selectedEvent}
+              />
             </CardContent>
           </Card>
         )}

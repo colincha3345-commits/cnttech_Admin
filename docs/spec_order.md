@@ -99,3 +99,82 @@
 - **취소 시 원복** — 쿠폰/포인트/E쿠폰 환원을 단일 트랜잭션으로 처리한다. 외부 PG 취소 호출이 포함되므로 Saga 패턴 또는 보상 트랜잭션을 고려한다.
 - **엑셀 내보내기** — 1만 건 이상 시 비동기 처리 + S3 업로드 후 다운로드 링크 반환이다.
 - **복합결제 개별취소** — 부분취소 불가 PG사 대응을 위한 전액취소→재결제 플로우 구현이 필요하다.
+
+---
+
+## 3. 정상작동 시나리오
+
+### 시나리오 1: 주문 접수 → 완료
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 주문 목록 페이지 진입 | 당일 주문 최신순 로드 | 기본 필터=당일, 페이지네이션 |
+| 2 | 신규 주문(pending) 행 클릭 | 상세 페이지 이동, 3탭 렌더링 | 기본정보/결제정보/메모 탭 |
+| 3 | [접수] 버튼 클릭 | ConfirmDialog → `PATCH /api/orders/:id/status` {status:"confirmed"} | Badge: warning→info 전환 |
+| 4 | [준비중] 클릭 | status→preparing | Badge: info 유지 |
+| 5 | [준비완료] 클릭 | status→ready | Badge: info→success |
+| 6 | [완료] 클릭 | status→completed | Badge: success, 상태변경 버튼 비활성화 |
+
+### 시나리오 2: 주문 취소 + 쿠폰/포인트 환원
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 주문 상세에서 [취소] 클릭 | 취소 사유 선택 모달 표시 | 4개 사유 Select + 상세 Textarea |
+| 2 | 사유 선택 + 상세 입력 후 확인 | `POST /api/orders/:id/cancel` 호출 | status→cancelled |
+| 3 | 서버: 쿠폰 사용분 환원 | 쿠폰 상태 used→active 복원, 사용횟수 차감 | 쿠폰 서비스 트랜잭션 |
+| 4 | 서버: 포인트 사용분 환원 | pointBalance += 사용 포인트, 이력 기록 | 포인트 동시성 제어 |
+| 5 | 서버: PG 결제 취소 호출 | PG사 취소 API 호출 → 성공 시 결제 상태 갱신 | Saga 패턴 보상 트랜잭션 |
+| 6 | 성공 Toast + 상세 갱신 | cancelled Badge, 취소 정보 섹션 표시 | cancelInfo 필드 노출 |
+
+### 시나리오 3: 복합결제 개별 취소
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 결제정보 탭에서 복합결제 상세 확인 | 결제수단별 행(카드/간편결제/E쿠폰 등) 렌더링 | 각 행에 개별취소 버튼 |
+| 2 | 특정 결제수단의 [취소] 클릭 | ConfirmDialog → `POST /api/orders/:id/payments/:paymentItemId/cancel` | 해당 행만 "취소완료" 전환 |
+| 3 | "전체 취소가 아닌 부분 취소입니다" 안내 | 나머지 결제수단은 유지 | 전체 상태는 그대로 |
+
+---
+
+## 4. 개발자용 정책 설명
+
+### 4.1. 주문 상태 전이 규칙 (FSM)
+
+```
+허용 전이:
+  pending → confirmed → preparing → ready → completed
+  (모든 상태) → cancelled
+
+금지 전이:
+  completed → (어떤 상태든) : 완료 후 역행 불가
+  cancelled → (어떤 상태든) : 취소 후 복원 불가
+
+서버 검증: 요청 status가 현재 status의 허용 전이 목록에 없으면 → 400 INVALID_STATUS_TRANSITION
+```
+
+### 4.2. 취소 시 환원 처리 순서
+
+```
+1. 쿠폰 환원: coupon.usageCount -= 1, coupon.status → active (만료일 미경과 시)
+2. 포인트 환원: member.pointBalance += order.discount.pointUsed (SELECT FOR UPDATE)
+3. E쿠폰 환원: eCoupon.status → active, pinNumber 재활성화
+4. PG 결제 취소: 각 결제수단별 PG사 취소 API 호출
+5. 위 4단계를 단일 트랜잭션으로 처리. PG 외부호출 실패 시 Saga 보상 트랜잭션 실행
+```
+
+### 4.3. 주문번호 채번 규칙
+
+```
+형식: {YYYYMMDD}-{6자리 시퀀스}  예: 20260312-000001
+동시성: DB 시퀀스 또는 Snowflake ID 사용
+중복 방지: UNIQUE 제약 + 시퀀스 gap 허용
+```
+
+### 4.4. 관리자 메모 정책
+
+```
+삭제 불가 (append-only)
+수정 불가 (작성 후 변경 불가)
+각 메모에 createdBy(작성자 ID) + createdAt(작성 시각) 필수 기록
+```
+

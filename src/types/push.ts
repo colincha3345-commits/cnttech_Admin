@@ -19,7 +19,7 @@ export interface PushNotification {
     status: PushStatus;
     targetCount: number;
     triggerType: TriggerType;
-    triggerConfig?: any; // e.g. delay minutes for cart abandoned
+    triggerConfig?: Record<string, unknown>;
     createdAt: Date;
     updatedAt: Date;
 }

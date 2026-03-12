@@ -8,7 +8,6 @@ const mockProducts: Product[] = [
     price: 15000,
     description: 'BHC 대표 메뉴, 달콤한 치즈 가루와 바삭한 치킨의 조화',
     imageUrl: 'https://via.placeholder.com/400x300?text=뿌링클',
-    tags: [{ code: 'MAIN', name: '메인', color: '#FF6B6B' }],
     mainCategoryId: '1',
     mainCategoryName: '한마리',
     subCategoryIds: [],
@@ -26,7 +25,6 @@ const mockProducts: Product[] = [
       },
     ],
     status: 'active',
-    isVisible: true,
     applyToAll: true,
     storeIds: [],
     productCode: 'PRD-001',
@@ -34,6 +32,8 @@ const mockProducts: Product[] = [
     allowCoupon: true,
     allowVoucher: true,
     allowGiftCard: false,
+    allowOwnDiscount: true,
+    allowPartnerDiscount: true,
     origin: [
       { ingredient: '닭고기', origin: '국내산' },
       { ingredient: '치즈가루', origin: '미국산' },
@@ -63,19 +63,19 @@ const mockProducts: Product[] = [
     price: 15000,
     description: '매콤달콤한 맛의 치킨',
     imageUrl: 'https://via.placeholder.com/400x300?text=맛초킹',
-    tags: [{ code: 'MAIN', name: '메인', color: '#FF6B6B' }],
     mainCategoryId: '1',
     mainCategoryName: '한마리',
     subCategoryIds: [],
     subCategoryNames: [],
     optionGroups: [],
     status: 'active',
-    isVisible: true,
     applyToAll: true,
     storeIds: [],
     allowCoupon: true,
     allowVoucher: true,
     allowGiftCard: false,
+    allowOwnDiscount: true,
+    allowPartnerDiscount: false,
     origin: [{ ingredient: '닭고기', origin: '국내산' }],
     nutrition: {
       calories: 900,
@@ -99,19 +99,19 @@ const mockProducts: Product[] = [
     price: 2000,
     description: '시원한 콜라',
     imageUrl: 'https://via.placeholder.com/400x300?text=콜라',
-    tags: [{ code: 'DRINK', name: '음료', color: '#4ECDC4' }],
     mainCategoryId: '3',
     mainCategoryName: '음료',
     subCategoryIds: [],
     subCategoryNames: [],
     optionGroups: [],
     status: 'soldout',
-    isVisible: false,
     applyToAll: true,
     storeIds: [],
     allowCoupon: false,
     allowVoucher: false,
     allowGiftCard: false,
+    allowOwnDiscount: false,
+    allowPartnerDiscount: false,
     origin: [],
     nutrition: {
       calories: 200,
@@ -246,21 +246,20 @@ class ProductService {
       price: data.price,
       description: data.description,
       imageUrl: data.imageUrl || 'https://via.placeholder.com/400x300?text=New+Product',
-      tags: data.tags.map((code) => ({ code, name: this.getTagName(code) })),
       mainCategoryId: data.mainCategoryId,
       subCategoryIds: data.subCategoryIds,
       optionGroups: this.optionGroups
         .filter((og) => data.optionGroupIds.includes(og.id))
         .map((og) => ({ ...og, isApplied: true })),
       status: data.status,
-      isVisible: data.isVisible,
-      scheduledAt: data.scheduledAt,
       applyToAll: data.applyToAll,
       storeIds: data.storeIds,
       posCode: data.posCode,
       allowCoupon: data.allowCoupon,
       allowVoucher: data.allowVoucher,
       allowGiftCard: data.allowGiftCard,
+      allowOwnDiscount: data.allowOwnDiscount,
+      allowPartnerDiscount: data.allowPartnerDiscount,
       origin: data.origin,
       nutrition: data.nutrition,
       allergens: data.allergens.map((code) => ({ code, name: this.getAllergenName(code) })),
@@ -392,17 +391,6 @@ class ProductService {
   // Helper: Delay 시뮬레이션
   private delay(ms: number = 500): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  // Helper: 태그 이름 변환
-  private getTagName(code: string): string {
-    const tagMap: Record<string, string> = {
-      MAIN: '메인',
-      SIDE: '사이드',
-      DRINK: '음료',
-      DESSERT: '디저트',
-    };
-    return tagMap[code] || code;
   }
 
   // Helper: 알레르기 이름 변환

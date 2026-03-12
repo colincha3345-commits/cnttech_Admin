@@ -95,3 +95,63 @@ expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 - **포인트 소멸 배치** — 매일 자정 `expiresAt`이 지난 적립 건을 자동 소멸 처리. 대량 건(10만+) 처리 시 청크(1,000건) 단위 배치를 권장한다.
 - **만료 알림** — `expiryNotificationDays`일 전 대상자에게 푸시/SMS 발송. 발송 대상자가 많을 경우 비동기 큐(Message Queue)로 처리한다.
 - **시스템 통계** — SUM 집계 쿼리가 무거우므로 materialized view 또는 별도 집계 테이블 + 주기적 갱신(5분)을 권장한다.
+
+---
+
+## 4. 정상작동 시나리오
+
+### 시나리오 1: 포인트 적립 정책 설정
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 포인트 설정 페이지 진입 | 상단 통계카드 4개(적립/사용/소멸/잔액) + 현재 설정값 로드 | GET /api/point-settings + stats |
+| 2 | 적립방식: "정률" 선택 | 정액 필드 숨김, 정률 필드(비율/최대적립) 노출 | UI 동적 전환 |
+| 3 | 비율 5%, 최대 500P, 최소 주문 10,000원 입력 | 실시간 유효성 검증 | 0.1~100%, maxEarnPoints > 0 |
+| 4 | [저장] 클릭 | `PUT /api/point-settings` → 성공 Toast | 감사 로그 기록 |
+
+### 시나리오 2: 포인트 이력 조회
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 이력 섹션 진입 | 전체 이력 DataTable 로드 | 페이지네이션, 최신순 |
+| 2 | 필터: "소멸" 선택 | type=expire 이력만 필터링 | 금액 음수 표시 |
+| 3 | 페이지 2로 이동 | 다음 페이지 데이터 로드 | offset 정확성 |
+
+---
+
+## 5. 개발자용 정책 설명
+
+### 5.1. 포인트 적립 계산
+
+```
+정액: fixedUnit원당 fixedPoints 적립
+  예: 1,000원당 10P → 15,000원 주문 시 150P 적립
+
+정률: orderAmount × percentageRate / 100 (소수점 절사)
+  maxEarnPoints가 설정된 경우: min(계산값, maxEarnPoints)
+  예: 5%, max 500P → 15,000원 주문 시 min(750, 500) = 500P
+
+적립 조건: orderAmount >= minOrderAmount (0이면 모든 주문)
+적립 시점: 주문 완료(completed) 시 자동 적립
+취소 시: 적립 포인트 차감 (잔액 부족 시 0까지만)
+```
+
+### 5.2. 포인트 사용 제한
+
+```
+최소 사용: minUsePoints 이상만 사용 가능
+최대 사용: 결제금액 × maxUseRate / 100
+사용 단위: useUnit 단위로만 입력 가능 (예: 100P 단위)
+할인 중복 불가: 할인/쿠폰 적용 시 포인트 사용 차단 (DISCOUNT_POINT_CONFLICT)
+```
+
+### 5.3. 포인트 소멸 배치
+
+```
+실행: 매일 00:00
+대상: expiresAt < now() AND type='earn' AND 미사용 잔여분
+처리: type='expire' 이력 생성 + balance 차감
+알림: expiryNotificationDays일 전 대상자에게 푸시/SMS (비동기 큐)
+유효기간 변경: 변경 이후 적립분부터 적용. 기존 적립 포인트 만료일 변경하지 않음
+```
+

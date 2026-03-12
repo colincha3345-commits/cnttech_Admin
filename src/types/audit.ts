@@ -2,32 +2,57 @@ import type { AuditLog } from './index';
 
 // 감사 로그 액션 타입
 export type AuditAction =
+  // 인증
   | 'LOGIN'
   | 'LOGIN_FAILED'
   | 'LOGOUT'
   | 'MFA_VERIFIED'
   | 'MFA_FAILED'
   | 'PASSWORD_CHANGED'
+  | 'SESSION_EXPIRED'
+  // 사용자/권한
   | 'USER_CREATED'
   | 'USER_UPDATED'
   | 'USER_DELETED'
   | 'USER_STATUS_CHANGE'
   | 'PERMISSION_CHANGED'
+  // 데이터 조회/다운로드
   | 'UNMASK_DATA'
   | 'DATA_EXPORT'
   | 'DATA_DOWNLOAD'
   | 'DOWNLOAD_HISTORY_VIEW'
-  | 'SESSION_EXPIRED'
   | 'ACCESS_DENIED'
   | 'ACCESS_ATTEMPT'
-  | 'SETTINGS_CHANGED';
+  // 설정
+  | 'SETTINGS_CHANGED'
+  // CRUD 공통 (모든 어드민 사용 로그)
+  | 'PAGE_VIEW'
+  | 'RECORD_CREATED'
+  | 'RECORD_UPDATED'
+  | 'RECORD_DELETED'
+  | 'RECORD_STATUS_CHANGE'
+  | 'BULK_ACTION';
 
 // 감사 로그 심각도
 export type AuditSeverity = 'info' | 'warning' | 'critical';
 
+/** 변경된 필드 상세 */
+export interface ChangedField {
+  field: string;       // 필드명 (예: 'name', 'status')
+  label: string;       // 표시명 (예: '상품명', '상태')
+  before?: string;     // 변경 전 값
+  after?: string;      // 변경 후 값
+}
+
 // 확장된 감사 로그 엔트리
 export interface AuditLogEntry extends Omit<AuditLog, 'action'> {
   action: AuditAction;
+  /** 수정자 계정 ID */
+  userName?: string;
+  /** 수정 페이지 경로 (예: /marketing/coupons) */
+  pagePath?: string;
+  /** 수정 항목 상세 */
+  changedFields?: ChangedField[];
   userAgent?: string;
   sessionId?: string;
   requestId?: string;
@@ -74,6 +99,12 @@ export const ACTION_SEVERITY: Record<AuditAction, AuditSeverity> = {
   SESSION_EXPIRED: 'info',
   ACCESS_DENIED: 'critical',
   ACCESS_ATTEMPT: 'info',
+  PAGE_VIEW: 'info',
+  RECORD_CREATED: 'info',
+  RECORD_UPDATED: 'info',
+  RECORD_DELETED: 'warning',
+  RECORD_STATUS_CHANGE: 'warning',
+  BULK_ACTION: 'warning',
 };
 
 // 액션 표시 이름
@@ -97,4 +128,10 @@ export const ACTION_DISPLAY_NAMES: Record<AuditAction, string> = {
   SESSION_EXPIRED: '세션 만료',
   ACCESS_DENIED: '접근 거부',
   ACCESS_ATTEMPT: '접근 시도',
+  PAGE_VIEW: '페이지 조회',
+  RECORD_CREATED: '데이터 생성',
+  RECORD_UPDATED: '데이터 수정',
+  RECORD_DELETED: '데이터 삭제',
+  RECORD_STATUS_CHANGE: '상태 변경',
+  BULK_ACTION: '일괄 처리',
 };

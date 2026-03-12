@@ -220,3 +220,16 @@ class DeliveryZoneService {
 }
 
 export const deliveryZoneService = new DeliveryZoneService();
+
+// ============================================
+// Real API 엔드포인트 (백엔드 연동 시)
+// ============================================
+// GET    /api/delivery-zones?storeId=&isActive=&keyword=&page=&limit=  → 목록 조회
+// GET    /api/delivery-zones/:id                                       → 상세 조회
+// POST   /api/delivery-zones                                           → 생성 (minOrderAmount: 메인상권만)
+// PATCH  /api/delivery-zones/:id                                       → 수정 (minOrderAmount: 메인상권만)
+// DELETE /api/delivery-zones/:id                                       → 삭제
+//
+// 주의: 최소주문금액(minOrderAmount)은 메인상권(zoneLevel='main')에서만 설정 가능
+//       소상권(zoneLevel='sub')은 minOrderAmount를 null로 전송
+//       매장(Store)의 DeliverySettings.minOrderAmount는 해당 매장의 메인상권 값을 참조 (읽기전용)

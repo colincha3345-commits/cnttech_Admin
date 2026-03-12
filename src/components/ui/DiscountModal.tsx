@@ -11,7 +11,6 @@ import { Label } from './Label';
 import { Switch } from './Switch';
 import type {
   DiscountFormData,
-  DiscountPeriodType,
   DiscountTargetType,
   DayOfWeek,
   RoundingUnit,
@@ -46,44 +45,33 @@ export function DiscountModal({
   isEditing = false,
 }: DiscountModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const [formData, setFormData] = useState<DiscountFormData>(
-    initialData || {
-      name: '',
-      discountType: 'company',
-      method: 'percentage',
-      value: 0,
-      periodType: 'period',
-      target: { type: 'all' },
-      applyToAll: true,
-      storeIds: [],
-      channel: 'all',
-      orderType: 'all',
-      isActive: true,
-      headquartersRatio: 0,
-      franchiseRatio: 100,
-    }
-  );
+  const defaultForm: DiscountFormData = {
+    name: '',
+    discountType: 'company',
+    method: 'percentage',
+    value: 0,
+    schedule: { days: [...DAYS_OF_WEEK], timeSlots: [{ startTime: '00:00', endTime: '23:59' }] },
+    target: { type: 'all' },
+    applyToAll: true,
+    storeIds: [],
+    channel: 'all',
+    orderType: 'all',
+    isActive: true,
+    headquartersRatio: 0,
+    franchiseRatio: 100,
+  };
+
+  const [formData, setFormData] = useState<DiscountFormData>(initialData || defaultForm);
 
   // 초기 데이터 변경 시 폼 리셋
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
-    } else {
       setFormData({
-        name: '',
-        discountType: 'company',
-        method: 'percentage',
-        value: 0,
-        periodType: 'period',
-        target: { type: 'all' },
-        applyToAll: true,
-        storeIds: [],
-        channel: 'all',
-        headquartersRatio: 0,
-        franchiseRatio: 100,
-        orderType: 'all',
-        isActive: true,
+        ...initialData,
+        schedule: initialData.schedule || { days: [...DAYS_OF_WEEK], timeSlots: [{ startTime: '00:00', endTime: '23:59' }] },
       });
+    } else {
+      setFormData(defaultForm);
     }
   }, [initialData, isOpen]);
 
@@ -298,177 +286,108 @@ export function DiscountModal({
           {/* 기간 설정 */}
           <div>
             <Label required>기간 설정</Label>
-            <div className="mt-2 flex gap-2">
-              {(['period', 'schedule'] as DiscountPeriodType[]).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => updateFormData({ periodType: type })}
-                  className={`flex-1 px-4 py-3 rounded-lg border text-sm font-medium transition-all ${
-                    formData.periodType === type
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-bg-hover text-txt-muted border-border hover:border-primary'
-                  }`}
-                >
-                  {type === 'period' ? '기간' : '특정 시간/요일'}
-                </button>
-              ))}
+            <div className="mt-4 p-4 bg-bg-hover rounded-lg space-y-4">
+              {/* 시작일 / 종료일 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-txt-muted mb-2">시작일</label>
+                  <div className="relative">
+                    <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                    <input
+                      type="date"
+                      value={formData.startDate || ''}
+                      onChange={(e) => updateFormData({ startDate: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm text-txt-muted mb-2">종료일</label>
+                  <div className="relative">
+                    <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                    <input
+                      type="date"
+                      value={formData.endDate || ''}
+                      onChange={(e) => updateFormData({ endDate: e.target.value })}
+                      className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 적용 요일 */}
+              <div>
+                <label className="block text-sm text-txt-muted mb-2">적용 요일</label>
+                <div className="flex gap-2">
+                  {DAYS_OF_WEEK.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => toggleDay(day)}
+                      className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                        formData.schedule?.days?.includes(day)
+                          ? 'bg-primary text-white'
+                          : 'bg-bg-card border border-border text-txt-muted hover:border-primary'
+                      }`}
+                    >
+                      {DAY_LABELS_MAP[day]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 적용 시간 */}
+              <div>
+                <label className="block text-sm text-txt-muted mb-2">적용 시간</label>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                    <input
+                      type="time"
+                      value={formData.schedule?.timeSlots?.[0]?.startTime || '00:00'}
+                      onChange={(e) =>
+                        updateFormData({
+                          schedule: {
+                            ...formData.schedule,
+                            days: formData.schedule?.days || [...DAYS_OF_WEEK],
+                            timeSlots: [
+                              {
+                                startTime: e.target.value,
+                                endTime: formData.schedule?.timeSlots?.[0]?.endTime || '23:59',
+                              },
+                            ],
+                          },
+                        })
+                      }
+                      className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <span className="text-txt-muted">~</span>
+                  <div className="relative flex-1">
+                    <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                    <input
+                      type="time"
+                      value={formData.schedule?.timeSlots?.[0]?.endTime || '23:59'}
+                      onChange={(e) =>
+                        updateFormData({
+                          schedule: {
+                            ...formData.schedule,
+                            days: formData.schedule?.days || [...DAYS_OF_WEEK],
+                            timeSlots: [
+                              {
+                                startTime: formData.schedule?.timeSlots?.[0]?.startTime || '00:00',
+                                endTime: e.target.value,
+                              },
+                            ],
+                          },
+                        })
+                      }
+                      className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-
-            {/* 기간 선택 UI */}
-            {formData.periodType === 'period' && (
-              <div className="mt-4 p-4 bg-bg-hover rounded-lg space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-txt-muted mb-2">시작일</label>
-                    <div className="relative">
-                      <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                      <input
-                        type="date"
-                        value={formData.startDate || ''}
-                        onChange={(e) => updateFormData({ startDate: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm text-txt-muted mb-2">종료일</label>
-                    <div className="relative">
-                      <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                      <input
-                        type="date"
-                        value={formData.endDate || ''}
-                        onChange={(e) => updateFormData({ endDate: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 특정 시간/요일 UI */}
-            {formData.periodType === 'schedule' && (
-              <div className="mt-4 p-4 bg-bg-hover rounded-lg space-y-4">
-                {/* 요일 선택 */}
-                <div>
-                  <label className="block text-sm text-txt-muted mb-2">적용 요일</label>
-                  <div className="flex gap-2">
-                    {DAYS_OF_WEEK.map((day) => (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => toggleDay(day)}
-                        className={`w-10 h-10 rounded-full text-sm font-medium transition-all ${
-                          formData.schedule?.days?.includes(day)
-                            ? 'bg-primary text-white'
-                            : 'bg-bg-card border border-border text-txt-muted hover:border-primary'
-                        }`}
-                      >
-                        {DAY_LABELS_MAP[day]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 시간대 선택 */}
-                <div>
-                  <label className="block text-sm text-txt-muted mb-2">적용 시간</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                      <input
-                        type="time"
-                        value={formData.schedule?.timeSlots?.[0]?.startTime || '00:00'}
-                        onChange={(e) =>
-                          updateFormData({
-                            schedule: {
-                              ...formData.schedule,
-                              days: formData.schedule?.days || [],
-                              timeSlots: [
-                                {
-                                  startTime: e.target.value,
-                                  endTime: formData.schedule?.timeSlots?.[0]?.endTime || '23:59',
-                                },
-                              ],
-                            },
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <span className="text-txt-muted">~</span>
-                    <div className="relative flex-1">
-                      <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                      <input
-                        type="time"
-                        value={formData.schedule?.timeSlots?.[0]?.endTime || '23:59'}
-                        onChange={(e) =>
-                          updateFormData({
-                            schedule: {
-                              ...formData.schedule,
-                              days: formData.schedule?.days || [],
-                              timeSlots: [
-                                {
-                                  startTime: formData.schedule?.timeSlots?.[0]?.startTime || '00:00',
-                                  endTime: e.target.value,
-                                },
-                              ],
-                            },
-                          })
-                        }
-                        className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 기간 제한 (선택) */}
-                <div>
-                  <label className="block text-sm text-txt-muted mb-2">기간 제한 (선택)</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="relative">
-                      <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                      <input
-                        type="date"
-                        value={formData.schedule?.startDate || ''}
-                        onChange={(e) =>
-                          updateFormData({
-                            schedule: {
-                              ...formData.schedule,
-                              days: formData.schedule?.days || [],
-                              timeSlots: formData.schedule?.timeSlots || [],
-                              startDate: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder="시작일"
-                        className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div className="relative">
-                      <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                      <input
-                        type="date"
-                        value={formData.schedule?.endDate || ''}
-                        onChange={(e) =>
-                          updateFormData({
-                            schedule: {
-                              ...formData.schedule,
-                              days: formData.schedule?.days || [],
-                              timeSlots: formData.schedule?.timeSlots || [],
-                              endDate: e.target.value,
-                            },
-                          })
-                        }
-                        placeholder="종료일"
-                        className="w-full pl-10 pr-4 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* 적용 상품 */}

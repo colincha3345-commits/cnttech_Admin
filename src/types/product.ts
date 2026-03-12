@@ -2,12 +2,6 @@
 
 export type ProductStatus = 'active' | 'soldout';
 
-export interface ProductTag {
-  code: string;
-  name: string;
-  color?: string;
-}
-
 export interface ProductOption {
   id: string;
   name: string;
@@ -108,9 +102,6 @@ export interface Product {
   imageUrl: string;
   subImageUrls?: string[]; // 서브 이미지 (최대 5개)
 
-  // 속성 태그
-  tags: ProductTag[];
-
   // 카테고리 (다중 1차+2차 쌍)
   categoryPairs?: CategoryPair[];
   // Legacy
@@ -124,8 +115,6 @@ export interface Product {
 
   // 판매 설정
   status: ProductStatus;
-  isVisible: boolean;
-  scheduledAt?: Date;
 
   // 판매기간
   salesStartDate?: Date;
@@ -150,6 +139,8 @@ export interface Product {
   allowCoupon: boolean;
   allowVoucher: boolean;
   allowGiftCard: boolean;
+  allowOwnDiscount: boolean;      // 자사할인 허용
+  allowPartnerDiscount: boolean;  // 제휴할인 허용
 
   // 상세 정보
   origin: OriginInfo[];
@@ -187,7 +178,6 @@ export interface ProductFormData {
   imageUrl?: string;
   subImageUrls?: string[]; // 서브 이미지 (최대 5개)
   subImageFiles?: File[];
-  tags: string[];
 
   // 카테고리 (다중 1차+2차 쌍)
   categoryPairs: CategoryPair[];
@@ -200,8 +190,6 @@ export interface ProductFormData {
 
   // 판매 설정
   status: ProductStatus;
-  isVisible: boolean;
-  scheduledAt?: Date;
 
   // 판매기간
   salesStartDate?: Date;
@@ -226,6 +214,8 @@ export interface ProductFormData {
   allowCoupon: boolean;
   allowVoucher: boolean;
   allowGiftCard: boolean;
+  allowOwnDiscount: boolean;
+  allowPartnerDiscount: boolean;
 
   // 상세 정보
   origin: OriginInfo[];
@@ -310,6 +300,7 @@ export interface OptionCategory {
   name: string;              // 옵션명
   posCode: string;           // 포스코드
   price: number;             // 가격
+  minQuantity: number;       // 최소 선택 수량 (0~99)
   maxQuantity: number;       // 최대 선택 수량 (1~99)
   imageUrl?: string;         // 옵션 이미지 (선택사항)
   isVisible: boolean;        // 노출 여부
@@ -322,6 +313,7 @@ export interface OptionCategoryFormData {
   name: string;
   posCode: string;
   price: number;
+  minQuantity: number;       // 최소 선택 수량 (0~99)
   maxQuantity: number;       // 최대 선택 수량 (1~99)
   imageFile?: File;
   imageUrl?: string;

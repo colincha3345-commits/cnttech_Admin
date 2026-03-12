@@ -514,7 +514,11 @@ class StoreService {
         : undefined,
       isDeliveryAvailable: data.deliverySettings?.isAvailable ?? data.isDeliveryAvailable,
       isPickupAvailable: data.pickupSettings?.isAvailable ?? data.isPickupAvailable,
-      deliverySettings: data.deliverySettings,
+      // 배달 최소주문금액은 상권관리에서만 설정 → 기존값 보존
+      deliverySettings: {
+        ...data.deliverySettings,
+        minOrderAmount: store.operatingInfo?.deliverySettings?.minOrderAmount,
+      } as OperatingInfo['deliverySettings'],
       pickupSettings: data.pickupSettings,
       isVisible: data.isVisible,
     };

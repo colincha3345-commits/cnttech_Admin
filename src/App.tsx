@@ -1,31 +1,73 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 import { AdminLayout } from '@/components/layout';
 import { ProtectedRoute } from '@/components/auth';
-import { Dashboard, GA4Statistics, GA4DeviceDetail, GA4FunnelDetail } from '@/pages/Dashboard';
-import { Settings } from '@/pages/Settings';
-import { PermissionManagement } from '@/pages/permissions';
-import { LoginPage } from '@/pages/Login';
-import { Categories, Products, OptionCategories, OptionGroups } from '@/pages/Menu';
-import { Discounts, Coupons, BenefitCampaigns, PointSettings, PushList, PushNotificationFormPage, PushDetail } from '@/pages/Marketing';
-import { EventManagement } from '@/pages/events';
-import { OrderList, OrderDetail } from '@/pages/Orders';
-import { AppMemberList, AppMemberDetail, MemberExtract, MemberGroups, MemberGroupDetail, GradeManagement } from '@/pages/AppMembers';
-import { HeadquartersStaff, FranchiseStaff, Teams, TeamEditPage, StaffApprovals, StaffApprovalDetail, StaffEditPage } from '@/pages/Staff';
-import { StoreList, StoreDetail, StoreForm, OperatingInfoEdit, IntegrationCodesEdit, AmenitiesEdit, ClosedDayEdit, PaymentMethodsEdit } from '@/pages/Store';
-import { SettlementList, SettlementDetail, SettlementStats } from '@/pages/Settlement';
-import { BannerManagement, PopupManagement, IconBadgeManagement, MainScreenManagement } from '@/pages/Design';
-import { InquiryList, FaqManagement, TermsManagement } from '@/pages/Support';
-import { AuditLogList } from '@/pages/AuditLogs';
-import { DeliveryZoneList } from '@/pages/DeliveryZone/DeliveryZoneList';
-import { DeliveryZoneEditor } from '@/pages/DeliveryZone/DeliveryZoneEditor';
-import { AcceptInvitation } from '@/pages/Invitation';
 import { ToastProvider, useSessionTimeout } from '@/hooks';
+
+// Lazy-loaded pages (route-level code splitting)
+const Dashboard = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const GA4Statistics = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.GA4Statistics })));
+const GA4DeviceDetail = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.GA4DeviceDetail })));
+const GA4FunnelDetail = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.GA4FunnelDetail })));
+const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.Settings })));
+const PermissionManagement = lazy(() => import('@/pages/permissions').then(m => ({ default: m.PermissionManagement })));
+const LoginPage = lazy(() => import('@/pages/Login').then(m => ({ default: m.LoginPage })));
+const Categories = lazy(() => import('@/pages/Menu').then(m => ({ default: m.Categories })));
+const Products = lazy(() => import('@/pages/Menu').then(m => ({ default: m.Products })));
+const OptionCategories = lazy(() => import('@/pages/Menu').then(m => ({ default: m.OptionCategories })));
+const OptionGroups = lazy(() => import('@/pages/Menu').then(m => ({ default: m.OptionGroups })));
+const Discounts = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.Discounts })));
+const Coupons = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.Coupons })));
+const BenefitCampaigns = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.BenefitCampaigns })));
+const PointSettings = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PointSettings })));
+const PushList = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PushList })));
+const PushNotificationFormPage = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PushNotificationFormPage })));
+const PushDetail = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PushDetail })));
+const EventManagement = lazy(() => import('@/pages/events').then(m => ({ default: m.EventManagement })));
+const OrderList = lazy(() => import('@/pages/Orders').then(m => ({ default: m.OrderList })));
+const OrderDetail = lazy(() => import('@/pages/Orders').then(m => ({ default: m.OrderDetail })));
+const AppMemberList = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.AppMemberList })));
+const AppMemberDetail = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.AppMemberDetail })));
+const MemberExtract = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.MemberExtract })));
+const MemberGroups = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.MemberGroups })));
+const MemberGroupDetail = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.MemberGroupDetail })));
+const GradeManagement = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.GradeManagement })));
+const HeadquartersStaff = lazy(() => import('@/pages/Staff').then(m => ({ default: m.HeadquartersStaff })));
+const FranchiseStaff = lazy(() => import('@/pages/Staff').then(m => ({ default: m.FranchiseStaff })));
+const Teams = lazy(() => import('@/pages/Staff').then(m => ({ default: m.Teams })));
+const TeamEditPage = lazy(() => import('@/pages/Staff').then(m => ({ default: m.TeamEditPage })));
+const StaffApprovals = lazy(() => import('@/pages/Staff').then(m => ({ default: m.StaffApprovals })));
+const StaffApprovalDetail = lazy(() => import('@/pages/Staff').then(m => ({ default: m.StaffApprovalDetail })));
+const StaffEditPage = lazy(() => import('@/pages/Staff').then(m => ({ default: m.StaffEditPage })));
+const StoreList = lazy(() => import('@/pages/Store').then(m => ({ default: m.StoreList })));
+const StoreDetail = lazy(() => import('@/pages/Store').then(m => ({ default: m.StoreDetail })));
+const StoreForm = lazy(() => import('@/pages/Store').then(m => ({ default: m.StoreForm })));
+const OperatingInfoEdit = lazy(() => import('@/pages/Store').then(m => ({ default: m.OperatingInfoEdit })));
+const IntegrationCodesEdit = lazy(() => import('@/pages/Store').then(m => ({ default: m.IntegrationCodesEdit })));
+const AmenitiesEdit = lazy(() => import('@/pages/Store').then(m => ({ default: m.AmenitiesEdit })));
+const ClosedDayEdit = lazy(() => import('@/pages/Store').then(m => ({ default: m.ClosedDayEdit })));
+const PaymentMethodsEdit = lazy(() => import('@/pages/Store').then(m => ({ default: m.PaymentMethodsEdit })));
+const SettlementList = lazy(() => import('@/pages/Settlement').then(m => ({ default: m.SettlementList })));
+const SettlementDetail = lazy(() => import('@/pages/Settlement').then(m => ({ default: m.SettlementDetail })));
+const SettlementStats = lazy(() => import('@/pages/Settlement').then(m => ({ default: m.SettlementStats })));
+const BannerManagement = lazy(() => import('@/pages/Design').then(m => ({ default: m.BannerManagement })));
+const PopupManagement = lazy(() => import('@/pages/Design').then(m => ({ default: m.PopupManagement })));
+const IconBadgeManagement = lazy(() => import('@/pages/Design').then(m => ({ default: m.IconBadgeManagement })));
+const MainScreenManagement = lazy(() => import('@/pages/Design').then(m => ({ default: m.MainScreenManagement })));
+const InquiryList = lazy(() => import('@/pages/Support').then(m => ({ default: m.InquiryList })));
+const FaqManagement = lazy(() => import('@/pages/Support').then(m => ({ default: m.FaqManagement })));
+const TermsManagement = lazy(() => import('@/pages/Support').then(m => ({ default: m.TermsManagement })));
+const AuditLogList = lazy(() => import('@/pages/AuditLogs').then(m => ({ default: m.AuditLogList })));
+const DeliveryZoneList = lazy(() => import('@/pages/DeliveryZone/DeliveryZoneList').then(m => ({ default: m.DeliveryZoneList })));
+const DeliveryZoneEditor = lazy(() => import('@/pages/DeliveryZone/DeliveryZoneEditor').then(m => ({ default: m.DeliveryZoneEditor })));
+const AcceptInvitation = lazy(() => import('@/pages/Invitation').then(m => ({ default: m.AcceptInvitation })));
 
 export default function App() {
   useSessionTimeout();
   return (
     <ToastProvider>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen text-gray-500">로딩 중...</div>}>
       <Routes>
         {/* 공개 라우트 */}
         <Route path="/login" element={<LoginPage />} />
@@ -127,6 +169,7 @@ export default function App() {
           <Route path="settings" element={<ProtectedRoute requiredPermissions={[{ resource: 'settings', action: 'read' }]}><Settings /></ProtectedRoute>} />
         </Route>
       </Routes>
+      </Suspense>
     </ToastProvider>
   );
 }

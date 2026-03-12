@@ -151,7 +151,7 @@ export const POINT_TYPE_LABELS: Record<PointType, string> = {
   earn_manual: '수동 지급',
   use_order: '주문 사용',
   withdraw_manual: '수동 회수',
-  expired: '만료',
+  expired: '기간 만료',
 };
 
 /**

@@ -27,7 +27,8 @@ import type { CancelReasonType, OrderPaymentItem, ECouponType } from '@/types/or
 import { E_COUPON_TYPE_LABELS } from '@/types/order';
 import { emailService } from '@/services/emailService';
 import type { OrderStatus } from '@/types/app-member';
-import { useOrder, useCancelOrder, useCancelPaymentItem, useAddOrderMemo, useUpdateOrderStatus } from '@/hooks';
+import { useOrder, useCancelOrder, useCancelPaymentItem, useCancelDiscountItem, useAddOrderMemo, useUpdateOrderStatus } from '@/hooks';
+import type { DiscountCancelType } from '@/types/order';
 import { useToast } from '@/hooks/useToast';
 
 // 상태별 뱃지 variant
@@ -49,6 +50,7 @@ export function OrderDetail() {
   const { data: orderData, isLoading } = useOrder(id);
   const cancelOrderMutation = useCancelOrder();
   const cancelPaymentItemMutation = useCancelPaymentItem();
+  const cancelDiscountItemMutation = useCancelDiscountItem();
   const addMemoMutation = useAddOrderMemo();
   const updateStatusMutation = useUpdateOrderStatus();
 
@@ -67,6 +69,10 @@ export function OrderDetail() {
   const [targetPaymentItem, setTargetPaymentItem] = useState<OrderPaymentItem | null>(null);
   const [paymentCancelReason, setPaymentCancelReason] = useState<CancelReasonType>('customer_request');
   const [paymentCancelDetail, setPaymentCancelDetail] = useState('');
+
+  // 할인 취소 모달
+  const [discountCancelModalOpen, setDiscountCancelModalOpen] = useState(false);
+  const [discountCancelType, setDiscountCancelType] = useState<DiscountCancelType>('coupon');
 
   // 핀번호 보기 토글
   const [revealedPinIds, setRevealedPinIds] = useState<Set<string>>(new Set());
@@ -178,6 +184,23 @@ export function OrderDetail() {
               toast.warning(`쿠폰사 이메일이 등록되어 있지 않아 자동 발송에 실패했습니다.`);
             }
           }
+        },
+      }
+    );
+  };
+
+  // 할인 취소
+  const handleCancelDiscount = () => {
+    if (!id) return;
+    cancelDiscountItemMutation.mutate(
+      { orderId: id, type: discountCancelType },
+      {
+        onSuccess: () => {
+          setDiscountCancelModalOpen(false);
+          toast.success(discountCancelType === 'coupon' ? '쿠폰 할인이 취소되었습니다.' : '제휴할인이 취소되었습니다.');
+        },
+        onError: (error) => {
+          toast.error(error instanceof Error ? error.message : '할인 취소에 실패했습니다.');
         },
       }
     );
@@ -415,13 +438,29 @@ export function OrderDetail() {
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-3 px-4 text-txt-muted text-center border-r border-border">할인쿠폰</td>
-                      <td className="py-3 px-4 text-txt-main text-center">-{formatNumber(order.discount.couponAmount)}</td>
-                      <td className="py-3 px-4 w-24"></td>
+                      <td className={`py-3 px-4 text-center ${order.discount.couponCancelled ? 'line-through text-txt-muted' : 'text-txt-main'}`}>
+                        -{formatNumber(order.discount.couponAmount)}
+                      </td>
+                      <td className="py-3 px-4 w-24 text-center">
+                        {order.discount.couponCancelled ? (
+                          <Badge variant="critical" className="!bg-transparent border border-[#FF3B30]">취소됨</Badge>
+                        ) : order.discount.couponAmount > 0 && order.status !== 'cancelled' ? (
+                          <Button variant="danger" size="sm" onClick={() => { setDiscountCancelType('coupon'); setDiscountCancelModalOpen(true); }}>취소</Button>
+                        ) : null}
+                      </td>
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-3 px-4 text-txt-muted text-center border-r border-border">제휴할인</td>
-                      <td className="py-3 px-4 text-txt-main text-center">-{formatNumber(order.discount.affiliateDiscount ?? 0)}</td>
-                      <td className="py-3 px-4 w-24"></td>
+                      <td className={`py-3 px-4 text-center ${order.discount.affiliateDiscountCancelled ? 'line-through text-txt-muted' : 'text-txt-main'}`}>
+                        -{formatNumber(order.discount.affiliateDiscount ?? 0)}
+                      </td>
+                      <td className="py-3 px-4 w-24 text-center">
+                        {order.discount.affiliateDiscountCancelled ? (
+                          <Badge variant="critical" className="!bg-transparent border border-[#FF3B30]">취소됨</Badge>
+                        ) : (order.discount.affiliateDiscount ?? 0) > 0 && order.status !== 'cancelled' ? (
+                          <Button variant="danger" size="sm" onClick={() => { setDiscountCancelType('affiliate'); setDiscountCancelModalOpen(true); }}>취소</Button>
+                        ) : null}
+                      </td>
                     </tr>
                     {/* E쿠폰 금액권 */}
                     {(() => {
@@ -533,27 +572,49 @@ export function OrderDetail() {
                     <tr className="border-b border-border">
                       <td colSpan={2} className="py-3 px-4 text-txt-muted text-center">배달비</td>
                       <td className="py-3 px-4 text-txt-main text-center">{formatNumber(order.deliveryFee)}</td>
+                      <td className="py-3 px-4 w-24"></td>
                     </tr>
                     <tr className="border-b border-border">
                       <td rowSpan={3} className="py-3 px-4 text-txt-muted text-center align-middle border-r border-border">할인</td>
                       <td className="py-3 px-4 text-txt-muted text-center border-r border-border">상품할인</td>
                       <td className="py-3 px-4 text-txt-main text-center">-{formatNumber(order.discount.productDiscount ?? 0)}</td>
+                      <td className="py-3 px-4 w-24"></td>
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-3 px-4 text-txt-muted text-center border-r border-border">할인쿠폰</td>
-                      <td className="py-3 px-4 text-txt-main text-center">-{formatNumber(order.discount.couponAmount)}</td>
+                      <td className={`py-3 px-4 text-center ${order.discount.couponCancelled ? 'line-through text-txt-muted' : 'text-txt-main'}`}>
+                        -{formatNumber(order.discount.couponAmount)}
+                      </td>
+                      <td className="py-3 px-4 w-24 text-center">
+                        {order.discount.couponCancelled ? (
+                          <Badge variant="critical" className="!bg-transparent border border-[#FF3B30]">취소됨</Badge>
+                        ) : order.discount.couponAmount > 0 && order.status !== 'cancelled' ? (
+                          <Button variant="danger" size="sm" onClick={() => { setDiscountCancelType('coupon'); setDiscountCancelModalOpen(true); }}>취소</Button>
+                        ) : null}
+                      </td>
                     </tr>
                     <tr className="border-b border-border">
                       <td className="py-3 px-4 text-txt-muted text-center border-r border-border">제휴할인</td>
-                      <td className="py-3 px-4 text-txt-main text-center">-{formatNumber(order.discount.affiliateDiscount ?? 0)}</td>
+                      <td className={`py-3 px-4 text-center ${order.discount.affiliateDiscountCancelled ? 'line-through text-txt-muted' : 'text-txt-main'}`}>
+                        -{formatNumber(order.discount.affiliateDiscount ?? 0)}
+                      </td>
+                      <td className="py-3 px-4 w-24 text-center">
+                        {order.discount.affiliateDiscountCancelled ? (
+                          <Badge variant="critical" className="!bg-transparent border border-[#FF3B30]">취소됨</Badge>
+                        ) : (order.discount.affiliateDiscount ?? 0) > 0 && order.status !== 'cancelled' ? (
+                          <Button variant="danger" size="sm" onClick={() => { setDiscountCancelType('affiliate'); setDiscountCancelModalOpen(true); }}>취소</Button>
+                        ) : null}
+                      </td>
                     </tr>
                     <tr className="border-b border-border">
                       <td colSpan={2} className="py-3 px-4 text-txt-muted text-center font-medium">E쿠폰</td>
                       <td className="py-3 px-4 text-txt-main text-center">-{formatNumber(order.discount.eCouponDiscount ?? 0)}</td>
+                      <td className="py-3 px-4 w-24"></td>
                     </tr>
                     <tr>
                       <td colSpan={2} className="py-3 px-4 text-txt-main text-center font-semibold">총결제금액</td>
                       <td className="py-3 px-4 text-txt-main text-center font-semibold">{formatNumber(order.totalAmount)}</td>
+                      <td className="py-3 px-4 w-24"></td>
                     </tr>
                   </tbody>
                 </table>
@@ -777,6 +838,37 @@ export function OrderDetail() {
                 disabled={cancelPaymentItemMutation.isPending}
               >
                 {cancelPaymentItemMutation.isPending ? '처리 중...' : '결제 취소'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 할인 취소 확인 모달 */}
+      {discountCancelModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <ExclamationCircleOutlined className="text-xl text-critical" />
+              <h3 className="text-lg font-semibold text-txt-main">
+                {discountCancelType === 'coupon' ? '쿠폰 할인 취소' : '제휴할인 취소'}
+              </h3>
+            </div>
+            <p className="text-sm text-txt-muted mb-2">
+              {discountCancelType === 'coupon'
+                ? `할인쿠폰 ${formatCurrency(order.discount.couponAmount)} 할인을 취소하시겠습니까?`
+                : `제휴할인 ${formatCurrency(order.discount.affiliateDiscount ?? 0)} 할인을 취소하시겠습니까?`}
+            </p>
+            <p className="text-xs text-warning mb-4">
+              취소된 할인 금액은 고객에게 추가 청구됩니다.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setDiscountCancelModalOpen(false)}>닫기</Button>
+              <Button
+                variant="danger"
+                onClick={handleCancelDiscount}
+                disabled={cancelDiscountItemMutation.isPending}
+              >
+                {cancelDiscountItemMutation.isPending ? '처리 중...' : '할인 취소'}
               </Button>
             </div>
           </div>

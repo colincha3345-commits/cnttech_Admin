@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from 'react';
+import { forwardRef, useCallback, type InputHTMLAttributes, type MouseEvent } from 'react';
 import { clsx } from 'clsx';
 
 import type { InputState } from '@/types';
@@ -8,6 +8,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   hint?: string;
   state?: InputState;
+  disableSelectOnClick?: boolean;
 }
 
 const stateClasses: Record<InputState, string> = {
@@ -17,9 +18,19 @@ const stateClasses: Record<InputState, string> = {
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, state = 'default', className, id, ...props }, ref) => {
+  ({ label, error, hint, state = 'default', className, id, disableSelectOnClick, onClick, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
     const computedState = error ? 'error' : state;
+
+    const handleClick = useCallback(
+      (e: MouseEvent<HTMLInputElement>) => {
+        if (props.type === 'number' && !disableSelectOnClick) {
+          e.currentTarget.select();
+        }
+        onClick?.(e);
+      },
+      [props.type, disableSelectOnClick, onClick]
+    );
 
     return (
       <div className="form-group">
@@ -34,6 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           className={clsx('form-input', stateClasses[computedState], className)}
           aria-invalid={computedState === 'error'}
           aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+          onClick={handleClick}
           {...props}
         />
         {error && (

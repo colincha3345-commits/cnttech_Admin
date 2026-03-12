@@ -92,6 +92,15 @@ export interface OrderDiscount {
   eCouponDiscount?: number;
   /** E쿠폰 사용 상세 (금액권/교환권 분리) */
   eCoupons?: ECouponUsage[];
+
+  /** 쿠폰 할인 취소 여부 */
+  couponCancelled?: boolean;
+  couponCancelledAt?: Date;
+  couponCancelledBy?: string;
+  /** 제휴할인 취소 여부 */
+  affiliateDiscountCancelled?: boolean;
+  affiliateDiscountCancelledAt?: Date;
+  affiliateDiscountCancelledBy?: string;
 }
 
 /** 주문 메모 */
@@ -261,6 +270,9 @@ export interface OrderCancelRequest {
 export interface OrderMemoRequest {
   content: string;
 }
+
+/** 할인 취소 유형 */
+export type DiscountCancelType = 'coupon' | 'affiliate';
 
 /** 엑셀 내보내기 컬럼 */
 export interface OrderExportColumn {

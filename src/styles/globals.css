@@ -99,7 +99,7 @@
   --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
   --shadow-md: 0 2px 8px 0 rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 4px 16px 0 rgba(0, 0, 0, 0.12);
-  --shadow-focus: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(0, 0, 0, 0.15);
 
   /* ----- 폰트 패밀리 ----- */
   --font-sans: 'Inter Variable', '-apple-system', 'BlinkMacSystemFont', 'Pretendard Variable', sans-serif;
@@ -713,7 +713,6 @@ body {
   color: var(--text-muted);
 }
 
-.form-input:hover::placeholder,
 .form-input:focus::placeholder {
   color: transparent;
 }
@@ -738,6 +737,17 @@ body {
   background: var(--bg-disabled);
   color: var(--text-disabled);
   cursor: not-allowed;
+}
+
+/* Number Input — hide spinner */
+.form-input[type="number"]::-webkit-outer-spin-button,
+.form-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.form-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* Error State */

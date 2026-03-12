@@ -39,6 +39,8 @@ import {
   CardContent,
   Button,
   Badge,
+  Input,
+  Select,
   SearchInput,
   ConfirmDialog,
   ToggleButtonGroup,
@@ -353,10 +355,7 @@ export function BannerManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">배너 제목 *</label>
-                  <input type="text" className="form-input w-full" value={formData.title} onChange={(e) => handleFormChange({ title: e.target.value })} placeholder="배너 제목을 입력하세요" />
-                </div>
+                <Input label="배너 제목 *" value={formData.title} onChange={(e) => handleFormChange({ title: e.target.value })} placeholder="배너 제목을 입력하세요" />
                 <div>
                   <label className="block text-sm font-medium text-txt-main mb-1">배너 이미지</label>
                   <ImageUpload
@@ -370,32 +369,19 @@ export function BannerManagement() {
                     }}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">링크 URL</label>
-                  <input type="text" className="form-input w-full" value={formData.linkUrl} onChange={(e) => handleFormChange({ linkUrl: e.target.value })} placeholder="클릭 시 이동할 경로" />
+                <Input label="링크 URL" value={formData.linkUrl} onChange={(e) => handleFormChange({ linkUrl: e.target.value })} placeholder="클릭 시 이동할 경로" />
+                <div className="grid grid-cols-2 gap-4">
+                  <Select label="배치 위치" value={formData.position} onChange={(e) => handleFormChange({ position: e.target.value as BannerPosition })}>
+                    {Object.entries(BANNER_POSITION_LABELS).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </Select>
+                  <Input label="정렬 순서" type="number" value={formData.sortOrder} onChange={(e) => handleFormChange({ sortOrder: Number(e.target.value) })} min={0} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                  <Input label="게시 시작일" type="date" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
                   <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">배치 위치</label>
-                    <select className="form-input w-full" value={formData.position} onChange={(e) => handleFormChange({ position: e.target.value as BannerPosition })}>
-                      {Object.entries(BANNER_POSITION_LABELS).map(([val, label]) => (
-                        <option key={val} value={val}>{label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">정렬 순서</label>
-                    <input type="number" className="form-input w-full" value={formData.sortOrder} onChange={(e) => handleFormChange({ sortOrder: Number(e.target.value) })} min={0} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">게시 시작일</label>
-                    <input type="date" className="form-input w-full" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-txt-main mb-1">게시 종료일</label>
-                    <input type="date" className={`form-input w-full ${formData.isAlwaysOn ? 'opacity-50' : ''}`} value={formData.endDate} onChange={(e) => handleFormChange({ endDate: e.target.value })} disabled={formData.isAlwaysOn} />
+                    <Input label="게시 종료일" type="date" className={formData.isAlwaysOn ? 'opacity-50' : ''} value={formData.endDate} onChange={(e) => handleFormChange({ endDate: e.target.value })} disabled={formData.isAlwaysOn} />
                     <label className="flex items-center gap-1.5 mt-1 text-xs text-txt-muted cursor-pointer">
                       <input type="checkbox" checked={formData.isAlwaysOn} onChange={(e) => handleFormChange({ isAlwaysOn: e.target.checked })} />
                       상시 게시

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -28,7 +28,6 @@ import {
 import type {
   Discount,
   DiscountFormData,
-  DiscountPeriodType,
   DiscountTargetType,
   DiscountChannel,
   OrderType,
@@ -149,25 +148,21 @@ export function Discounts() {
 
   // 기간 표시 텍스트
   const getPeriodText = (discount: Discount) => {
-    switch (discount.periodType) {
-      case 'period':
-        if (discount.startDate && discount.endDate) {
-          return `${formatDate(discount.startDate)} ~ ${formatDate(discount.endDate)}`;
-        }
-        return '기간 미설정';
-      case 'schedule':
-        if (discount.schedule) {
-          const days = discount.schedule.days.map((d) => DAY_LABELS_MAP[d]).join(', ');
-          const time = discount.schedule.timeSlots?.[0];
-          if (time) {
-            return `${days} ${time.startTime}~${time.endTime}`;
-          }
-          return days;
-        }
-        return '스케줄 미설정';
-      default:
-        return '-';
+    const parts: string[] = [];
+    if (discount.startDate && discount.endDate) {
+      parts.push(`${formatDate(discount.startDate)} ~ ${formatDate(discount.endDate)}`);
     }
+    if (discount.schedule) {
+      const allSelected = discount.schedule.days.length === 7;
+      const dayText = allSelected ? '매일' : discount.schedule.days.map((d) => DAY_LABELS_MAP[d]).join(', ');
+      const time = discount.schedule.timeSlots?.[0];
+      if (time && !(time.startTime === '00:00' && time.endTime === '23:59')) {
+        parts.push(`${dayText} ${time.startTime}~${time.endTime}`);
+      } else if (!allSelected) {
+        parts.push(dayText);
+      }
+    }
+    return parts.length > 0 ? parts.join(' · ') : '기간 미설정';
   };
 
   // 할인 선택
@@ -180,10 +175,9 @@ export function Discounts() {
       value: discount.value,
       giftCondition: discount.giftCondition,
       giftReward: discount.giftReward,
-      periodType: discount.periodType,
       startDate: discount.startDate,
       endDate: discount.endDate,
-      schedule: discount.schedule,
+      schedule: discount.schedule || { days: DAYS_OF_WEEK, timeSlots: [{ startTime: '00:00', endTime: '23:59' }] },
       target: discount.target,
       applyToAll: discount.applyToAll,
       storeIds: discount.storeIds,
@@ -424,11 +418,7 @@ export function Discounts() {
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-xs text-txt-muted">
-                        {discount.periodType === 'schedule' ? (
-                          <ClockCircleOutlined style={{ fontSize: 10 }} />
-                        ) : (
-                          <CalendarOutlined style={{ fontSize: 10 }} />
-                        )}
+                        <CalendarOutlined style={{ fontSize: 10 }} />
                         <span>{getPeriodText(discount)}</span>
                       </div>
                     </div>
@@ -835,128 +825,106 @@ export function Discounts() {
                   <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
                     <h3 className="text-sm font-semibold text-txt-main">기간 설정</h3>
 
-                    <div className="space-y-2">
-                      <Label required>기간 타입</Label>
-                      <div className="flex gap-2">
-                        {(['period', 'schedule'] as DiscountPeriodType[]).map((type) => (
+                    {/* 시작일 / 종료일 */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-txt-muted mb-1">시작일</label>
+                        <div className="relative">
+                          <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                          <input
+                            type="date"
+                            value={formData.startDate || ''}
+                            onChange={(e) => updateFormData({ startDate: e.target.value })}
+                            className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-txt-muted mb-1">종료일</label>
+                        <div className="relative">
+                          <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                          <input
+                            type="date"
+                            value={formData.endDate || ''}
+                            onChange={(e) => updateFormData({ endDate: e.target.value })}
+                            className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 적용 요일 */}
+                    <div>
+                      <label className="block text-sm text-txt-muted mb-2">적용 요일</label>
+                      <div className="flex gap-1">
+                        {DAYS_OF_WEEK.map((day) => (
                           <button
-                            key={type}
+                            key={day}
                             type="button"
-                            onClick={() => updateFormData({ periodType: type })}
-                            className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-all ${formData.periodType === type
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-bg-card text-txt-muted border-border hover:border-primary'
+                            onClick={() => toggleDay(day)}
+                            className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${formData.schedule?.days?.includes(day)
+                              ? 'bg-primary text-white'
+                              : 'bg-bg-card border border-border text-txt-muted hover:border-primary'
                               }`}
                           >
-                            {type === 'period' ? '기간' : '시간/요일'}
+                            {DAY_LABELS_MAP[day]}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {formData.periodType === 'period' && (
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-sm text-txt-muted mb-1">시작일</label>
-                          <div className="relative">
-                            <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                            <input
-                              type="date"
-                              value={formData.startDate || ''}
-                              onChange={(e) => updateFormData({ startDate: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                            />
-                          </div>
+                    {/* 적용 시간 */}
+                    <div>
+                      <label className="block text-sm text-txt-muted mb-2">적용 시간</label>
+                      <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                          <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                          <input
+                            type="time"
+                            value={formData.schedule?.timeSlots?.[0]?.startTime || '00:00'}
+                            onChange={(e) =>
+                              updateFormData({
+                                schedule: {
+                                  ...formData.schedule,
+                                  days: formData.schedule?.days || DAYS_OF_WEEK,
+                                  timeSlots: [
+                                    {
+                                      startTime: e.target.value,
+                                      endTime: formData.schedule?.timeSlots?.[0]?.endTime || '23:59',
+                                    },
+                                  ],
+                                },
+                              })
+                            }
+                            className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                          />
                         </div>
-                        <div>
-                          <label className="block text-sm text-txt-muted mb-1">종료일</label>
-                          <div className="relative">
-                            <CalendarOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                            <input
-                              type="date"
-                              value={formData.endDate || ''}
-                              onChange={(e) => updateFormData({ endDate: e.target.value })}
-                              className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                            />
-                          </div>
+                        <span className="text-txt-muted">~</span>
+                        <div className="relative flex-1">
+                          <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
+                          <input
+                            type="time"
+                            value={formData.schedule?.timeSlots?.[0]?.endTime || '23:59'}
+                            onChange={(e) =>
+                              updateFormData({
+                                schedule: {
+                                  ...formData.schedule,
+                                  days: formData.schedule?.days || DAYS_OF_WEEK,
+                                  timeSlots: [
+                                    {
+                                      startTime:
+                                        formData.schedule?.timeSlots?.[0]?.startTime || '00:00',
+                                      endTime: e.target.value,
+                                    },
+                                  ],
+                                },
+                              })
+                            }
+                            className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+                          />
                         </div>
                       </div>
-                    )}
-
-                    {formData.periodType === 'schedule' && (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm text-txt-muted mb-2">적용 요일</label>
-                          <div className="flex gap-1">
-                            {DAYS_OF_WEEK.map((day) => (
-                              <button
-                                key={day}
-                                type="button"
-                                onClick={() => toggleDay(day)}
-                                className={`w-9 h-9 rounded-full text-sm font-medium transition-all ${formData.schedule?.days?.includes(day)
-                                  ? 'bg-primary text-white'
-                                  : 'bg-bg-card border border-border text-txt-muted hover:border-primary'
-                                  }`}
-                              >
-                                {DAY_LABELS_MAP[day]}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-sm text-txt-muted mb-2">적용 시간</label>
-                          <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                              <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                              <input
-                                type="time"
-                                value={formData.schedule?.timeSlots?.[0]?.startTime || '00:00'}
-                                onChange={(e) =>
-                                  updateFormData({
-                                    schedule: {
-                                      ...formData.schedule,
-                                      days: formData.schedule?.days || [],
-                                      timeSlots: [
-                                        {
-                                          startTime: e.target.value,
-                                          endTime: formData.schedule?.timeSlots?.[0]?.endTime || '23:59',
-                                        },
-                                      ],
-                                    },
-                                  })
-                                }
-                                className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                              />
-                            </div>
-                            <span className="text-txt-muted">~</span>
-                            <div className="relative flex-1">
-                              <ClockCircleOutlined className="absolute left-3 top-1/2 -translate-y-1/2 text-txt-muted" />
-                              <input
-                                type="time"
-                                value={formData.schedule?.timeSlots?.[0]?.endTime || '23:59'}
-                                onChange={(e) =>
-                                  updateFormData({
-                                    schedule: {
-                                      ...formData.schedule,
-                                      days: formData.schedule?.days || [],
-                                      timeSlots: [
-                                        {
-                                          startTime:
-                                            formData.schedule?.timeSlots?.[0]?.startTime || '00:00',
-                                          endTime: e.target.value,
-                                        },
-                                      ],
-                                    },
-                                  })
-                                }
-                                className="w-full pl-9 pr-3 py-2 bg-bg-card border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* 적용 대상 섹션 */}
@@ -1069,51 +1037,65 @@ export function Discounts() {
                   {/* 정산 비율 섹션 */}
                   <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
                     <h3 className="text-sm font-semibold text-txt-main">정산 비율</h3>
+                    <p className="text-xs text-txt-muted">
+                      {formData.method === 'fixed'
+                        ? '할인 금액을 본사/가맹점으로 나누어 정산합니다.'
+                        : '할인율(%)을 본사/가맹점 비율로 나누어 정산합니다.'}
+                    </p>
 
                     <div className="space-y-4">
-                      <div className="flex gap-4">
-                        <div className="flex-1 space-y-2">
-                          <Label>본사 부담 (%)</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={formData.headquartersRatio}
-                            onChange={(e) => {
-                              const val = Math.max(0, Math.min(100, Number(e.target.value)));
-                              handleSettlementRatioChange(val);
-                            }}
-                          />
-                        </div>
-                        <div className="flex-1 space-y-2">
-                          <Label>가맹점 부담 (%)</Label>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={100}
-                            value={formData.franchiseRatio}
-                            onChange={(e) => {
-                              const val = Math.max(0, Math.min(100, Number(e.target.value)));
-                              handleSettlementRatioChange(100 - val);
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="pt-2">
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={formData.headquartersRatio}
-                          onChange={(e) => handleSettlementRatioChange(Number(e.target.value))}
-                          className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                      {formData.method === 'fixed' ? (
+                        <FixedAmountSettlement
+                          totalAmount={formData.value || 0}
+                          headquartersRatio={formData.headquartersRatio}
+                          onRatioChange={handleSettlementRatioChange}
                         />
-                        <div className="flex justify-between px-1 mt-2">
-                          <span className="text-xs font-medium text-primary">본사 {formData.headquartersRatio}%</span>
-                          <span className="text-xs font-medium text-warning">가맹점 {formData.franchiseRatio}%</span>
-                        </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-4">
+                            <div className="flex-1 space-y-2">
+                              <Label>본사 부담 (%)</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={formData.headquartersRatio}
+                                onChange={(e) => {
+                                  const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                                  handleSettlementRatioChange(val);
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1 space-y-2">
+                              <Label>가맹점 부담 (%)</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={formData.franchiseRatio}
+                                onChange={(e) => {
+                                  const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                                  handleSettlementRatioChange(100 - val);
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="pt-2">
+                            <input
+                              type="range"
+                              min="0"
+                              max="100"
+                              value={formData.headquartersRatio}
+                              onChange={(e) => handleSettlementRatioChange(Number(e.target.value))}
+                              className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                            />
+                            <div className="flex justify-between px-1 mt-2">
+                              <span className="text-xs font-medium text-primary">본사 {formData.headquartersRatio}%</span>
+                              <span className="text-xs font-medium text-warning">가맹점 {formData.franchiseRatio}%</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -1216,5 +1198,109 @@ export function Discounts() {
         showCancel={true}
       />
     </div>
+  );
+}
+
+/** 금액 할인 정산 비율 입력 (로컬 state로 타이핑 안정화) */
+function FixedAmountSettlement({
+  totalAmount,
+  headquartersRatio,
+  onRatioChange,
+}: {
+  totalAmount: number;
+  headquartersRatio: number;
+  onRatioChange: (ratio: number) => void;
+}) {
+  const hqAmt = totalAmount > 0 ? Math.round(totalAmount * headquartersRatio / 100) : 0;
+  const frAmt = totalAmount - hqAmt;
+
+  const [hqInput, setHqInput] = useState(String(hqAmt));
+  const [frInput, setFrInput] = useState(String(frAmt));
+  const isTyping = useRef(false);
+
+  useEffect(() => {
+    if (!isTyping.current) {
+      setHqInput(String(hqAmt));
+      setFrInput(String(frAmt));
+    }
+  }, [hqAmt, frAmt]);
+
+  const commitRatio = (amt: number, isHq: boolean) => {
+    const clamped = Math.max(0, Math.min(totalAmount, amt));
+    const ratio = totalAmount > 0 ? (clamped / totalAmount) * 100 : 0;
+    onRatioChange(isHq ? ratio : 100 - ratio);
+  };
+
+  return (
+    <>
+      <div className="flex gap-4">
+        <div className="flex-1 space-y-2">
+          <Label>본사 부담 (원)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={totalAmount}
+            value={hqInput}
+            onChange={(e) => {
+              isTyping.current = true;
+              setHqInput(e.target.value);
+              const num = Number(e.target.value);
+              if (e.target.value !== '' && !isNaN(num)) {
+                commitRatio(num, true);
+              }
+            }}
+            onBlur={() => {
+              isTyping.current = false;
+              setHqInput(String(hqAmt));
+              setFrInput(String(frAmt));
+            }}
+          />
+        </div>
+        <div className="flex-1 space-y-2">
+          <Label>가맹점 부담 (원)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={totalAmount}
+            value={frInput}
+            onChange={(e) => {
+              isTyping.current = true;
+              setFrInput(e.target.value);
+              const num = Number(e.target.value);
+              if (e.target.value !== '' && !isNaN(num)) {
+                commitRatio(num, false);
+              }
+            }}
+            onBlur={() => {
+              isTyping.current = false;
+              setHqInput(String(hqAmt));
+              setFrInput(String(frAmt));
+            }}
+          />
+        </div>
+      </div>
+      <div className="pt-2">
+        <input
+          type="range"
+          min="0"
+          max={totalAmount || 100}
+          value={hqAmt}
+          onChange={(e) => {
+            const amt = Number(e.target.value);
+            const ratio = totalAmount > 0 ? (amt / totalAmount) * 100 : 0;
+            onRatioChange(ratio);
+          }}
+          className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+        />
+        <div className="flex justify-between px-1 mt-2">
+          <span className="text-xs font-medium text-primary">
+            본사 {hqAmt.toLocaleString()}원
+          </span>
+          <span className="text-xs font-medium text-warning">
+            가맹점 {frAmt.toLocaleString()}원
+          </span>
+        </div>
+      </div>
+    </>
   );
 }

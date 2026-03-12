@@ -72,3 +72,90 @@
 - **쿠폰 동시성 (Race Condition)** — 한정 수량 쿠폰의 `POST /api/coupons/{id}/download` 호출 시 오버셀링 방지. Redis DECR + DB 트랜잭션 이중 체크를 권장한다.
 - **할인액 계산** — 프론트엔드 계산 결과를 신뢰하지 않는다. 서버 자체 할인 엔진으로 재검증 후 결제를 진행한다.
 - **쿠폰 만료 배치** — endDate 지난 쿠폰을 expired로 일괄 전환하는 Worker가 필요하다. 청크 단위 처리로 DB Lock 최소화한다.
+
+---
+
+## 3. 정상작동 시나리오
+
+### 시나리오 1: 할인 생성 → 활성화
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 할인 목록 → [할인 등록] 클릭 | 생성 폼 렌더링 | 필수 필드 빈 상태 |
+| 2 | 기본정보: 할인명 입력, 할인방식 선택(정률) | 정률 선택 시 '%' 단위 표시 + maxDiscountAmount 입력 활성화 | 방식별 UI 동적 전환 |
+| 3 | 할인값: 20% 입력, 최대 할인 5,000원 | 실시간 유효성 검증 (1~100%) | maxDiscountAmount > 0 |
+| 4 | 적용범위: "특정 상품" 선택 | 상품 검색 모달 팝업 → 복수 선택 | 최소 1개 상품 선택 |
+| 5 | 정산 비율: 본사 70 / 가맹 30 입력 | 한쪽 입력 시 반대편 자동 계산 (100-X) | 합계=100 검증 |
+| 6 | 적용기간: 시작~종료일 설정 | DatePicker 범위 선택 | 종료일 > 시작일 |
+| 7 | [저장] 클릭 | `POST /api/discounts` → 성공 Toast → 목록 이동 | 목록에 신규 할인(active) 표시 |
+
+### 시나리오 2: 쿠폰 생성 → 고객 다운로드
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 쿠폰 목록 → [쿠폰 등록] | 생성 폼 렌더링 | 쿠폰 고유 필드(발행수량, 1인1매) 표시 |
+| 2 | 발행수량: 1000매, 1인1매: ON | totalCount=1000, perUserLimit=1 설정 | null이면 무제한 |
+| 3 | 할인 설정 + 정산 비율 입력 | 할인과 동일한 검증 | 합계=100 |
+| 4 | [저장] 클릭 | `POST /api/coupons` → 생성 완료 | status=active |
+| 5 | 고객앱에서 쿠폰 다운로드 | `POST /api/coupons/:id/download` → Redis DECR + DB 트랜잭션 | remainingCount 차감, 동시성 제어 |
+
+---
+
+## 4. 개발자용 정책 설명
+
+### 4.1. 할인 중복 불가 정책 (⚠️ 핵심 정책)
+
+```
+규칙: 장바구니에 할인 적용 상품이 1건이라도 존재하면 쿠폰 사용 불가
+      할인/쿠폰/포인트는 모두 상호 배타적 — 동시 적용 불가
+
+프론트엔드 처리:
+  - 할인상품 담기 → couponSelector.disabled = true, pointInput.disabled = true
+  - 쿠폰 적용 중 할인상품 추가 → 쿠폰 자동 해제 + Toast
+  - 포인트 사용 중 할인상품 추가 → 포인트 자동 해제 + Toast
+
+백엔드 검증:
+  - hasDiscountItem && hasCoupon → DISCOUNT_COUPON_CONFLICT (400)
+  - hasDiscountItem && hasPoint → DISCOUNT_POINT_CONFLICT (400)
+  - hasCoupon && hasPoint → DISCOUNT_POINT_CONFLICT (400)
+
+참조: docs/policy_discount_coupon.md
+```
+
+### 4.2. 할인 자동 적용 우선순위
+
+```
+적용 가능 할인이 복수인 경우 서버가 1건만 선택:
+  1순위: 할인 금액이 가장 작은 것 (본사 비용 최소화)
+  2순위: 종료일이 가까운 것
+  3순위: 생성일이 최신인 것
+```
+
+### 4.3. 쿠폰 동시성 제어 (Race Condition 방지)
+
+```
+한정수량 쿠폰 다운로드 API:
+  1. Redis DECR coupon:{id}:remaining → 결과 < 0 이면 즉시 거부 + INCR 복원
+  2. DECR 성공 시 DB 트랜잭션으로 usageCount 증가 + 사용자 발급 기록
+  3. DB 실패 시 Redis INCR 보상
+  이중 체크로 오버셀링 방지
+```
+
+### 4.4. 절사 규칙
+
+```
+정률 할인 계산: discountAmount = floor(orderAmount * rate / 100)
+절사 방식: roundingType(round/ceil/floor) × roundingUnit(10/100)
+예시: 15,750원, floor, 100단위 → 15,700원
+```
+
+### 4.5. 쿠폰 만료 배치
+
+```
+실행: 매일 00:00
+대상: endDate < now() AND status = 'active'
+처리: status → 'expired', 청크 1,000건 단위
+고객앱: expired 쿠폰은 쿠폰함에서 "기간 만료" 라벨 표시
+삭제 가능 시점: 만료 후 7일 경과 (policy_discount_coupon.md 참조)
+```
+

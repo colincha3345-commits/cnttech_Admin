@@ -39,6 +39,8 @@ import {
   CardContent,
   Button,
   Badge,
+  Input,
+  Select,
   SearchInput,
   ConfirmDialog,
   ToggleButtonGroup,
@@ -408,10 +410,7 @@ export function PopupManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">팝업 제목 *</label>
-                  <input type="text" className="form-input w-full" value={formData.title} onChange={(e) => handleFormChange({ title: e.target.value })} placeholder="팝업 제목을 입력하세요" />
-                </div>
+                <Input label="팝업 제목 *" value={formData.title} onChange={(e) => handleFormChange({ title: e.target.value })} placeholder="팝업 제목을 입력하세요" />
 
                 {/* 팝업 전시 설정 - 최상단 배치 */}
                 <div className="border-t border-border pt-4">
@@ -419,35 +418,28 @@ export function PopupManagement() {
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">노출 기기 (Device)</label>
-                      <select className="form-input w-full" value={formData.deviceType} onChange={(e) => handleFormChange({ deviceType: e.target.value as DeviceType })} disabled={formData.popupType === 'bottom_sheet'}>
+                      <Select label="노출 기기 (Device)" value={formData.deviceType} onChange={(e) => handleFormChange({ deviceType: e.target.value as DeviceType })} disabled={formData.popupType === 'bottom_sheet'}>
                         {Object.entries(DEVICE_TYPE_LABELS).map(([val, label]) => (
                           <option key={val} value={val}>{label}</option>
                         ))}
-                      </select>
+                      </Select>
                       {formData.popupType === 'bottom_sheet' && (
                         <p className="text-xs text-info mt-1">※ 바텀시트는 모바일에서만 지원됩니다.</p>
                       )}
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">팝업 유형</label>
-                      <select className="form-input w-full" value={formData.popupType} onChange={(e) => handleFormChange({ popupType: e.target.value as PopupType })}>
-                        {Object.entries(POPUP_TYPE_LABELS).map(([val, label]) => (
-                          <option key={val} value={val}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select label="팝업 유형" value={formData.popupType} onChange={(e) => handleFormChange({ popupType: e.target.value as PopupType })}>
+                      {Object.entries(POPUP_TYPE_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </Select>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">노출 대상 (회원/비회원)</label>
-                      <select className="form-input w-full" value={formData.exposureTarget} onChange={(e) => handleFormChange({ exposureTarget: e.target.value as ExposureTarget })}>
-                        {Object.entries(EXPOSURE_TARGET_LABELS).map(([val, label]) => (
-                          <option key={val} value={val}>{label}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select label="노출 대상 (회원/비회원)" value={formData.exposureTarget} onChange={(e) => handleFormChange({ exposureTarget: e.target.value as ExposureTarget })}>
+                      {Object.entries(EXPOSURE_TARGET_LABELS).map(([val, label]) => (
+                        <option key={val} value={val}>{label}</option>
+                      ))}
+                    </Select>
                     <div>
                       <label className="block text-sm font-medium text-txt-main mb-1">노출 화면</label>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -466,13 +458,9 @@ export function PopupManagement() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
+                    <Input label="시작일" type="date" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
                     <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">시작일</label>
-                      <input type="date" className="form-input w-full" value={formData.startDate} onChange={(e) => handleFormChange({ startDate: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">종료일</label>
-                      <input type="date" className={`form-input w-full ${formData.isAlwaysOn ? 'opacity-50' : ''}`} value={formData.endDate} onChange={(e) => handleFormChange({ endDate: e.target.value })} disabled={formData.isAlwaysOn} />
+                      <Input label="종료일" type="date" className={formData.isAlwaysOn ? 'opacity-50' : ''} value={formData.endDate} onChange={(e) => handleFormChange({ endDate: e.target.value })} disabled={formData.isAlwaysOn} />
                       <label className="flex items-center gap-1.5 mt-1 text-xs text-txt-muted cursor-pointer">
                         <input type="checkbox" checked={formData.isAlwaysOn} onChange={(e) => handleFormChange({ isAlwaysOn: e.target.checked })} />
                         상시 노출
@@ -493,8 +481,8 @@ export function PopupManagement() {
                 <div className="border-t border-border pt-4">
                   <h3 className="text-sm font-semibold text-txt-main mb-3">팝업 콘텐츠</h3>
                   <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">내용</label>
+                    <div className="form-group">
+                      <label className="form-label">내용</label>
                       <textarea className="form-input w-full resize-y" value={formData.content} onChange={(e) => handleFormChange({ content: e.target.value })} placeholder="팝업 내용을 입력하세요" rows={3} />
                     </div>
                     <div>
@@ -511,14 +499,8 @@ export function PopupManagement() {
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-txt-main mb-1">웹 링크 URL (PC/Web)</label>
-                        <input type="text" className="form-input w-full" value={formData.webLinkUrl} onChange={(e) => handleFormChange({ webLinkUrl: e.target.value })} placeholder="클릭 시 이동할 웹 주소 (선택)" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-txt-main mb-1">앱 딥링크 URL (Mobile)</label>
-                        <input type="text" className="form-input w-full" value={formData.deepLinkUrl} onChange={(e) => handleFormChange({ deepLinkUrl: e.target.value })} placeholder="클릭 시 이동할 앱 딥링크 (선택)" />
-                      </div>
+                      <Input label="웹 링크 URL (PC/Web)" value={formData.webLinkUrl} onChange={(e) => handleFormChange({ webLinkUrl: e.target.value })} placeholder="클릭 시 이동할 웹 주소 (선택)" />
+                      <Input label="앱 딥링크 URL (Mobile)" value={formData.deepLinkUrl} onChange={(e) => handleFormChange({ deepLinkUrl: e.target.value })} placeholder="클릭 시 이동할 앱 딥링크 (선택)" />
                     </div>
                   </div>
                 </div>

@@ -9,8 +9,12 @@ import type {
 import {
   mockAuthUsers,
   mockLoginAttempts,
+  mockSessions,
   toAuthUser,
   createSession,
+  removeSession,
+  getMockTokenFromCookie,
+  validateSession,
 } from '@/lib/api/mockAuth';
 import { delay } from '@/utils/async';
 
@@ -333,7 +337,6 @@ export const authService = {
    */
   async logout(): Promise<void> {
     await delay(100);
-    const { removeSession } = await import('@/lib/api/mockAuth');
     removeSession();
   },
 
@@ -343,7 +346,6 @@ export const authService = {
   async getCurrentUser(): Promise<ApiResponse<AuthUser | null>> {
     await delay(100);
 
-    const { getMockTokenFromCookie, validateSession } = await import('@/lib/api/mockAuth');
     const token = getMockTokenFromCookie('mock_access_token');
 
     if (!token) {
@@ -376,11 +378,9 @@ export const authService = {
     await delay(200);
 
     // Mock: refreshToken으로 세션 찾기
-    for (const [, session] of Array.from(
-      (await import('@/lib/api/mockAuth')).mockSessions
-    )) {
+    for (const [, session] of Array.from(mockSessions)) {
       if (session.refreshToken === refreshToken) {
-        (await import('@/lib/api/mockAuth')).mockSessions.delete(session.accessToken);
+        mockSessions.delete(session.accessToken);
         const newSession = createSession(session.user);
         return {
           success: true,

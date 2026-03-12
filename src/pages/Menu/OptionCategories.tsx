@@ -55,11 +55,12 @@ export function OptionCategories() {
   const [formData, setFormData] = useState({
     name: '',
     posCode: '',
-    price: '' as unknown as number,
-    maxQuantity: '' as unknown as number,
+    price: 0,
+    minQuantity: 0,
+    maxQuantity: 1,
     imageUrl: '',
     isVisible: true,
-    displayOrder: '' as unknown as number,
+    displayOrder: 1,
   });
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -144,6 +145,7 @@ export function OptionCategories() {
       name: option.name,
       posCode: option.posCode,
       price: option.price,
+      minQuantity: option.minQuantity,
       maxQuantity: option.maxQuantity,
       imageUrl: option.imageUrl || '',
       isVisible: option.isVisible,
@@ -158,11 +160,12 @@ export function OptionCategories() {
     setFormData({
       name: '',
       posCode: '',
-      price: '' as unknown as number,
-      maxQuantity: '' as unknown as number,
+      price: 0,
+      minQuantity: 0,
+      maxQuantity: 1,
       imageUrl: '',
       isVisible: true,
-      displayOrder: '' as unknown as number,
+      displayOrder: 1,
     });
     setImagePreview(null);
     setIsEditing(true);
@@ -207,15 +210,23 @@ export function OptionCategories() {
       showAlert('입력 오류', '포스코드는 20자 이내로 입력해주세요.');
       return;
     }
-    if (formData.price === '' as unknown as number || formData.price < 0 || formData.price > 9999999) {
+    if (typeof formData.price !== 'number' || isNaN(formData.price) || formData.price < 0 || formData.price > 9999999) {
       showAlert('입력 오류', '가격은 0~9,999,999 범위로 입력해주세요.');
       return;
     }
-    if (formData.maxQuantity === '' as unknown as number || formData.maxQuantity < 1 || formData.maxQuantity > 99) {
+    if (typeof formData.minQuantity !== 'number' || isNaN(formData.minQuantity) || formData.minQuantity < 0 || formData.minQuantity > 99) {
+      showAlert('입력 오류', '최소 선택 수량은 0~99 범위로 입력해주세요.');
+      return;
+    }
+    if (typeof formData.maxQuantity !== 'number' || isNaN(formData.maxQuantity) || formData.maxQuantity < 1 || formData.maxQuantity > 99) {
       showAlert('입력 오류', '최대 선택 수량은 1~99 범위로 입력해주세요.');
       return;
     }
-    if (formData.displayOrder === '' as unknown as number || formData.displayOrder < 1 || formData.displayOrder > 999) {
+    if (formData.minQuantity > formData.maxQuantity) {
+      showAlert('입력 오류', '최소 수량은 최대 수량보다 클 수 없습니다.');
+      return;
+    }
+    if (typeof formData.displayOrder !== 'number' || isNaN(formData.displayOrder) || formData.displayOrder < 1 || formData.displayOrder > 999) {
       showAlert('입력 오류', '표시 순서는 1~999 범위로 입력해주세요.');
       return;
     }
@@ -234,6 +245,7 @@ export function OptionCategories() {
       name: formData.name,
       posCode: formData.posCode,
       price: formData.price,
+      minQuantity: formData.minQuantity,
       maxQuantity: formData.maxQuantity,
       imageUrl: formData.imageUrl,
       isVisible: formData.isVisible,
@@ -360,8 +372,8 @@ export function OptionCategories() {
                           {formatCurrency(option.price)}원
                         </span>
                         <span className="flex-shrink-0">|</span>
-                        <span className={`flex-shrink-0 text-xs px-1.5 py-0.5 rounded ${option.maxQuantity === 1 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {option.maxQuantity === 1 ? '선택형' : `수량 ${option.maxQuantity}개`}
+                        <span className={`flex-shrink-0 text-xs px-1.5 py-0.5 rounded ${option.maxQuantity === 1 && option.minQuantity === 0 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {option.maxQuantity === 1 && option.minQuantity === 0 ? '선택형' : `${option.minQuantity}~${option.maxQuantity}개`}
                         </span>
                       </div>
                     </div>
@@ -490,8 +502,8 @@ export function OptionCategories() {
                   </p>
                 </div>
 
-                {/* 포스코드 & 가격 & 최대 선택 수량 */}
-                <div className="grid grid-cols-3 gap-4">
+                {/* 포스코드 & 가격 */}
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label required>포스코드</Label>
                     <Input
@@ -509,7 +521,7 @@ export function OptionCategories() {
                         value={formData.price}
                         onChange={(e) => {
                           if (e.target.value === '') {
-                            setFormData({ ...formData, price: '' as unknown as number });
+                            setFormData({ ...formData, price: 0 });
                             return;
                           }
                           const val = parseInt(e.target.value);
@@ -528,6 +540,32 @@ export function OptionCategories() {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                {/* 최소/최대 선택 수량 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>최소 선택 수량</Label>
+                    <Input
+                      type="number"
+                      value={formData.minQuantity}
+                      onChange={(e) => {
+                        if (e.target.value === '') {
+                          setFormData({ ...formData, minQuantity: 0 });
+                          return;
+                        }
+                        const val = parseInt(e.target.value);
+                        if (!isNaN(val) && val >= 0 && val <= 99) {
+                          setFormData({ ...formData, minQuantity: val });
+                        }
+                      }}
+                      min={0}
+                      max={99}
+                      placeholder="0"
+                      disabled={!isEditing && !!selectedOption}
+                    />
+                    <p className="text-xs text-txt-muted">0~99개 (0 = 선택사항)</p>
+                  </div>
                   <div className="space-y-2">
                     <Label required>최대 선택 수량</Label>
                     <Input
@@ -535,7 +573,7 @@ export function OptionCategories() {
                       value={formData.maxQuantity}
                       onChange={(e) => {
                         if (e.target.value === '') {
-                          setFormData({ ...formData, maxQuantity: '' as unknown as number });
+                          setFormData({ ...formData, maxQuantity: 1 });
                           return;
                         }
                         const val = parseInt(e.target.value);
@@ -553,19 +591,21 @@ export function OptionCategories() {
                 </div>
 
                 {/* 프론트 UI 타입 안내 */}
-                {formData.maxQuantity !== ('' as unknown as number) && <div className={`p-3 rounded-lg border ${formData.maxQuantity === 1 ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
+                {formData.maxQuantity > 0 && <div className={`p-3 rounded-lg border ${formData.maxQuantity === 1 && (formData.minQuantity === 0) ? 'bg-blue-50 border-blue-200' : 'bg-amber-50 border-amber-200'}`}>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${formData.maxQuantity === 1 ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
-                      {formData.maxQuantity === 1 ? '선택형' : '수량 조절형'}
+                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${formData.maxQuantity === 1 && (formData.minQuantity === 0) ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
+                      {formData.maxQuantity === 1 && (formData.minQuantity === 0) ? '선택형' : '수량 조절형'}
                     </span>
                     <span className="text-sm font-medium text-txt-main">
-                      프론트 UI: {formData.maxQuantity === 1 ? '체크박스 / 라디오' : `수량 조절 (0~${formData.maxQuantity}개)`}
+                      프론트 UI: {formData.maxQuantity === 1 && (formData.minQuantity === 0)
+                        ? '체크박스 / 라디오'
+                        : `수량 조절 (${formData.minQuantity === 0 ? 0 : formData.minQuantity}~${formData.maxQuantity}개)`}
                     </span>
                   </div>
                   <p className="text-xs text-txt-muted">
-                    {formData.maxQuantity === 1
+                    {formData.maxQuantity === 1 && (formData.minQuantity === 0)
                       ? '고객 화면에서 선택/해제만 가능한 단일 선택 UI로 표시됩니다.'
-                      : `고객 화면에서 +/- 버튼으로 0~${formData.maxQuantity}개 수량 조절이 가능한 UI로 표시됩니다.`}
+                      : `고객 화면에서 +/- 버튼으로 ${formData.minQuantity === 0 ? 0 : formData.minQuantity}~${formData.maxQuantity}개 수량 조절이 가능한 UI로 표시됩니다.`}
                   </p>
                 </div>}
 
@@ -577,7 +617,7 @@ export function OptionCategories() {
                     value={formData.displayOrder}
                     onChange={(e) => {
                       if (e.target.value === '') {
-                        setFormData({ ...formData, displayOrder: '' as unknown as number });
+                        setFormData({ ...formData, displayOrder: 1 });
                         return;
                       }
                       const val = parseInt(e.target.value);

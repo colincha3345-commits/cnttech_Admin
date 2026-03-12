@@ -141,8 +141,30 @@ export const PushNotificationFormPage = () => {
         </div>
     );
 
+    // 야간 발송 차단 (정보통신망법 제50조 — 광고성 21:00~08:00 발송 금지)
+    const isNightTimeSendBlocked = (): boolean => {
+        if (formData.type !== 'ad') return false;
+        const checkHour = (date: Date) => {
+            const h = date.getHours();
+            return h >= 21 || h < 8;
+        };
+        if (formData.isScheduled && formData.scheduledAt) {
+            return checkHour(new Date(formData.scheduledAt));
+        }
+        if (!formData.isScheduled) {
+            return checkHour(new Date());
+        }
+        return false;
+    };
+
     // 전송 핸들러 (백엔드 API 연동 예시)
     const handleSubmit = async () => {
+        // 광고성 야간 발송 차단
+        if (isNightTimeSendBlocked()) {
+            alert('광고성 푸시는 21:00~08:00 사이에 발송할 수 없습니다. (정보통신망법 제50조)');
+            return;
+        }
+
         try {
             // 1. 세그먼트 데이터 병합
             const segments = {
@@ -195,13 +217,7 @@ export const PushNotificationFormPage = () => {
             if (smallIconFile) apiPayload.append('androidSmallIcon', smallIconFile);
             if (bigPictureFile) apiPayload.append('androidBigPicture', bigPictureFile);
 
-            console.log('📌 [API Payload 준비 완료]');
-            for (let [key, value] of apiPayload.entries()) {
-                console.log(`${key}:`, value);
-            }
-
-            // Mock 백엔드 호출
-            // await axios.post('/api/v1/pushes', apiPayload, { headers: { 'Content-Type': 'multipart/form-data' } });
+            // TODO: 백엔드 API 연동 시 pushService.send(apiPayload) 호출
 
             toast.success('푸시 발송(예약)이 접수되었습니다.');
         } catch (error) {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   PlusOutlined,
   StopOutlined,
@@ -7,6 +7,7 @@ import {
   CopyOutlined,
   CheckOutlined,
   DownloadOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -27,12 +28,18 @@ import {
   CouponDiscountType,
   CouponApplyScope,
   CouponOrderType,
+  CouponStatus,
+  CouponChannel,
   COUPON_APPLY_SCOPE_LABELS,
   COUPON_ORDER_TYPE_LABELS,
+  COUPON_CHANNEL_LABELS,
+  COUPON_STATUS_LABELS,
+  COUPON_STATUS_FILTER_OPTIONS,
   DEFAULT_COUPON_FORM,
   validateCouponForm,
 } from '@/types/coupon';
-import { useToast, useStores, useCouponList, useCreateCoupon, useUpdateCoupon, useSuspendCoupon, useActivateCoupon, useDuplicateCoupon, useCouponStats } from '@/hooks';
+import { ToggleButtonGroup, ConfirmDialog } from '@/components/ui';
+import { useToast, useStores, useCouponList, useCreateCoupon, useUpdateCoupon, useSuspendCoupon, useActivateCoupon, useDeleteCoupon, useDuplicateCoupon, useCouponStats } from '@/hooks';
 
 // 요일 라벨
 const DAY_LABELS: Record<number, string> = {
@@ -49,6 +56,7 @@ export function Coupons() {
   const { stores } = useStores();
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<CouponStatus | 'all'>('all');
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [isFormActive, setIsFormActive] = useState(false);
   const [formData, setFormData] = useState<CouponFormData>(getDefaultFormData());
@@ -62,18 +70,33 @@ export function Coupons() {
     coupon: Coupon | null;
     gracePeriodDays: number;
   }>({ isOpen: false, coupon: null, gracePeriodDays: 7 });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // 서버사이드 훅
-  const { data: couponListData } = useCouponList({ keyword: searchTerm });
+  const { data: couponListData } = useCouponList({
+    keyword: searchTerm,
+    status: statusFilter === 'all' ? undefined : statusFilter,
+  });
   const { data: statsData } = useCouponStats();
   const createCoupon = useCreateCoupon();
   const updateCouponMutation = useUpdateCoupon();
   const suspendMutation = useSuspendCoupon();
   const activateMutation = useActivateCoupon();
+  const deleteCouponMutation = useDeleteCoupon();
   const duplicateCouponMutation = useDuplicateCoupon();
 
   const coupons = couponListData?.data ?? [];
   const activeCount = statsData?.data?.active ?? 0;
+
+  // 쿠폰 목록 갱신 시 selectedCoupon 동기화
+  useEffect(() => {
+    if (selectedCoupon && coupons.length > 0) {
+      const updated = coupons.find((c) => c.id === selectedCoupon.id);
+      if (updated && updated.status !== selectedCoupon.status) {
+        setSelectedCoupon(updated);
+      }
+    }
+  }, [coupons, selectedCoupon]);
 
   // 다른 쿠폰에서 이미 사용 중인 상품 목록 계산
   const excludedProducts = useMemo((): ExcludedProduct[] => {
@@ -82,7 +105,7 @@ export function Coupons() {
     coupons.forEach((coupon) => {
       if (selectedCoupon?.id === coupon.id) return;
       if (coupon.applyScope !== 'specific_product') return;
-      if (!coupon.isActive) return;
+      if (coupon.status !== 'active') return;
 
       coupon.applicableProductIds.forEach((productId) => {
         if (!excluded.some((ep) => ep.productId === productId)) {
@@ -114,6 +137,7 @@ export function Coupons() {
       maxDiscountAmount: coupon.maxDiscountAmount,
       applyScope: coupon.applyScope || 'cart_total',
       orderType: coupon.orderType || 'all',
+      channel: coupon.channel || 'all',
       startDate: coupon.startDate || '',
       endDate: coupon.endDate || '',
       autoDelete: coupon.autoDelete,
@@ -200,13 +224,18 @@ export function Coupons() {
 
   // 정지 다이얼로그 열기 / 활성화 즉시 실행
   const handleToggleActive = (coupon: Coupon) => {
-    if (coupon.isActive || coupon.status === 'suspended') {
+    if (coupon.status === 'active') {
       // 활성 → 정지: 유예기간 다이얼로그 표시
       setSuspendDialog({ isOpen: true, coupon, gracePeriodDays: 7 });
     } else {
-      // 비활성/정지 → 활성화
+      // 정지 → 활성화
       activateMutation.mutate(coupon.id, {
-        onSuccess: () => toast.success('쿠폰이 활성화되었습니다.'),
+        onSuccess: (result) => {
+          toast.success('쿠폰이 활성화되었습니다.');
+          if (selectedCoupon?.id === coupon.id) {
+            setSelectedCoupon(result.data);
+          }
+        },
         onError: () => toast.error('활성화에 실패했습니다.'),
       });
     }
@@ -218,13 +247,29 @@ export function Coupons() {
     suspendMutation.mutate(
       { id: suspendDialog.coupon.id, gracePeriodDays: suspendDialog.gracePeriodDays },
       {
-        onSuccess: () => {
+        onSuccess: (result) => {
           toast.success(`쿠폰이 정지되었습니다. (유예기간 ${suspendDialog.gracePeriodDays}일)`);
+          if (selectedCoupon?.id === suspendDialog.coupon?.id) {
+            setSelectedCoupon(result.data);
+          }
           setSuspendDialog({ isOpen: false, coupon: null, gracePeriodDays: 7 });
         },
         onError: () => toast.error('정지에 실패했습니다.'),
       },
     );
+  };
+
+  // 삭제 확정
+  const handleConfirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteCouponMutation.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        handleCancel();
+        toast.success('쿠폰이 삭제되었습니다.');
+      },
+      onError: () => toast.error('삭제에 실패했습니다.'),
+    });
+    setDeleteTarget(null);
   };
 
   // 수정 모드 여부 (기존 쿠폰 선택 시)
@@ -307,6 +352,13 @@ export function Coupons() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 상태 필터 */}
+            <ToggleButtonGroup
+              value={statusFilter}
+              onChange={(val) => setStatusFilter(val as CouponStatus | 'all')}
+              options={COUPON_STATUS_FILTER_OPTIONS}
+            />
+
             {/* 검색 */}
             <SearchInput
               placeholder="쿠폰명 검색..."
@@ -337,7 +389,7 @@ export function Coupons() {
                         <div className="flex items-center gap-2">
                           <h3 className="font-medium text-txt-main truncate">{coupon.name}</h3>
                           <Badge
-                            variant={coupon.status === 'suspended' ? 'warning' : coupon.isActive ? 'success' : 'secondary'}
+                            variant={coupon.status === 'active' ? 'success' : coupon.status === 'suspended' ? 'warning' : 'secondary'}
                             className="flex-shrink-0"
                           >
                             {coupon.status === 'suspended'
@@ -346,7 +398,7 @@ export function Coupons() {
                                   const remaining = Math.ceil((new Date(coupon.graceExpiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                                   return remaining > 0 ? `정지 (유예 ${remaining}일)` : '정지됨';
                                 })()
-                              : coupon.isActive ? '활성' : '비활성'}
+                              : COUPON_STATUS_LABELS[coupon.status]}
                           </Badge>
                         </div>
                         <p className="text-sm text-txt-muted mt-1">
@@ -354,22 +406,41 @@ export function Coupons() {
                             ? `${coupon.discountValue}% 할인`
                             : `${formatCurrency(coupon.discountValue)}원 할인`}
                           {' · '}
-                          {coupon.usedCount}/{coupon.totalCount || '∞'} 사용
+                          소진 {coupon.issuedCount}/{coupon.totalCount || '∞'} · 사용 {coupon.usedCount}
                         </p>
+                        {coupon.autoDeleteAt && (
+                          <p className="text-xs text-danger mt-0.5">
+                            자동 삭제: {new Date(coupon.autoDeleteAt).toLocaleDateString('ko-KR')}
+                          </p>
+                        )}
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleActive(coupon);
-                        }}
-                        className={`p-1.5 rounded transition-colors ${coupon.isActive ? 'hover:bg-warning/10' : 'hover:bg-success/10'}`}
-                        title={coupon.isActive ? '정지' : '활성화'}
-                      >
-                        {coupon.isActive
-                          ? <StopOutlined style={{ fontSize: 14 }} className="text-warning" />
-                          : <PlayCircleOutlined style={{ fontSize: 14 }} className="text-success" />
-                        }
-                      </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleActive(coupon);
+                          }}
+                          className={`p-1.5 rounded transition-colors ${coupon.status === 'active' ? 'hover:bg-warning/10' : 'hover:bg-success/10'}`}
+                          title={coupon.status === 'active' ? '정지' : '활성화'}
+                        >
+                          {coupon.status === 'active'
+                            ? <StopOutlined style={{ fontSize: 14 }} className="text-warning" />
+                            : <PlayCircleOutlined style={{ fontSize: 14 }} className="text-success" />
+                          }
+                        </button>
+                        {(coupon.status === 'suspended' || coupon.status === 'expired') && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteTarget({ id: coupon.id, name: coupon.name });
+                            }}
+                            className="p-1.5 rounded transition-colors hover:bg-danger/10"
+                            title="삭제"
+                          >
+                            <DeleteOutlined style={{ fontSize: 14 }} className="text-danger" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))
@@ -411,7 +482,7 @@ export function Coupons() {
               <div className="space-y-6">
                 {/* 선택된 쿠폰 통계 (수정 모드일 때만) */}
                 {selectedCoupon && (
-                  <div className="grid grid-cols-3 gap-4 p-4 bg-bg-hover rounded-lg">
+                  <div className="grid grid-cols-4 gap-3 p-4 bg-bg-hover rounded-lg">
                     <div className="text-center">
                       <p className="text-sm text-txt-muted">발행 수</p>
                       <p className="text-xl font-bold text-primary">
@@ -419,14 +490,18 @@ export function Coupons() {
                       </p>
                     </div>
                     <div className="text-center border-x border-border">
-                      <p className="text-sm text-txt-muted">사용 수</p>
+                      <p className="text-sm text-txt-muted">소진</p>
+                      <p className="text-xl font-bold text-txt-main">{formatCurrency(selectedCoupon.issuedCount)}</p>
+                    </div>
+                    <div className="text-center border-r border-border">
+                      <p className="text-sm text-txt-muted">쿠폰사용</p>
                       <p className="text-xl font-bold text-success">{formatCurrency(selectedCoupon.usedCount)}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-sm text-txt-muted">사용율</p>
                       <p className="text-xl font-bold text-warning">
-                        {selectedCoupon.totalCount
-                          ? `${Math.round((selectedCoupon.usedCount / selectedCoupon.totalCount) * 100)}%`
+                        {selectedCoupon.issuedCount > 0
+                          ? `${Math.round((selectedCoupon.usedCount / selectedCoupon.issuedCount) * 100)}%`
                           : '-'}
                       </p>
                     </div>
@@ -572,37 +647,47 @@ export function Coupons() {
                 <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">적용 범위</h3>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label>적용 대상</Label>
-                      <div className="flex gap-2">
+                      <select
+                        value={formData.applyScope}
+                        onChange={(e) => {
+                          const value = e.target.value as CouponApplyScope;
+                          setFormData((prev) => ({ ...prev, applyScope: value, applicableProductIds: value !== 'specific_product' ? [] : prev.applicableProductIds }));
+                        }}
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-bg-card text-sm"
+                      >
                         {(Object.entries(COUPON_APPLY_SCOPE_LABELS) as [CouponApplyScope, string][]).map(([value, label]) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setFormData((prev) => ({ ...prev, applyScope: value, applicableProductIds: value !== 'specific_product' ? [] : prev.applicableProductIds }))}
-                            className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm transition-all ${formData.applyScope === value ? 'border-primary bg-primary/5 text-primary' : 'border-border'}`}
-                          >
-                            {label}
-                          </button>
+                          <option key={value} value={value}>{label}</option>
                         ))}
-                      </div>
+                      </select>
                     </div>
 
                     <div className="space-y-2">
                       <Label>주문 유형</Label>
-                      <div className="flex gap-2">
+                      <select
+                        value={formData.orderType}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, orderType: e.target.value as CouponOrderType }))}
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-bg-card text-sm"
+                      >
                         {(Object.entries(COUPON_ORDER_TYPE_LABELS) as [CouponOrderType, string][]).map(([value, label]) => (
-                          <button
-                            key={value}
-                            type="button"
-                            onClick={() => setFormData((prev) => ({ ...prev, orderType: value }))}
-                            className={`flex-1 py-2 px-4 rounded-lg border-2 transition-all ${formData.orderType === value ? 'border-primary bg-primary/5 text-primary' : 'border-border'}`}
-                          >
-                            {label}
-                          </button>
+                          <option key={value} value={value}>{label}</option>
                         ))}
-                      </div>
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>사용 채널</Label>
+                      <select
+                        value={formData.channel}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, channel: e.target.value as CouponChannel }))}
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-bg-card text-sm"
+                      >
+                        {(Object.entries(COUPON_CHANNEL_LABELS) as [CouponChannel, string][]).map(([value, label]) => (
+                          <option key={value} value={value}>{label}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
@@ -621,51 +706,65 @@ export function Coupons() {
                 {/* 정산 비율 */}
                 <div className={`space-y-4${isEditMode ? ' pointer-events-none opacity-60' : ''}`}>
                   <h3 className="font-medium text-txt-main border-b border-border pb-2">정산 비율</h3>
+                  <p className="text-xs text-txt-muted">
+                    {formData.discountType === 'fixed'
+                      ? '할인 금액을 본사/가맹점으로 나누어 정산합니다.'
+                      : '할인율(%)을 본사/가맹점 비율로 나누어 정산합니다.'}
+                  </p>
 
                   <div className="space-y-4">
-                    <div className="flex gap-4">
-                      <div className="flex-1 space-y-2">
-                        <Label>본사 부담 (%)</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={formData.headquartersRatio}
-                          onChange={(e) => {
-                            const val = Math.max(0, Math.min(100, Number(e.target.value)));
-                            handleSettlementRatioChange(val);
-                          }}
-                        />
-                      </div>
-                      <div className="flex-1 space-y-2">
-                        <Label>가맹점 부담 (%)</Label>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={formData.franchiseRatio}
-                          onChange={(e) => {
-                            const val = Math.max(0, Math.min(100, Number(e.target.value)));
-                            handleSettlementRatioChange(100 - val);
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={formData.headquartersRatio}
-                        onChange={(e) => handleSettlementRatioChange(Number(e.target.value))}
-                        className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                    {formData.discountType === 'fixed' ? (
+                      <FixedAmountSettlement
+                        totalAmount={formData.discountValue || 0}
+                        headquartersRatio={formData.headquartersRatio}
+                        onRatioChange={handleSettlementRatioChange}
                       />
-                      <div className="flex justify-between px-1 mt-2">
-                        <span className="text-xs font-medium text-primary">본사 {formData.headquartersRatio}%</span>
-                        <span className="text-xs font-medium text-warning">가맹점 {formData.franchiseRatio}%</span>
-                      </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex gap-4">
+                          <div className="flex-1 space-y-2">
+                            <Label>본사 부담 (%)</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={formData.headquartersRatio}
+                              onChange={(e) => {
+                                const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                                handleSettlementRatioChange(val);
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <Label>가맹점 부담 (%)</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={formData.franchiseRatio}
+                              onChange={(e) => {
+                                const val = Math.max(0, Math.min(100, Number(e.target.value)));
+                                handleSettlementRatioChange(100 - val);
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="pt-2">
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={formData.headquartersRatio}
+                            onChange={(e) => handleSettlementRatioChange(Number(e.target.value))}
+                            className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                          />
+                          <div className="flex justify-between px-1 mt-2">
+                            <span className="text-xs font-medium text-primary">본사 {formData.headquartersRatio}%</span>
+                            <span className="text-xs font-medium text-warning">가맹점 {formData.franchiseRatio}%</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -868,11 +967,22 @@ export function Coupons() {
 
                 {/* 액션 버튼 */}
                 <div className="flex justify-between pt-4 border-t border-border">
-                  <div>
+                  <div className="flex gap-2">
                     {selectedCoupon && (
                       <Button variant="outline" onClick={handleDuplicateCoupon}>
                         <CopyOutlined style={{ fontSize: 14, marginRight: 6 }} />
                         복제
+                      </Button>
+                    )}
+                    {selectedCoupon && (selectedCoupon.status === 'active' || selectedCoupon.status === 'suspended') && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleToggleActive(selectedCoupon)}
+                      >
+                        {selectedCoupon.status === 'active'
+                          ? <><StopOutlined style={{ fontSize: 14, marginRight: 6 }} className="text-warning" />정지</>
+                          : <><PlayCircleOutlined style={{ fontSize: 14, marginRight: 6 }} className="text-success" />활성화</>
+                        }
                       </Button>
                     )}
                   </div>
@@ -927,7 +1037,8 @@ export function Coupons() {
             <h3 className="text-lg font-semibold text-txt-main mb-2">쿠폰 정지</h3>
             <p className="text-sm text-txt-muted mb-4">
               "{suspendDialog.coupon.name}" 쿠폰을 정지합니다.<br />
-              이미 발급된 쿠폰은 유예기간 후 사용 불가됩니다.
+              이미 발급된 쿠폰은 유예기간 후 사용 불가됩니다.<br />
+              <span className="text-danger">유예기간 종료 7일 후 쿠폰이 자동 삭제됩니다.</span>
             </p>
             <div className="space-y-2 mb-6">
               <Label>유예기간 (일)</Label>
@@ -954,6 +1065,123 @@ export function Coupons() {
           </div>
         </div>
       )}
+
+      {/* 삭제 확인 다이얼로그 */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        title="쿠폰 삭제"
+        message={`"${deleteTarget?.name}" 쿠폰을 삭제하시겠습니까? 고객에게 발급된 쿠폰도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.`}
+        confirmText="삭제"
+        type="warning"
+      />
     </div>
+  );
+}
+
+/** 금액 할인 정산 비율 입력 (로컬 state로 타이핑 안정화) */
+function FixedAmountSettlement({
+  totalAmount,
+  headquartersRatio,
+  onRatioChange,
+}: {
+  totalAmount: number;
+  headquartersRatio: number;
+  onRatioChange: (ratio: number) => void;
+}) {
+  const hqAmt = totalAmount > 0 ? Math.round(totalAmount * headquartersRatio / 100) : 0;
+  const frAmt = totalAmount - hqAmt;
+
+  const [hqInput, setHqInput] = useState(String(hqAmt));
+  const [frInput, setFrInput] = useState(String(frAmt));
+  const isTyping = useRef(false);
+
+  useEffect(() => {
+    if (!isTyping.current) {
+      setHqInput(String(hqAmt));
+      setFrInput(String(frAmt));
+    }
+  }, [hqAmt, frAmt]);
+
+  const commitRatio = (amt: number, isHq: boolean) => {
+    const clamped = Math.max(0, Math.min(totalAmount, amt));
+    const ratio = totalAmount > 0 ? (clamped / totalAmount) * 100 : 0;
+    onRatioChange(isHq ? ratio : 100 - ratio);
+  };
+
+  const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value);
+
+  return (
+    <>
+      <div className="flex gap-4">
+        <div className="flex-1 space-y-2">
+          <Label>본사 부담 (원)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={totalAmount}
+            value={hqInput}
+            onChange={(e) => {
+              isTyping.current = true;
+              setHqInput(e.target.value);
+              const num = Number(e.target.value);
+              if (e.target.value !== '' && !isNaN(num)) {
+                commitRatio(num, true);
+              }
+            }}
+            onBlur={() => {
+              isTyping.current = false;
+              setHqInput(String(hqAmt));
+              setFrInput(String(frAmt));
+            }}
+          />
+        </div>
+        <div className="flex-1 space-y-2">
+          <Label>가맹점 부담 (원)</Label>
+          <Input
+            type="number"
+            min={0}
+            max={totalAmount}
+            value={frInput}
+            onChange={(e) => {
+              isTyping.current = true;
+              setFrInput(e.target.value);
+              const num = Number(e.target.value);
+              if (e.target.value !== '' && !isNaN(num)) {
+                commitRatio(num, false);
+              }
+            }}
+            onBlur={() => {
+              isTyping.current = false;
+              setHqInput(String(hqAmt));
+              setFrInput(String(frAmt));
+            }}
+          />
+        </div>
+      </div>
+      <div className="pt-2">
+        <input
+          type="range"
+          min="0"
+          max={totalAmount || 100}
+          value={hqAmt}
+          onChange={(e) => {
+            const amt = Number(e.target.value);
+            const ratio = totalAmount > 0 ? (amt / totalAmount) * 100 : 0;
+            onRatioChange(ratio);
+          }}
+          className="w-full h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+        />
+        <div className="flex justify-between px-1 mt-2">
+          <span className="text-xs font-medium text-primary">
+            본사 {formatCurrency(hqAmt)}원
+          </span>
+          <span className="text-xs font-medium text-warning">
+            가맹점 {formatCurrency(frAmt)}원
+          </span>
+        </div>
+      </div>
+    </>
   );
 }

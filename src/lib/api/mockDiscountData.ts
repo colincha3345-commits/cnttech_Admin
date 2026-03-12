@@ -3,6 +3,8 @@
  */
 import type { Discount } from '@/types/discount';
 
+const ALL_DAYS = [1, 2, 3, 4, 5, 6, 0] as const;
+
 export const mockDiscounts: Discount[] = [
   {
     id: '1',
@@ -11,6 +13,7 @@ export const mockDiscounts: Discount[] = [
     method: 'percentage',
     value: 10,
     periodType: 'period',
+    schedule: { days: [...ALL_DAYS], timeSlots: [{ startTime: '00:00', endTime: '23:59' }] },
     target: { type: 'all' },
     applyToAll: true,
     storeIds: [],
@@ -32,7 +35,7 @@ export const mockDiscounts: Discount[] = [
     discountType: 'company',
     method: 'fixed',
     value: 3000,
-    periodType: 'schedule',
+    periodType: 'period',
     schedule: {
       days: [1, 2, 3, 4, 5],
       timeSlots: [{ startTime: '11:00', endTime: '14:00' }],
@@ -60,6 +63,7 @@ export const mockDiscounts: Discount[] = [
     periodType: 'period',
     startDate: '2024-02-01',
     endDate: '2024-03-31',
+    schedule: { days: [6, 0], timeSlots: [{ startTime: '00:00', endTime: '23:59' }] },
     target: { type: 'all' },
     applyToAll: false,
     storeIds: ['store-1', 'store-2'],
@@ -82,6 +86,7 @@ export const mockDiscounts: Discount[] = [
     method: 'percentage',
     value: 0,
     periodType: 'period',
+    schedule: { days: [...ALL_DAYS], timeSlots: [{ startTime: '00:00', endTime: '23:59' }] },
     target: { type: 'all' },
     giftCondition: {
       type: 'n_plus_one',

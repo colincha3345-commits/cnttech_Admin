@@ -42,26 +42,6 @@ export function useUpdateCoupon() {
   });
 }
 
-export function useDeleteCoupon() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => couponService.deleteCoupon(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'] });
-    },
-  });
-}
-
-export function useToggleCouponActive() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => couponService.toggleActive(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['coupons'] });
-    },
-  });
-}
-
 export function useSuspendCoupon() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -77,6 +57,16 @@ export function useActivateCoupon() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => couponService.activateCoupon(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+    },
+  });
+}
+
+export function useDeleteCoupon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => couponService.deleteCoupon(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coupons'] });
     },

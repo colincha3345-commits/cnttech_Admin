@@ -47,6 +47,7 @@ class MockDiscountService {
     const newDiscount: Discount = {
       id: `discount-${Date.now()}`,
       ...formData,
+      periodType: 'period',
       usageCount: 0,
       createdAt: new Date(),
       updatedAt: new Date(),

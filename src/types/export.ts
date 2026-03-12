@@ -56,6 +56,8 @@ export interface MemberExportRequest {
   memberIds?: string[];
   filter?: MemberSegmentFilter;
   filename?: string;
+  /** 내보내기 사유 (개인정보보호법 — 개인정보 다운로드 사유 기록 필수) */
+  reason: string;
 }
 
 /**

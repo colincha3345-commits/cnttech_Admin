@@ -692,10 +692,11 @@ const SaveGroupModal: React.FC<{
 const ExportModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onExport: (columns: ExportColumn[], format: 'xlsx' | 'csv') => void;
+  onExport: (columns: ExportColumn[], format: 'xlsx' | 'csv', reason: string) => void;
 }> = ({ isOpen, onClose, onExport }) => {
   const [columns, setColumns] = useState<ExportColumn[]>(DEFAULT_MEMBER_EXPORT_COLUMNS);
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
+  const [reason, setReason] = useState('');
 
   const toggleColumn = (key: string) => {
     setColumns((prev) =>
@@ -706,7 +707,9 @@ const ExportModal: React.FC<{
   };
 
   const handleExport = () => {
-    onExport(columns, format);
+    if (!reason.trim()) return;
+    onExport(columns, format, reason.trim());
+    setReason('');
     onClose();
   };
 
@@ -758,11 +761,26 @@ const ExportModal: React.FC<{
           </div>
         </div>
 
+        {/* 내보내기 사유 (개인정보보호법 준수) */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-txt-main mb-2">
+            내보내기 사유 <span className="text-danger">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="예: 마케팅 캠페인 대상자 추출"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          />
+          <p className="text-xs text-txt-muted mt-1">개인정보보호법에 따라 다운로드 사유가 기록됩니다.</p>
+        </div>
+
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="outline" onClick={onClose}>
             취소
           </Button>
-          <Button onClick={handleExport}>
+          <Button onClick={handleExport} disabled={!reason.trim()}>
             <DownloadOutlined className="mr-1" />
             내보내기
           </Button>
@@ -842,10 +860,20 @@ export const MemberExtract: React.FC = () => {
     }
   };
 
-  const handleExport = (columns: ExportColumn[], format: 'xlsx' | 'csv') => {
+  const handleExport = (columns: ExportColumn[], format: 'xlsx' | 'csv', reason: string) => {
     const targetMembers = selectedIds.size > 0
       ? members.filter((m) => selectedIds.has(m.id))
       : members;
+
+    // 감사 로그: 내보내기 사유 기록 (개인정보보호법)
+    // eslint-disable-next-line no-console
+    console.info('[AUDIT] 회원 데이터 내보내기', {
+      format,
+      reason,
+      count: targetMembers.length,
+      columns: columns.filter((c) => c.enabled).map((c) => c.key),
+      exportedAt: new Date().toISOString(),
+    });
 
     if (format === 'xlsx') {
       exportToExcel(targetMembers, columns, '회원목록');

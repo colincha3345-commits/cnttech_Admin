@@ -39,6 +39,7 @@ import {
   CardContent,
   Button,
   Badge,
+  Input,
   SearchInput,
   ConfirmDialog,
   ToggleButtonGroup,
@@ -368,10 +369,7 @@ export function IconBadgeManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">뱃지 이름 *</label>
-                  <input type="text" className="form-input w-full" value={formData.name} onChange={(e) => handleFormChange({ name: e.target.value })} placeholder="뱃지 이름 (관리용)" />
-                </div>
+                <Input label="뱃지 이름 *" value={formData.name} onChange={(e) => handleFormChange({ name: e.target.value })} placeholder="뱃지 이름 (관리용)" />
                 <div>
                   <label className="block text-sm font-medium text-txt-main mb-2">표시 유형 *</label>
                   <div className="flex gap-3">
@@ -385,30 +383,24 @@ export function IconBadgeManagement() {
                     </label>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">정렬 순서</label>
-                  <input type="number" className="form-input w-full" value={formData.sortOrder} onChange={(e) => handleFormChange({ sortOrder: Number(e.target.value) })} min={0} />
-                </div>
+                <Input label="정렬 순서" type="number" value={formData.sortOrder} onChange={(e) => handleFormChange({ sortOrder: Number(e.target.value) })} min={0} />
 
                 {formData.displayType === 'text' ? (
                   <>
-                    <div>
-                      <label className="block text-sm font-medium text-txt-main mb-1">뱃지 텍스트 *</label>
-                      <input type="text" className="form-input w-full" value={formData.text} onChange={(e) => handleFormChange({ text: e.target.value })} placeholder="NEW, HOT, BEST 등" maxLength={10} />
-                    </div>
+                    <Input label="뱃지 텍스트 *" value={formData.text} onChange={(e) => handleFormChange({ text: e.target.value })} placeholder="NEW, HOT, BEST 등" maxLength={10} />
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-txt-main mb-1">글자 색상</label>
+                        <label className="form-label mb-2 block">글자 색상</label>
                         <div className="flex items-center gap-2">
                           <input type="color" className="w-10 h-10 rounded border border-border cursor-pointer" value={formData.textColor} onChange={(e) => handleFormChange({ textColor: e.target.value })} />
-                          <input type="text" className="form-input flex-1" value={formData.textColor} onChange={(e) => handleFormChange({ textColor: e.target.value })} />
+                          <Input value={formData.textColor} onChange={(e) => handleFormChange({ textColor: e.target.value })} />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-txt-main mb-1">배경 색상</label>
+                        <label className="form-label mb-2 block">배경 색상</label>
                         <div className="flex items-center gap-2">
                           <input type="color" className="w-10 h-10 rounded border border-border cursor-pointer" value={formData.bgColor} onChange={(e) => handleFormChange({ bgColor: e.target.value })} />
-                          <input type="text" className="form-input flex-1" value={formData.bgColor} onChange={(e) => handleFormChange({ bgColor: e.target.value })} />
+                          <Input value={formData.bgColor} onChange={(e) => handleFormChange({ bgColor: e.target.value })} />
                         </div>
                       </div>
                     </div>

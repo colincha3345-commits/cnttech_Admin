@@ -8,6 +8,7 @@ import {
   ClockCircleOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -68,6 +69,17 @@ export function OrderList() {
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
 
+  // 자동 업데이트 간격 (ms, false=끔)
+  const [refreshInterval, setRefreshInterval] = useState<number | false>(60000);
+
+  const REFRESH_OPTIONS: { value: number | false; label: string }[] = [
+    { value: false, label: '수동' },
+    { value: 30000, label: '30초' },
+    { value: 60000, label: '1분' },
+    { value: 180000, label: '3분' },
+    { value: 300000, label: '5분' },
+  ];
+
   // 필터 params 빌드
   const searchParams = useMemo<OrderSearchFilter>(() => {
     const params: OrderSearchFilter = { page, limit: 10 };
@@ -93,7 +105,7 @@ export function OrderList() {
   }, [keyword, orderType, status, storeId, dateFrom, dateTo]);
 
   // 서버사이드 훅
-  const { data: orderListData, isLoading } = useOrderList(searchParams);
+  const { data: orderListData, isLoading, refetch: refetchOrders } = useOrderList(searchParams, { refetchInterval: refreshInterval });
   const { data: statsData } = useOrderStats();
   const { refetch: fetchExportData } = useOrdersForExport(exportParams);
 
@@ -344,11 +356,39 @@ export function OrderList() {
             <h3 className="text-sm font-semibold text-txt-main">
               주문 목록 {pagination && <span className="text-txt-muted font-normal">({pagination.total}건)</span>}
             </h3>
-            {stats?.todayRevenue !== undefined && (
-              <p className="text-sm text-txt-muted">
-                오늘 매출: <span className="font-semibold text-primary">{formatCurrency(stats.todayRevenue)}</span>
-              </p>
-            )}
+            <div className="flex items-center gap-3">
+              {stats?.todayRevenue !== undefined && (
+                <p className="text-sm text-txt-muted">
+                  오늘 매출: <span className="font-semibold text-primary">{formatCurrency(stats.todayRevenue)}</span>
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <select
+                  value={refreshInterval === false ? '' : String(refreshInterval)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setRefreshInterval(v === '' ? false : Number(v));
+                  }}
+                  className="px-2 py-1.5 border border-border rounded-lg text-xs bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  {REFRESH_OPTIONS.map((opt) => (
+                    <option key={String(opt.value)} value={opt.value === false ? '' : String(opt.value)}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchOrders()}
+                  disabled={isLoading}
+                  title="목록 업데이트"
+                >
+                  <ReloadOutlined className={isLoading ? 'animate-spin' : ''} />
+                  <span className="ml-1">업데이트</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>

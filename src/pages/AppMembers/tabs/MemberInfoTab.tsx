@@ -416,6 +416,9 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
                   <th>약관 유형</th>
                   <th>동의일시</th>
                   <th>버전</th>
+                  <th>상태</th>
+                  <th>철회일시</th>
+                  <th>철회사유</th>
                 </tr>
               </thead>
               <tbody>
@@ -426,6 +429,15 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
                     <td>
                       <Badge variant="secondary">{agreement.version}</Badge>
                     </td>
+                    <td>
+                      {agreement.revokedAt ? (
+                        <Badge variant="critical">철회</Badge>
+                      ) : (
+                        <Badge variant="success">동의</Badge>
+                      )}
+                    </td>
+                    <td>{agreement.revokedAt ? formatDateTime(agreement.revokedAt) : '-'}</td>
+                    <td>{agreement.revokeReason || '-'}</td>
                   </tr>
                 ))}
               </tbody>

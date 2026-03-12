@@ -18,14 +18,45 @@ export type TimeRange = TimeSlot;
 export const COUPON_ORDER_TYPE_LABELS = PROMOTION_ORDER_TYPE_LABELS;
 
 /**
+ * 쿠폰 사용 채널
+ */
+export type CouponChannel = 'all' | 'app' | 'pc_web' | 'mobile_web';
+
+export const COUPON_CHANNEL_LABELS: Record<CouponChannel, string> = {
+  all: '전체',
+  app: 'APP',
+  pc_web: 'PC웹',
+  mobile_web: '모바일웹',
+};
+
+/**
  * 쿠폰 상태
  */
 export type CouponStatus =
   | 'active'      // 활성
-  | 'inactive'    // 비활성
   | 'suspended'   // 정지 (유예기간 중)
   | 'expired'     // 만료됨
   | 'exhausted';  // 소진됨
+
+/**
+ * 쿠폰 상태 라벨
+ */
+export const COUPON_STATUS_LABELS: Record<CouponStatus, string> = {
+  active: '활성',
+  suspended: '정지',
+  expired: '만료',
+  exhausted: '소진',
+};
+
+/**
+ * 쿠폰 상태 필터 옵션
+ */
+export const COUPON_STATUS_FILTER_OPTIONS: { value: CouponStatus | 'all'; label: string }[] = [
+  { value: 'all', label: '전체' },
+  { value: 'active', label: '활성' },
+  { value: 'suspended', label: '정지' },
+  { value: 'expired', label: '만료' },
+];
 
 /**
  * 쿠폰 적용 범위
@@ -86,16 +117,18 @@ export interface Coupon {
   // 적용 범위
   applyScope: CouponApplyScope;    // 장바구니/특정상품/배달비
   orderType: PromotionOrderType;   // 배달/포장/전체
+  channel: CouponChannel;          // 사용 채널 (앱/웹/키오스크/전체)
 
   // 유효 기간
   startDate: string | null;        // 사용 가능 시작일
   endDate: string | null;          // 사용 가능 종료일
   autoDelete: boolean;             // 만료 시 자동 삭제
 
-  // 사용 제한
+  // 발급/사용 수량
   singleUsePerMember: boolean;     // 1인 1회 사용 제한
   totalCount: number | null;       // 총 발행 수량 (null = 무제한)
-  usedCount: number;               // 사용된 수량
+  issuedCount: number;             // 소진 수량 (발급 완료된 쿠폰 수)
+  usedCount: number;               // 쿠폰사용 수량 (실제 주문에서 사용 완료된 수)
 
   // 적용 대상 상품
   applicableProductIds: string[];  // 적용 가능 상품 ID (빈 배열 = 전체)
@@ -112,12 +145,12 @@ export interface Coupon {
 
   // 상태
   status: CouponStatus;
-  isActive: boolean;
 
   // 정지/유예
   suspendedAt?: Date;       // 정지 시점
   gracePeriodDays?: number; // 유예기간 (일)
   graceExpiresAt?: Date;    // 유예 만료일
+  autoDeleteAt?: Date;      // 자동 삭제 예정일 (정지/만료 후 7일)
 
   // 메타데이터
   createdAt: Date;
@@ -140,6 +173,7 @@ export interface CouponFormData {
   // 적용 범위
   applyScope: CouponApplyScope;
   orderType: PromotionOrderType;
+  channel: CouponChannel;
 
   startDate: string;
   endDate: string;
@@ -176,6 +210,7 @@ export const DEFAULT_COUPON_FORM: CouponFormData = {
   maxDiscountAmount: null,
   applyScope: 'cart_total',
   orderType: 'all',
+  channel: 'all',
   startDate: '',
   endDate: '',
   autoDelete: false,

@@ -93,3 +93,62 @@
 - **로그인 시도 제한** — loginAttempts/lockedUntil은 Redis에 저장하여 DB 부하를 줄인다. Key: `login_attempts:{email}`, TTL: 30분.
 - **MFA OTP** — OTP 발송은 이메일 서비스 외부 호출이므로 비동기 큐로 처리한다. 발송 실패 시 재시도 로직이 필요하다.
 - **JWT 세션** — 세션 타임아웃(30분)은 슬라이딩 윈도우로 구현하되, Refresh Token 방식을 권장한다. Access Token TTL: 15분, Refresh Token TTL: 7일.
+
+---
+
+## 3. 정상작동 시나리오
+
+### 시나리오 1: 로그인 성공 (MFA 포함)
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | `/login` 접속 | 이메일/비밀번호 폼 렌더링 | 빈 폼, 버튼 비활성 |
+| 2 | 이메일/비밀번호 입력 후 로그인 클릭 | `POST /api/auth/login` 호출 | 로딩 스피너 표시 |
+| 3 | 서버: 자격증명 일치 + MFA 필요 판정 | `{ mfaRequired: true }` 반환, OTP 이메일 발송 | OTP 입력 폼으로 전환 |
+| 4 | OTP 6자리 입력 후 확인 | `POST /api/auth/verify-mfa` 호출 | 로딩 스피너 표시 |
+| 5 | 서버: OTP 일치 | JWT(Access+Refresh) 발급, 세션 생성 | `/dashboard`로 리다이렉트 |
+
+### 시나리오 2: 초대 수락 → 비밀번호 설정
+
+| 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
+| :---: | :--- | :--- | :--- |
+| 1 | 초대 이메일 링크 클릭 → `/invitation/accept?token=xxx` | `GET /api/auth/invitation?token=xxx` 호출 | 토큰 유효성 검증 |
+| 2 | 유효 시 비밀번호 설정 폼 표시 | 비밀번호 + 확인 필드 렌더링 | 강도 표시기 초기 상태 |
+| 3 | 비밀번호 입력 (8자 이상, 대/소/숫/특수) | 실시간 강도 판정 → "강함" 표시 | 확인 필드 일치 검증 |
+| 4 | 설정 완료 클릭 | `POST /api/auth/set-password` 호출. status→pending_approval | "계정이 활성화되었습니다" + 로그인 페이지 이동 |
+
+---
+
+## 4. 개발자용 정책 설명
+
+### 4.1. 계정 잠금 정책
+
+```
+조건: loginAttempts >= maxLoginAttempts(5)
+처리: lockedUntil = now() + lockoutDurationMinutes(15분)
+해제: (1) 시간 경과 자동 해제 (2) 관리자 수동 해제 API
+저장소: Redis key="login_attempts:{email}", TTL=30분
+초기화: 로그인 성공 시 loginAttempts=0, lockedUntil=null
+```
+
+**프론트엔드 분기:**
+- `loginAttempts < 5`: 잔여 횟수 텍스트 `"N회 남음"`
+- `lockedUntil > now()`: 카운트다운 타이머 표시, 로그인 버튼 비활성화
+
+### 4.2. 세션 동시접속 제한 정책
+
+```
+sessionConcurrencyLimit = 1
+처리: 신규 로그인 시 기존 세션 강제 만료
+기존 세션 사용자 화면: "다른 기기에서 로그인하여 현재 세션이 종료되었습니다" → 로그인 페이지 이동
+```
+
+### 4.3. 토큰 정책
+
+```
+Access Token: TTL=15분, 슬라이딩 윈도우
+Refresh Token: TTL=7일 (rememberMe=true 시 30일)
+초대 토큰: TTL=72시간, 1회 사용 후 isUsed=true로 무효화
+MFA OTP: TTL=5분, 재발송 쿨다운=60초
+```
+

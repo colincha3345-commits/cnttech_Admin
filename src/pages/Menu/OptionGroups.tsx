@@ -34,7 +34,7 @@ import {
   useAvailableOptions,
   useAvailableProducts,
 } from '@/hooks';
-import type { OptionGroup, OptionGroupItem, OptionGroupFormData, OptionPriceType, SelectionType } from '@/types/product';
+import type { OptionGroup, OptionGroupItem, OptionGroupFormData, SelectionType } from '@/types/product';
 import { SELECTION_TYPE_LABELS } from '@/types/product';
 
 // 다이얼로그 상태 타입
@@ -206,6 +206,15 @@ export function OptionGroups() {
       return;
     }
 
+    // 다수 선택 시 개별 옵션 수량이 그룹 최대수량을 초과하는지 검증
+    if (formData.selectionType === 'multi') {
+      const overItems = formData.items.filter((it) => it.maxQuantity > formData.maxSelection);
+      if (overItems.length > 0) {
+        showAlert('입력 오류', `개별 옵션의 최대 구매수량은 그룹 최대 선택수량(${formData.maxSelection})을 초과할 수 없습니다.`);
+        return;
+      }
+    }
+
     const isNewGroup = !selectedGroup;
     const submitData: OptionGroupFormData = {
       name: formData.name,
@@ -252,7 +261,7 @@ export function OptionGroups() {
       id: `item-${Date.now()}`,
       type,
       referenceId,
-      priceType: type === 'product' ? 'override' : 'original',
+      priceType: 'override',
       overridePrice: 0,
       maxQuantity: formData.selectionType === 'multi' ? 10 : 1,
       displayOrder: formData.items.length + 1,
@@ -281,12 +290,12 @@ export function OptionGroups() {
   };
 
   // 아이템 가격 설정 변경
-  const handleUpdateItemPrice = (itemId: string, priceType: OptionPriceType, overridePrice: number) => {
+  const handleUpdateItemPrice = (itemId: string, overridePrice: number) => {
     setFormData({
       ...formData,
       items: formData.items.map((item) =>
         item.id === itemId
-          ? { ...item, priceType, overridePrice }
+          ? { ...item, priceType: 'override' as const, overridePrice }
           : item
       ),
     });
@@ -323,36 +332,7 @@ export function OptionGroups() {
 
   // 계산된 가격 텍스트 가져오기
   const getCalculatedPriceText = (item: OptionGroupItem) => {
-    const info = getItemInfo(item);
-
-    switch (item.priceType) {
-      case 'original':
-        return info.originalPrice > 0 ? `+${formatCurrency(info.originalPrice)}원` : '무료';
-      case 'override':
-        return item.overridePrice > 0 ? `+${formatCurrency(item.overridePrice)}원` : '무료';
-      case 'differential': {
-        const baseProduct = item.differentialBaseId
-          ? getProductById(item.differentialBaseId)
-          : null;
-        if (baseProduct) {
-          const diff = info.originalPrice - (baseProduct.price || 0);
-          return diff > 0 ? `+${formatCurrency(diff)}원` : diff < 0 ? `-${formatCurrency(Math.abs(diff))}원` : '무료';
-        }
-        return `+${formatCurrency(info.originalPrice)}원`;
-      }
-      default:
-        return '무료';
-    }
-  };
-
-  // 가격 정책 라벨
-  const getPriceTypeLabel = (priceType: OptionPriceType) => {
-    switch (priceType) {
-      case 'original': return '원가';
-      case 'override': return '지정가';
-      case 'differential': return '차액';
-      default: return '';
-    }
+    return item.overridePrice > 0 ? `+${formatCurrency(item.overridePrice)}원` : '무료';
   };
 
   // useMemo로 O(n²) → O(n) 최적화
@@ -629,13 +609,20 @@ export function OptionGroups() {
                           onClick={() => {
                             if (isDisabled) return;
                             const isSingle = type === 'single';
+                            const newMaxSelection = isSingle ? 1 : Math.max(formData.maxSelection, 2);
+                            // 선택 타입 전환 시 아이템 수량 자동 조정
+                            const adjustedItems = formData.items.map((it) => ({
+                              ...it,
+                              maxQuantity: isSingle ? 1 : Math.min(it.maxQuantity, newMaxSelection),
+                            }));
                             setFormData({
                               ...formData,
                               selectionType: type,
-                              maxSelection: isSingle ? 1 : Math.max(formData.maxSelection, 2),
+                              maxSelection: newMaxSelection,
                               minSelection: formData.isRequired
                                 ? 1
                                 : isSingle ? 0 : formData.minSelection,
+                              items: adjustedItems,
                             });
                           }}
                           className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
@@ -701,7 +688,11 @@ export function OptionGroups() {
                         onChange={(e) => {
                           const val = parseInt(e.target.value);
                           if (!isNaN(val) && val >= 2 && val <= 99) {
-                            setFormData({ ...formData, maxSelection: val });
+                            // 그룹 최대수량 변경 시 초과하는 아이템 수량 자동 조정
+                            const adjustedItems = formData.items.map((it) =>
+                              it.maxQuantity > val ? { ...it, maxQuantity: val } : it
+                            );
+                            setFormData({ ...formData, maxSelection: val, items: adjustedItems });
                           }
                         }}
                         disabled={!isEditing && !!selectedGroup}
@@ -716,12 +707,12 @@ export function OptionGroups() {
                   <p className="text-sm text-txt-muted mt-1">
                     {formData.isRequired ? '필수 선택 • ' : '선택 사항 • '}
                     {formData.selectionType === 'single'
-                      ? '1개만 선택 (라디오)'
+                      ? '1개만 선택 · 수량 1 고정'
                       : formData.minSelection === formData.maxSelection
-                        ? `정확히 ${formData.maxSelection}개 선택`
+                        ? `정확히 ${formData.maxSelection}개 선택 · 개별 최대수량 ≤ ${formData.maxSelection}`
                         : formData.minSelection === 0
-                          ? `최대 ${formData.maxSelection}개 선택 가능 (수량 조절)`
-                          : `${formData.minSelection}~${formData.maxSelection}개 선택 (수량 조절)`}
+                          ? `최대 ${formData.maxSelection}개 선택 가능 · 개별 최대수량 ≤ ${formData.maxSelection}`
+                          : `${formData.minSelection}~${formData.maxSelection}개 선택 · 개별 최대수량 ≤ ${formData.maxSelection}`}
                   </p>
                 </div>
 
@@ -739,11 +730,6 @@ export function OptionGroups() {
                                 {item.type === 'option' ? '●' : '■'}
                               </span>
                               <span className="text-txt-muted">{info.name}</span>
-                              {item.type === 'product' && (
-                                <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                                  {getPriceTypeLabel(item.priceType)}
-                                </Badge>
-                              )}
                             </div>
                             <span className="font-medium text-txt-main">
                               {getCalculatedPriceText(item)}
@@ -878,8 +864,8 @@ export function OptionGroups() {
                       {addItemMode === 'product' && (
                         <div className="mt-3 p-2 bg-warning-light rounded-md">
                           <p className="text-xs text-warning">
-                            상품을 옵션으로 사용 시 가격 계산 방식을 설정할 수 있습니다.
-                            추가 후 가격 정책(원가/지정가/차액)을 확인하세요.
+                            상품을 옵션으로 사용 시 추가 금액을 설정할 수 있습니다.
+                            추가 후 가격 설정 버튼을 클릭하여 금액을 확인하세요.
                           </p>
                         </div>
                       )}
@@ -911,11 +897,6 @@ export function OptionGroups() {
                                     <Badge variant={item.type === 'option' ? 'info' : 'warning'} className="text-[10px]">
                                       {item.type === 'option' ? '옵션' : '상품'}
                                     </Badge>
-                                    {item.type === 'product' && (
-                                      <Badge variant="secondary" className="text-[10px]">
-                                        {getPriceTypeLabel(item.priceType)}
-                                      </Badge>
-                                    )}
                                   </div>
                                   <p className="text-xs text-txt-muted">
                                     POS: {info.posCode} | 원가: {formatCurrency(info.originalPrice)}원
@@ -926,18 +907,20 @@ export function OptionGroups() {
                                 <span className="text-sm font-medium text-primary">
                                   {getCalculatedPriceText(item)}
                                 </span>
-                                {/* 다수 선택 시 아이템별 최대 수량 */}
-                                {formData.selectionType === 'multi' && (
-                                  <div className="flex items-center gap-1 bg-bg-main rounded px-1.5 py-0.5">
-                                    <span className="text-[10px] text-txt-muted">수량</span>
+                                {/* 아이템별 최대 구매수량 */}
+                                <div className="flex items-center gap-1 bg-bg-main rounded px-1.5 py-0.5">
+                                  <span className="text-[10px] text-txt-muted">최대수량</span>
+                                  {formData.selectionType === 'single' ? (
+                                    <span className="w-14 h-6 text-xs text-center flex items-center justify-center text-txt-muted">1</span>
+                                  ) : (
                                     <Input
                                       type="number"
                                       min={1}
-                                      max={99}
+                                      max={formData.maxSelection}
                                       value={item.maxQuantity || 1}
                                       onChange={(e) => {
                                         const val = parseInt(e.target.value);
-                                        if (!isNaN(val) && val >= 1 && val <= 99) {
+                                        if (!isNaN(val) && val >= 1 && val <= formData.maxSelection) {
                                           setFormData({
                                             ...formData,
                                             items: formData.items.map((it) =>
@@ -949,8 +932,8 @@ export function OptionGroups() {
                                       className="w-14 h-6 text-xs text-center"
                                       disabled={!isEditing && !!selectedGroup}
                                     />
-                                  </div>
-                                )}
+                                  )}
+                                </div>
                                 {(isEditing || !selectedGroup) && (
                                   <>
                                     <Button
@@ -979,67 +962,22 @@ export function OptionGroups() {
                             {isEditingPrice && (isEditing || !selectedGroup) && (
                               <div className="mt-3 pt-3 border-t border-border space-y-3">
                                 <div className="space-y-2">
-                                  <Label className="text-xs">가격 계산 방식</Label>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <button
-                                      onClick={() => handleUpdateItemPrice(item.id, 'original', 0)}
-                                      className={`p-2 rounded-md text-xs font-medium transition-colors ${item.priceType === 'original'
-                                        ? 'bg-primary text-white'
-                                        : 'bg-bg-main text-txt-muted hover:text-txt-main'
-                                        }`}
-                                    >
-                                      원가 적용
-                                    </button>
-                                    <button
-                                      onClick={() => handleUpdateItemPrice(item.id, 'override', item.overridePrice)}
-                                      className={`p-2 rounded-md text-xs font-medium transition-colors ${item.priceType === 'override'
-                                        ? 'bg-primary text-white'
-                                        : 'bg-bg-main text-txt-muted hover:text-txt-main'
-                                        }`}
-                                    >
-                                      지정가
-                                    </button>
-                                    <button
-                                      onClick={() => handleUpdateItemPrice(item.id, 'differential', 0)}
-                                      className={`p-2 rounded-md text-xs font-medium transition-colors ${item.priceType === 'differential'
-                                        ? 'bg-primary text-white'
-                                        : 'bg-bg-main text-txt-muted hover:text-txt-main'
-                                        }`}
-                                    >
-                                      차액
-                                    </button>
+                                  <Label className="text-xs">추가 금액</Label>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-txt-muted">+</span>
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      value={item.overridePrice}
+                                      onChange={(e) =>
+                                        handleUpdateItemPrice(item.id, parseInt(e.target.value) || 0)
+                                      }
+                                      className="h-8 text-sm"
+                                    />
+                                    <span className="text-sm text-txt-muted">원</span>
                                   </div>
-                                </div>
-
-                                {/* 지정가 입력 */}
-                                {item.priceType === 'override' && (
-                                  <div className="space-y-2">
-                                    <Label className="text-xs">추가 금액</Label>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-txt-muted">+</span>
-                                      <Input
-                                        type="number"
-                                        min={0}
-                                        value={item.overridePrice}
-                                        onChange={(e) =>
-                                          handleUpdateItemPrice(item.id, 'override', parseInt(e.target.value) || 0)
-                                        }
-                                        className="h-8 text-sm"
-                                      />
-                                      <span className="text-sm text-txt-muted">원</span>
-                                    </div>
-                                    <p className="text-xs text-txt-muted">
-                                      0원 입력 시 추가금액 없이 선택 가능
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* 가격 계산 방식 설명 */}
-                                <div className="p-2 bg-info-light rounded-md">
-                                  <p className="text-xs text-info">
-                                    {item.priceType === 'original' && '상품/옵션의 원래 가격이 그대로 적용됩니다.'}
-                                    {item.priceType === 'override' && '지정한 금액이 추가 금액으로 적용됩니다. (반반피자 선택 시 권장)'}
-                                    {item.priceType === 'differential' && '기준 상품 대비 가격 차이가 적용됩니다.'}
+                                  <p className="text-xs text-txt-muted">
+                                    0원 입력 시 추가금액 없이 선택 가능
                                   </p>
                                 </div>
                               </div>
