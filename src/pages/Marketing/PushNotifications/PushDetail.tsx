@@ -1,48 +1,40 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, Button, Badge } from '@/components/ui';
-import type { PushStatus, PushType } from '@/types/push';
+import { Card, Button, Badge, Spinner, MaskedData, Pagination } from '@/components/ui';
+import { usePushDetail, usePushRecipients } from '@/hooks/usePush';
+import type { BadgeVariant } from '@/types';
+import type { PushDeliveryStatus } from '@/types/push';
 
-// Mock Detail Data
-const MOCK_DETAIL = {
-    id: '1',
-    type: 'ad' as PushType,
-    title: '[깜짝할인] 저녁 한정 치킨 3,000원 할인!',
-    body: '오늘 저녁은 치킨이닭! 매장 방문 시 화면을 보여주세요.',
-    status: 'completed' as PushStatus,
-    targetCount: 15200,
-    triggerType: 'none',
-    createdAt: new Date('2026-02-20T10:00:00'),
-    sentAt: new Date('2026-02-20T18:00:00'),
-    stats: {
-        sent: 15200,
-        delivered: 14800,
-        failed: 400,
-        opened: 8500,
-        openRate: 57.4,
-    }
+const DELIVERY_STATUS_BADGE: Record<PushDeliveryStatus, { variant: BadgeVariant; label: string }> = {
+    opened: { variant: 'success', label: '읽음' },
+    delivered: { variant: 'info', label: '전송됨' },
+    failed: { variant: 'critical', label: '실패' },
 };
 
-// Mock History Data
-const MOCK_HISTORY = [
-    { id: 'h1', userId: 'user_001', name: '김철수', phone: '010-1***-**11', status: 'delivered', openedAt: '2026-02-20 18:05' },
-    { id: 'h2', userId: 'user_002', name: '이영희', phone: '010-2***-**22', status: 'opened', openedAt: '2026-02-20 18:30' },
-    { id: 'h3', userId: 'user_003', name: '박민준', phone: '010-3***-**33', status: 'failed', openedAt: '-' },
-    { id: 'h4', userId: 'user_004', name: '정수아', phone: '010-4***-**44', status: 'delivered', openedAt: '-' },
-];
-
 export const PushDetail = () => {
-    const { id: _ } = useParams();
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const detail = MOCK_DETAIL; // id에 맞는 데이터 fetch 가정
+    const [recipientPage, setRecipientPage] = useState(1);
+    const recipientLimit = 20;
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'opened': return <Badge variant="success">읽음</Badge>;
-            case 'delivered': return <Badge variant="info">전송됨</Badge>;
-            case 'failed': return <Badge variant="critical">실패</Badge>;
-            default: return <Badge variant="default">{status}</Badge>;
-        }
-    };
+    const { detail, isLoading } = usePushDetail(id);
+    const { recipients, pagination: recipientPagination, isLoading: isLoadingRecipients } = usePushRecipients(id, {
+        page: recipientPage,
+        limit: recipientLimit,
+    });
+
+    if (isLoading) {
+        return <div className="p-8"><Spinner layout="center" /></div>;
+    }
+
+    if (!detail) {
+        return (
+            <div className="p-8 text-center">
+                <p className="text-gray-500 mb-4">푸시 알림을 찾을 수 없습니다.</p>
+                <Button variant="secondary" onClick={() => navigate('/marketing/push')}>목록으로</Button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -57,9 +49,14 @@ export const PushDetail = () => {
                         <h2 className="font-semibold text-lg border-b pb-2">기본 정보</h2>
                         <div className="grid grid-cols-2 gap-4 text-sm mt-4">
                             <div><span className="text-gray-500 block mb-1">유형</span> {detail.type === 'ad' ? '광고성' : '정보성'}</div>
-                            <div><span className="text-gray-500 block mb-1">상태</span> <Badge variant="success">발송 완료</Badge></div>
-                            <div><span className="text-gray-500 block mb-1">작성일</span> {detail.createdAt.toLocaleString()}</div>
-                            <div><span className="text-gray-500 block mb-1">발송일</span> {detail.sentAt.toLocaleString()}</div>
+                            <div>
+                                <span className="text-gray-500 block mb-1">상태</span>
+                                <Badge variant={detail.status === 'completed' ? 'success' : 'info'}>
+                                    {detail.status === 'completed' ? '발송 완료' : detail.status}
+                                </Badge>
+                            </div>
+                            <div><span className="text-gray-500 block mb-1">작성일</span> {new Date(detail.createdAt).toLocaleString('ko-KR')}</div>
+                            <div><span className="text-gray-500 block mb-1">발송일</span> {detail.sentAt ? new Date(detail.sentAt).toLocaleString('ko-KR') : '-'}</div>
                         </div>
                     </Card>
 
@@ -75,26 +72,51 @@ export const PushDetail = () => {
                         <div className="p-4 border-b flex justify-between items-center">
                             <h2 className="font-semibold text-lg">유저별 전송/오픈 내역</h2>
                         </div>
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-gray-50 text-gray-500">
-                                <tr>
-                                    <th className="p-4 font-medium">회원명</th>
-                                    <th className="p-4 font-medium">연락처</th>
-                                    <th className="p-4 font-medium">전송상태</th>
-                                    <th className="p-4 font-medium">오픈시간</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y text-gray-700">
-                                {MOCK_HISTORY.map((h) => (
-                                    <tr key={h.id}>
-                                        <td className="p-4">{h.name}</td>
-                                        <td className="p-4">{h.phone}</td>
-                                        <td className="p-4">{getStatusBadge(h.status)}</td>
-                                        <td className="p-4">{h.openedAt}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        {isLoadingRecipients ? (
+                            <div className="p-8"><Spinner layout="center" /></div>
+                        ) : (
+                            <>
+                                <table className="w-full text-left text-sm">
+                                    <thead className="bg-gray-50 text-gray-500">
+                                        <tr>
+                                            <th className="p-4 font-medium">회원명</th>
+                                            <th className="p-4 font-medium">연락처</th>
+                                            <th className="p-4 font-medium">전송상태</th>
+                                            <th className="p-4 font-medium">오픈시간</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y text-gray-700">
+                                        {recipients.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={4} className="text-center p-8 text-gray-500">수신자가 없습니다.</td>
+                                            </tr>
+                                        ) : (
+                                            recipients.map((r) => (
+                                                <tr key={r.id}>
+                                                    <td className="p-4">{r.name}</td>
+                                                    <td className="p-4"><MaskedData value={r.phone} /></td>
+                                                    <td className="p-4">
+                                                        <Badge variant={DELIVERY_STATUS_BADGE[r.status].variant}>
+                                                            {DELIVERY_STATUS_BADGE[r.status].label}
+                                                        </Badge>
+                                                    </td>
+                                                    <td className="p-4">{r.openedAt ?? '-'}</td>
+                                                </tr>
+                                            ))
+                                        )}
+                                    </tbody>
+                                </table>
+
+                                <Pagination
+                                    page={recipientPage}
+                                    totalPages={recipientPagination.totalPages}
+                                    onPageChange={setRecipientPage}
+                                    totalElements={recipientPagination.total}
+                                    limit={recipientLimit}
+                                    unit="명"
+                                />
+                            </>
+                        )}
                     </Card>
                 </div>
 
@@ -110,12 +132,16 @@ export const PushDetail = () => {
 
                             <div className="flex justify-between items-center px-2">
                                 <span className="text-gray-600">성공 (도달)</span>
-                                <span className="text-blue-600 font-semibold">{detail.stats.delivered.toLocaleString()} ({(detail.stats.delivered / detail.targetCount * 100).toFixed(1)}%)</span>
+                                <span className="text-blue-600 font-semibold">
+                                    {detail.stats.delivered.toLocaleString()} ({(detail.stats.delivered / detail.targetCount * 100).toFixed(1)}%)
+                                </span>
                             </div>
 
                             <div className="flex justify-between items-center px-2">
                                 <span className="text-gray-600">실패 (알림거부 등)</span>
-                                <span className="text-red-500">{detail.stats.failed.toLocaleString()} ({(detail.stats.failed / detail.targetCount * 100).toFixed(1)}%)</span>
+                                <span className="text-red-500">
+                                    {detail.stats.failed.toLocaleString()} ({(detail.stats.failed / detail.targetCount * 100).toFixed(1)}%)
+                                </span>
                             </div>
 
                             <div className="h-px bg-gray-200 my-2" />

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     DownloadOutlined,
@@ -13,9 +13,9 @@ import {
     Button,
     SearchInput,
     DataTable,
+    Pagination,
 } from '@/components/ui';
-import { settlementService } from '@/services/settlementService';
-import { useToast } from '@/hooks';
+import { useSettlements, useRunSettlement } from '@/hooks/useSettlement';
 
 import type { Settlement, SettlementStatus } from '@/types/settlement';
 
@@ -28,46 +28,40 @@ const SETTLEMENT_STATUS_LABELS: Record<SettlementStatus, string> = {
 
 export function SettlementList() {
     const navigate = useNavigate();
-    const toast = useToast();
     const [keyword, setKeyword] = useState('');
     const [status, setStatus] = useState<SettlementStatus | ''>('');
-    const [data, setData] = useState<Settlement[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [isProcessing, setIsProcessing] = useState(false);
+    const [page, setPage] = useState(1);
+    const limit = 20;
 
-    const loadData = async () => {
-        setIsLoading(true);
-        try {
-            const res = await settlementService.getSettlements({ keyword, status });
-            setData(res.data);
-        } catch (error) {
-            toast.error('정산 목록을 불러오는데 실패했습니다.');
-        } finally {
-            setIsLoading(false);
-        }
+    const { settlements, pagination, isLoading, fetchSettlements } = useSettlements();
+    const runSettlement = useRunSettlement();
+
+    const handleSearch = () => {
+        setPage(1);
+        fetchSettlements({ keyword, status, page: 1, limit });
     };
 
-    useEffect(() => {
-        loadData();
-    }, [keyword, status]);
+    const handlePageChange = (newPage: number) => {
+        setPage(newPage);
+        fetchSettlements({ keyword, status, page: newPage, limit });
+    };
 
-    const handleRunSettlement = async () => {
+    const handleStatusChange = (newStatus: SettlementStatus | '') => {
+        setStatus(newStatus);
+        setPage(1);
+        fetchSettlements({ keyword, status: newStatus, page: 1, limit });
+    };
+
+    const handleRunSettlement = () => {
         if (!window.confirm('현재 대상에 대한 정산을 실행하시겠습니까?')) return;
-        setIsProcessing(true);
-        try {
-            const res = await settlementService.runSettlement();
-            toast.success(res.message);
-            loadData();
-        } catch {
-            toast.error('정산 실행에 실패했습니다.');
-        } finally {
-            setIsProcessing(false);
-        }
+        runSettlement.mutate(undefined, {
+            onSuccess: () => fetchSettlements({ keyword, status, page, limit }),
+        });
     };
 
     const totalNet = useMemo(() =>
-        data.reduce((acc, curr) => acc + curr.netAmount, 0),
-        [data]);
+        settlements.reduce((acc, curr) => acc + curr.netAmount, 0),
+        [settlements]);
 
     return (
         <div className="space-y-6">
@@ -102,7 +96,7 @@ export function SettlementList() {
                             <div>
                                 <p className="text-sm font-medium text-txt-muted mb-1">정산 대기건</p>
                                 <h3 className="text-2xl font-bold text-txt-main">
-                                    {data.filter(s => s.status === 'pending').length}건
+                                    {settlements.filter(s => s.status === 'pending').length}건
                                 </h3>
                             </div>
                             <ClockCircleOutlined style={{ fontSize: 32 }} className="text-border" />
@@ -116,7 +110,7 @@ export function SettlementList() {
                             <div>
                                 <p className="text-sm font-medium text-txt-muted mb-1">정산 완료건 (당월)</p>
                                 <h3 className="text-2xl font-bold text-txt-main">
-                                    {data.filter(s => s.status === 'completed').length}건
+                                    {settlements.filter(s => s.status === 'completed').length}건
                                 </h3>
                             </div>
                             <CheckCircleOutlined style={{ fontSize: 32 }} className="text-border" />
@@ -133,6 +127,7 @@ export function SettlementList() {
                             placeholder="가맹점명 또는 정산 ID 검색"
                             value={keyword}
                             onChange={(val) => setKeyword(val)}
+                            onSearch={handleSearch}
                         />
                     </div>
                     <div className="w-full md:w-48 text-left">
@@ -140,7 +135,7 @@ export function SettlementList() {
                         <select
                             className="w-full border border-border rounded-lg p-2 text-sm h-10 bg-bg-main text-txt-main"
                             value={status}
-                            onChange={(e) => setStatus(e.target.value as SettlementStatus)}
+                            onChange={(e) => handleStatusChange(e.target.value as SettlementStatus | '')}
                         >
                             <option value="">전체 상태</option>
                             {Object.entries(SETTLEMENT_STATUS_LABELS).map(([value, label]) => (
@@ -151,7 +146,7 @@ export function SettlementList() {
                     <Button
                         variant="secondary"
                         onClick={handleRunSettlement}
-                        isLoading={isProcessing}
+                        isLoading={runSettlement.isPending}
                     >
                         <span className="flex items-center gap-2">
                             <CalculatorOutlined /> 정산 실행
@@ -254,11 +249,23 @@ export function SettlementList() {
                             ),
                         },
                     ]}
-                    data={data}
+                    data={settlements}
                     isLoading={isLoading}
                     keyExtractor={(item) => item.id}
                     onRowClick={(item) => navigate(`/settlement/${item.id}`)}
                 />
+                {pagination && pagination.totalPages > 0 && (
+                    <div className="border-t">
+                        <Pagination
+                            page={page}
+                            totalPages={pagination.totalPages}
+                            onPageChange={handlePageChange}
+                            totalElements={pagination.total}
+                            limit={limit}
+                            unit="건"
+                        />
+                    </div>
+                )}
             </Card>
         </div>
     );

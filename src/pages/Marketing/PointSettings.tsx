@@ -92,6 +92,7 @@ export function PointSettings() {
         minUsePoints: s.usePolicy.minUsePoints,
         maxUseRate: s.usePolicy.maxUseRate,
         useUnit: s.usePolicy.useUnit,
+        allowNegativeBalance: s.usePolicy.allowNegativeBalance,
         defaultValidityDays: s.expiryPolicy.defaultValidityDays,
         expiryNotificationDays: s.expiryPolicy.expiryNotificationDays,
       };
@@ -419,6 +420,36 @@ export function PointSettings() {
                 예시: {formatCurrency(20000)}원 주문 시 최대 <span className="font-semibold text-primary">
                   {formatCurrency(Math.floor(20000 * formData.maxUseRate / 100 / formData.useUnit) * formData.useUnit)}P
                 </span> 사용 가능
+              </div>
+
+              {/* 마이너스 잔고 정책 */}
+              <div className="space-y-2 pt-4 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>주문취소 시 마이너스 잔고 허용</Label>
+                    <p className="text-xs text-txt-muted mt-1">
+                      주문 취소 시 적립 포인트를 강제 회수하여 잔액이 마이너스가 될 수 있습니다.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleFormChange({ allowNegativeBalance: !formData.allowNegativeBalance })}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                      formData.allowNegativeBalance ? 'bg-primary' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
+                        formData.allowNegativeBalance ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
+                </div>
+                {formData.allowNegativeBalance && (
+                  <div className="p-3 bg-warning/10 rounded-lg text-xs text-warning">
+                    마이너스 잔고 상태의 고객은 포인트 사용이 차단되며, 이후 적립 시 자동으로 복구됩니다.
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

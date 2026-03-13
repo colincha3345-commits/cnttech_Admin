@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   PlusOutlined,
   TrophyOutlined,
@@ -45,7 +45,7 @@ import {
   useDeleteMembershipGrade,
   useDuplicateMembershipGrade,
   useReorderMembershipGrades,
-  useAvailableCoupons,
+  useBenefitCampaignList,
   useToast,
 } from '@/hooks';
 import type { MembershipGrade, MembershipGradeFormData } from '@/types/membership-grade';
@@ -111,7 +111,6 @@ const SortableGradeItem: React.FC<{
         </div>
         <div className="flex items-center gap-3 mt-1 text-xs text-txt-muted">
           <span>{grade.memberCount.toLocaleString()}명</span>
-          <span>x{grade.benefits.point.earnMultiplier}배</span>
         </div>
       </div>
 
@@ -145,7 +144,7 @@ export const GradeManagement: React.FC = () => {
   // 데이터 조회
   const { data: gradeListData } = useMembershipGrades();
   const { data: statsData } = useMembershipGradeStats();
-  const { data: availableCouponsData } = useAvailableCoupons();
+  const { data: campaignListData } = useBenefitCampaignList({ limit: 200 });
   const createGrade = useCreateMembershipGrade();
   const updateGradeMutation = useUpdateMembershipGrade();
   const deleteGradeMutation = useDeleteMembershipGrade();
@@ -153,7 +152,7 @@ export const GradeManagement: React.FC = () => {
   const reorderGradesMutation = useReorderMembershipGrades();
 
   const grades = gradeListData?.data ?? [];
-  const availableCoupons = availableCouponsData?.data ?? [];
+  const allCampaigns = campaignListData?.data ?? [];
   const totalGrades = statsData?.data?.total ?? 0;
   const activeGrades = statsData?.data?.active ?? 0;
   const totalMembers = statsData?.data?.totalMembers ?? 0;
@@ -184,11 +183,6 @@ export const GradeManagement: React.FC = () => {
       calculationPeriodType: grade.achievementCondition.calculationPeriod.type,
       calculationPeriodMonths: grade.achievementCondition.calculationPeriod.months,
       retentionMonths: grade.achievementCondition.retentionMonths,
-      pointEarnMultiplier: grade.benefits.point.earnMultiplier,
-      autoIssueCouponIds: [...grade.benefits.coupon.autoIssueCouponIds],
-      couponIssueOnUpgrade: grade.benefits.coupon.issueOnUpgrade,
-      couponIssueMonthly: grade.benefits.coupon.issueMonthly,
-      couponMonthlyIssueDay: grade.benefits.coupon.monthlyIssueDay,
       isActive: grade.isActive,
     });
     setIsFormActive(true);
@@ -201,9 +195,14 @@ export const GradeManagement: React.FC = () => {
   };
 
   const handleCancel = () => {
-    setSelectedGrade(null);
-    setFormData({ ...DEFAULT_MEMBERSHIP_GRADE_FORM });
-    setIsFormActive(false);
+    if (selectedGrade) {
+      // 수정 모드 → 원본 데이터로 롤백
+      handleSelectGrade(selectedGrade);
+    } else {
+      // 신규 등록 모드 → 폼 닫기
+      setFormData({ ...DEFAULT_MEMBERSHIP_GRADE_FORM });
+      setIsFormActive(false);
+    }
   };
 
   const handleSave = () => {
@@ -279,15 +278,18 @@ export const GradeManagement: React.FC = () => {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  // 쿠폰 토글
-  const handleToggleCoupon = (couponId: string) => {
-    setFormData((prev) => {
-      const ids = prev.autoIssueCouponIds.includes(couponId)
-        ? prev.autoIssueCouponIds.filter((id) => id !== couponId)
-        : [...prev.autoIssueCouponIds, couponId];
-      return { ...prev, autoIssueCouponIds: ids };
-    });
-  };
+  // 현재 등급에 연결된 혜택 캠페인 혜택 조회 (ID 기반 매칭)
+  const gradeId = selectedGrade?.id ?? null;
+  const linkedBenefits = useMemo(() => {
+    if (!gradeId) return { couponNames: [] as string[], pointDescriptions: [] as string[] };
+    const matched = allCampaigns.filter(
+      (c) => c.trigger === 'membership_upgrade' && c.membershipCondition?.targetGrades.includes(gradeId),
+    );
+    return {
+      couponNames: matched.flatMap((c) => c.benefitConfig.couponBenefits.map((b) => b.couponName)),
+      pointDescriptions: matched.flatMap((c) => c.benefitConfig.pointBenefits.map((b) => b.pointDescription)),
+    };
+  }, [gradeId, allCampaigns]);
 
   // ── 렌더링 ──
 
@@ -439,7 +441,7 @@ export const GradeManagement: React.FC = () => {
                 {/* 달성 조건 */}
                 <section className="space-y-4">
                   <h3 className="text-sm font-semibold text-txt-main border-b border-border pb-2">달성 조건</h3>
-                  <p className="text-xs text-txt-muted">조건을 설정하지 않으면 기본 등급(신규 가입 시 자동 부여)으로 간주됩니다.</p>
+                  <p className="text-xs text-txt-muted">설정된 조건을 모두(AND) 충족해야 등급이 부여됩니다. 조건을 설정하지 않으면 기본 등급(신규 가입 시 자동 부여)으로 간주됩니다.</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <Label>최소 주문 금액</Label>
@@ -507,96 +509,40 @@ export const GradeManagement: React.FC = () => {
                   </div>
                 </section>
 
-                {/* 포인트 혜택 */}
+                {/* 혜택 (혜택 캠페인 연동) */}
                 <section className="space-y-4">
-                  <h3 className="text-sm font-semibold text-txt-main border-b border-border pb-2">포인트 혜택</h3>
-                  <div className="space-y-1.5">
-                    <Label>적립 배율</Label>
-                    <div className="flex items-center gap-3">
-                      <div className="relative flex-1 max-w-[200px]">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="1.0"
-                          max="10.0"
-                          value={formData.pointEarnMultiplier}
-                          onChange={(e) => handleFormChange({ pointEarnMultiplier: Number(e.target.value) })}
-                          className="pr-8"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-txt-muted">배</span>
-                      </div>
-                      <span className="text-sm text-txt-muted">
-                        {formData.pointEarnMultiplier === 1.0
-                          ? '기본 적립'
-                          : `기본 대비 ${formData.pointEarnMultiplier}배 적립`}
-                      </span>
-                    </div>
-                  </div>
-                </section>
+                  <h3 className="text-sm font-semibold text-txt-main border-b border-border pb-2">혜택 (혜택 캠페인 연동)</h3>
 
-                {/* 쿠폰 혜택 */}
-                <section className="space-y-4">
-                  <h3 className="text-sm font-semibold text-txt-main border-b border-border pb-2">쿠폰 혜택</h3>
-
-                  {availableCoupons.length > 0 && (
-                    <div className="space-y-1.5">
-                      <Label>자동 발급 쿠폰</Label>
-                      <div className="flex gap-2 flex-wrap">
-                        {availableCoupons.map((coupon) => (
-                          <button
-                            key={coupon.id}
-                            type="button"
-                            onClick={() => handleToggleCoupon(coupon.id)}
-                            className={`px-3 py-1.5 rounded-lg border text-xs transition-all ${
-                              formData.autoIssueCouponIds.includes(coupon.id)
-                                ? 'border-primary bg-primary/5 text-primary font-medium'
-                                : 'border-border text-txt-muted hover:border-primary/50'
-                            }`}
-                          >
-                            {coupon.name}
-                          </button>
-                        ))}
-                      </div>
+                  {linkedBenefits.couponNames.length > 0 || linkedBenefits.pointDescriptions.length > 0 ? (
+                    <div className="space-y-2">
+                      {linkedBenefits.couponNames.length > 0 && (
+                        <div className="flex gap-2 flex-wrap items-center">
+                          <span className="text-xs text-txt-muted w-12">쿠폰</span>
+                          {linkedBenefits.couponNames.map((name, idx) => (
+                            <Badge key={`c-${idx}`} variant="info">{name}</Badge>
+                          ))}
+                        </div>
+                      )}
+                      {linkedBenefits.pointDescriptions.length > 0 && (
+                        <div className="flex gap-2 flex-wrap items-center">
+                          <span className="text-xs text-txt-muted w-12">포인트</span>
+                          {linkedBenefits.pointDescriptions.map((desc, idx) => (
+                            <Badge key={`p-${idx}`} variant="success">{desc}</Badge>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                  ) : (
+                    <p className="text-sm text-txt-muted py-2">
+                      {selectedGrade ? '연결된 혜택이 없습니다.' : '등급을 저장한 후 혜택 캠페인을 연결할 수 있습니다.'}
+                    </p>
                   )}
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="issueOnUpgrade"
-                        checked={formData.couponIssueOnUpgrade}
-                        onChange={(e) => handleFormChange({ couponIssueOnUpgrade: e.target.checked })}
-                        className="rounded border-border"
-                      />
-                      <label htmlFor="issueOnUpgrade" className="text-sm text-txt-sub cursor-pointer">등급 달성 시 즉시 발급</label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="issueMonthly"
-                        checked={formData.couponIssueMonthly}
-                        onChange={(e) => handleFormChange({ couponIssueMonthly: e.target.checked, couponMonthlyIssueDay: e.target.checked ? 1 : null })}
-                        className="rounded border-border"
-                      />
-                      <label htmlFor="issueMonthly" className="text-sm text-txt-sub cursor-pointer">매월 자동 발급</label>
-                    </div>
-                    {formData.couponIssueMonthly && (
-                      <div className="ml-6 space-y-1.5">
-                        <Label>매월 발급일</Label>
-                        <div className="relative max-w-[150px]">
-                          <Input
-                            type="number"
-                            min={1}
-                            max={28}
-                            value={formData.couponMonthlyIssueDay ?? ''}
-                            onChange={(e) => handleFormChange({ couponMonthlyIssueDay: e.target.value ? Number(e.target.value) : null })}
-                            className="pr-8"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-txt-muted">일</span>
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex items-start gap-2 p-3 bg-info/10 rounded-lg">
+                    <InfoCircleOutlined className="text-info mt-0.5" />
+                    <p className="text-xs text-txt-secondary">
+                      포인트·쿠폰 혜택은 <strong>마케팅 &gt; 혜택 캠페인</strong>에서 &quot;멤버십 달성 시&quot; 트리거로 관리합니다.
+                    </p>
                   </div>
                 </section>
 

@@ -68,6 +68,8 @@ export interface AuditLogFilter {
   startDate?: Date;
   endDate?: Date;
   ipAddress?: string;
+  page?: number;
+  limit?: number;
 }
 
 // 알람 설정 정보

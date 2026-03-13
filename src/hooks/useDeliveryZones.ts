@@ -12,10 +12,16 @@ import type {
  * 상권 목록 조회
  */
 export function useDeliveryZones(params?: DeliveryZoneListParams) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['deliveryZones', params],
     queryFn: () => deliveryZoneService.getDeliveryZones(params),
   });
+
+  return {
+    ...query,
+    zones: query.data?.data ?? [],
+    pagination: query.data?.pagination ?? null,
+  };
 }
 
 /**

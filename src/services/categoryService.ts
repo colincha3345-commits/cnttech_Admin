@@ -1,4 +1,5 @@
-import type { Category, CategoryFormData } from '@/types/category';
+import type { Category, CategoryFormData, CategoryProductOrder } from '@/types/category';
+import { productService } from './productService';
 
 // 샘플 데이터
 const mockCategories: Category[] = [
@@ -24,8 +25,15 @@ const mockCategories: Category[] = [
     },
 ];
 
+const mockCategoryProductOrders: Record<string, CategoryProductOrder[]> = {
+    '1-1': [
+        { productId: 'prod-1', sortOrder: 1 }
+    ]
+};
+
 class CategoryService {
     private categories: Category[] = [...mockCategories];
+    private orders: Record<string, CategoryProductOrder[]> = { ...mockCategoryProductOrders };
 
     // 전체 카테고리 트리 조회
     async getCategories(): Promise<Category[]> {
@@ -144,6 +152,35 @@ class CategoryService {
         if (!isDeleted) {
             throw new Error('카테고리를 찾을 수 없습니다.');
         }
+    }
+
+    // 카테고리별 상품 노출 순서 조회
+    async getCategoryProducts(categoryId: string): Promise<CategoryProductOrder[]> {
+        await this.delay();
+        
+        // 1. 해당 카테고리에 속한 모든 상품을 가져옴
+        const res = await productService.getProducts({ categoryId, limit: 1000 });
+        const products = res.data;
+
+        // 2. 현재 저장된 순서 매핑
+        const savedOrders = this.orders[categoryId] || [];
+        const savedMap = new Map(savedOrders.map(o => [o.productId, o.sortOrder]));
+
+        // 3. 상품 목록과 합침 (저장된 순서가 없는 상품은 뒤로 밀어냄)
+        const combined = products.map((p, idx) => ({
+            productId: p.id,
+            productName: p.name,
+            sortOrder: savedMap.get(p.id) ?? 9999 + idx
+        }));
+
+        // 4. 순서대로 정렬
+        return combined.sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+
+    // 카테고리별 상품 노출 순서 업데이트
+    async updateCategoryProductOrders(categoryId: string, productOrders: CategoryProductOrder[]): Promise<void> {
+        await this.delay();
+        this.orders[categoryId] = [...productOrders];
     }
 
     // Delay 시뮬레이션

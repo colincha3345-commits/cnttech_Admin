@@ -38,6 +38,8 @@
 1. **섹션 목록** — 앱 메인화면의 섹션(배너캐러셀, 빠른메뉴, 추천메뉴, 신메뉴, 이벤트목록, 공지사항)을 정렬 순서대로 나열한다.
 2. **순서 변경** — 드래그 앤 드롭으로 섹션 순서를 변경한다.
 3. **노출 토글** — 각 섹션의 노출/비노출 Switch를 제공한다.
+4. **추천메뉴 설정** — "추천 메뉴" 섹션의 상세 관리(`[상세 관리]` 버튼)를 통해 전체 메뉴에서 메인에 노출할 상품에 대해 검색하여 추가하고, 직접 노출 순서(▲/▼ 방향 아이콘)를 배정 및 저장한다.
+   - **사용 상세**: 메인화면 섹션 관리 목록에서 "추천 메뉴" 섹션 항목에만 노출되는 상세 버튼 클릭 시 `RecommendedMenuManager` 모달이 오픈. 좌측에는 전체 상품을 이름 검색으로 찾아 "추천 메뉴" 목록으로 추가할 수 있고, 우측에서는 등록된 추천 상품들의 위/아래 순위를 교체하며 지정한다.
 
 ---
 
@@ -135,6 +137,15 @@
 | **bgColor** | String | C(text시) | 7자 (HEX) | #RRGGBB 형식이다. |
 | **imageUrl** | String | C(image시) | URL 형식 | displayType=image 시 필수다. |
 
+#### 추천 메뉴 (Recommended Menu)
+
+| 데이터베이스 필드 | 데이터 타입 | 필수 여부 | 글자수 / 제약조건 | 비고 (API 설계) |
+| :--- | :--- | :---: | :--- | :--- |
+| **id (PK)** | String | Y | - | 고유 식별자 또는 복합키 기반 식별자다. |
+| **productId** | String | Y | - | 연결된 상품(Product) ID다. |
+| **productName** | String | Y | - | 프론트 노출을 위한 상품(역정규화)명 정보. |
+| **sortOrder** | Integer | Y | 1 이상 | 메인화면 "추천 메뉴" 섹션 내에서의 노출 순서다. |
+
 **[API 및 비즈니스 로직 제약사항]**
 - **배너/팝업 상태 배치** — 매 분 또는 매 시간 단위로 startDate/endDate를 검사하여 status를 active/scheduled/inactive로 자동 전환하는 스케줄러가 필요하다.
 - **앱 메인화면 API** — 사용자 앱에서 메인화면을 요청할 때, 각 섹션의 isVisible=true인 항목만 sortOrder 순으로 반환한다. Redis 캐싱을 권장한다.
@@ -166,3 +177,79 @@
 | 2 | 섹션 추가/편집 | 섹션 유형(배너/상품/이벤트) 선택 | 유형별 설정 폼 |
 | 3 | 순서 변경 후 [저장] | `PUT /api/design/main-sections` | 고객앱 메인 즉시 반영 |
 
+
+
+### 공통 규칙 (Common Rules)
+- Base URL: `{VITE_API_URL}`
+- 인증: HttpOnly 쿠키 기반 세션 인증
+- 공통 응답: `{ "data": ... }` 또는 `{ "data": [...], "pagination": {...} }`
+- 에러 응답: `{ "error": { "code": "...", "message": "..." } }`
+
+
+---
+
+## 디자인 및 콘텐츠 (Design & Content) API
+
+### 11-1. 앱 팝업 배너 목록 조회
+```
+GET /content/popups
+```
+**Response** `200 OK`
+```json
+{
+  "data": [
+    {
+      "id": "popup-1",
+      "title": "봄 맞이 신메뉴 출시",
+      "imageUrl": "https://...",
+      "linkUrl": "/products/123",
+      "startDate": "2026-03-01T00:00:00Z",
+      "endDate": "2026-03-31T23:59:59Z",
+      "isActive": true
+    }
+  ]
+}
+```
+
+### 11-2. 앱 홈 탭 순서 설정
+```
+PUT /content/home-tabs
+```
+**Request Body**
+```json
+{
+  "tabs": ["delivery", "pickup", "event", "brand"]
+}
+```
+**Response** `200 OK`
+
+### 11-3. 메인 추천메뉴 전체 조회
+```http
+GET /content/main-sections/recommended-menus
+```
+**Response** `200 OK`
+```json
+{
+  "data": [
+    { "productId": "prod-1", "sortOrder": 1 },
+    { "productId": "prod-2", "sortOrder": 2 }
+  ]
+}
+```
+
+### 11-4. 메인 추천메뉴 순서 및 목록 갱신
+```http
+PUT /content/main-sections/recommended-menus
+```
+**Request Body**
+```json
+{
+  "recommendedMenus": [
+    { "productId": "prod-1", "sortOrder": 1 },
+    { "productId": "prod-2", "sortOrder": 2 }
+  ]
+}
+```
+**Response** `200 OK`
+
+---

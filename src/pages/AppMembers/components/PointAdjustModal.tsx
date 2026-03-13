@@ -45,9 +45,14 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
       return;
     }
 
+    // 마이너스 잔고 정책(방안 A): 회수 시 잔액 초과 허용, 확인 경고만 표시
     if (adjustType === 'withdraw_manual' && numAmount > currentBalance) {
-      toast.error(`회수 금액이 현재 잔액(${formatCurrency(currentBalance)}P)을 초과합니다.`);
-      return;
+      const confirmNegative = window.confirm(
+        `회수 금액(${formatCurrency(numAmount)}P)이 현재 잔액(${formatCurrency(currentBalance)}P)을 초과합니다.\n` +
+        `조정 후 잔액이 ${formatCurrency(currentBalance - numAmount)}P(마이너스)가 됩니다.\n` +
+        `마이너스 잔고 상태에서는 포인트 사용이 차단됩니다.\n계속하시겠습니까?`
+      );
+      if (!confirmNegative) return;
     }
 
     setIsLoading(true);
@@ -85,6 +90,13 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const parsedAmount = parseInt(amount, 10) || 0;
+  const showExpectedBalance = parsedAmount > 0;
+  const expectedBalance = adjustType === 'earn_manual'
+    ? currentBalance + parsedAmount
+    : currentBalance - parsedAmount;
+  const isNegativeBalance = expectedBalance < 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -154,13 +166,13 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
                 onChange={(e) => setAmount(e.target.value)}
                 className="pr-8"
                 min={1}
-                max={adjustType === 'withdraw_manual' ? currentBalance : undefined}
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-txt-muted">P</span>
             </div>
             {adjustType === 'withdraw_manual' && (
               <p className="text-xs text-txt-muted">
-                최대 회수 가능: {formatCurrency(currentBalance)}P
+                현재 잔액: {formatCurrency(currentBalance)}P
+                {currentBalance < 0 && <span className="text-critical font-medium"> (마이너스 상태)</span>}
               </p>
             )}
           </div>
@@ -177,16 +189,17 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
           </div>
 
           {/* 예상 잔액 */}
-          {amount && parseInt(amount, 10) > 0 && (
-            <div className="p-3 bg-info/10 rounded-lg">
+          {showExpectedBalance && (
+            <div className={`p-3 rounded-lg ${isNegativeBalance ? 'bg-critical/10' : 'bg-info/10'}`}>
               <p className="text-sm text-txt-muted">조정 후 예상 잔액</p>
-              <p className="text-lg font-bold text-info">
-                {formatCurrency(
-                  adjustType === 'earn_manual'
-                    ? currentBalance + parseInt(amount, 10)
-                    : currentBalance - parseInt(amount, 10)
-                )}P
+              <p className={`text-lg font-bold ${isNegativeBalance ? 'text-critical' : 'text-info'}`}>
+                {formatCurrency(expectedBalance)}P
               </p>
+              {isNegativeBalance && (
+                <p className="text-xs text-critical mt-1">
+                  마이너스 잔고 — 포인트 사용이 차단되며 이후 적립 시 자동 복구됩니다.
+                </p>
+              )}
             </div>
           )}
         </div>

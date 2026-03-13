@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
     SearchOutlined,
     BellOutlined,
@@ -16,11 +16,12 @@ import {
     Badge,
     SearchInput,
     Modal,
-    DataTable
+    DataTable,
+    Pagination,
+    Tooltip,
 } from '@/components/ui';
-import { auditService } from '@/services/auditService';
 import { usePageViewLog } from '@/hooks/useActivityLog';
-import { useToast } from '@/hooks';
+import { useAuditLogs, useAuditAlarmConfig } from '@/hooks/useAuditLogs';
 import type { AuditLogEntry, AuditAlarmConfig, AuditAction, ChangedField } from '@/types/audit';
 import { ACTION_DISPLAY_NAMES } from '@/types/audit';
 
@@ -50,75 +51,82 @@ const ACTION_FILTER_GROUPS: { label: string; actions: AuditAction[] }[] = [
 
 export function AuditLogList() {
     usePageViewLog('audit-logs');
-    const toast = useToast();
-    const [logs, setLogs] = useState<AuditLogEntry[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [searchUserId, setSearchUserId] = useState('');
     const [actionFilter, setActionFilter] = useState<AuditAction[]>([]);
     const [showFilters, setShowFilters] = useState(false);
+    const [page, setPage] = useState(1);
+    const limit = 20;
 
     // 상세 모달
     const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
 
-    // Alarm settings state
+    // Alarm settings
     const [isAlarmModalOpen, setIsAlarmModalOpen] = useState(false);
-    const [alarmConfig, setAlarmConfig] = useState<AuditAlarmConfig | null>(null);
-
+    const [localAlarmConfig, setLocalAlarmConfig] = useState<AuditAlarmConfig | null>(null);
     const currentAdminId = 'admin-1';
 
-    useEffect(() => {
-        loadLogs();
-        loadAlarmConfig();
-    }, []);
-
-    const loadLogs = async (userIdFilter?: string) => {
-        setIsLoading(true);
-        try {
-            const filter: Record<string, unknown> = {};
-            if (userIdFilter) filter.userId = userIdFilter;
-            if (actionFilter.length > 0) filter.action = actionFilter;
-            const res = await auditService.getLogs(filter as Parameters<typeof auditService.getLogs>[0]);
-            setLogs(res.data);
-        } catch {
-            toast.error('로그를 불러오는 데 실패했습니다.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const loadAlarmConfig = async () => {
-        try {
-            const res = await auditService.getAlarmConfig(currentAdminId);
-            setAlarmConfig(res.data);
-        } catch {
-            // silent
-        }
-    };
+    // react-query hooks
+    const { logs, pagination, isLoading, fetchLogs } = useAuditLogs();
+    const { alarmConfig, updateAlarmConfig } = useAuditAlarmConfig(currentAdminId);
 
     const handleSearch = () => {
-        loadLogs(searchUserId);
+        setPage(1);
+        fetchLogs({
+            userId: searchUserId || undefined,
+            action: actionFilter.length > 0 ? actionFilter : undefined,
+            page: 1,
+            limit,
+        });
     };
 
-    // 액션 필터 변경 시 재조회
-    useEffect(() => {
-        loadLogs(searchUserId);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [actionFilter]);
+    const handlePageChange = (newPage: number) => {
+        setPage(newPage);
+        fetchLogs({
+            userId: searchUserId || undefined,
+            action: actionFilter.length > 0 ? actionFilter : undefined,
+            page: newPage,
+            limit,
+        });
+    };
 
-    const handleSaveAlarmConfig = async () => {
-        if (!alarmConfig) return;
-        try {
-            await auditService.updateAlarmConfig(currentAdminId, alarmConfig);
-            toast.success('보안 설정이 저장되었습니다.');
-            setIsAlarmModalOpen(false);
-        } catch {
-            toast.error('보안 설정 저장에 실패했습니다.');
-        }
+    const toggleActionFilter = (action: AuditAction) => {
+        setActionFilter(prev => {
+            const next = prev.includes(action) ? prev.filter(a => a !== action) : [...prev, action];
+            setPage(1);
+            fetchLogs({
+                userId: searchUserId || undefined,
+                action: next.length > 0 ? next : undefined,
+                page: 1,
+                limit,
+            });
+            return next;
+        });
+    };
+
+    const clearActionFilter = () => {
+        setActionFilter([]);
+        setPage(1);
+        fetchLogs({
+            userId: searchUserId || undefined,
+            page: 1,
+            limit,
+        });
+    };
+
+    const openAlarmModal = () => {
+        setLocalAlarmConfig(alarmConfig ? { ...alarmConfig } : null);
+        setIsAlarmModalOpen(true);
+    };
+
+    const handleSaveAlarmConfig = () => {
+        if (!localAlarmConfig) return;
+        updateAlarmConfig(localAlarmConfig);
+        setIsAlarmModalOpen(false);
     };
 
     const toggleMonitoredAction = (action: AuditAction) => {
-        if (!alarmConfig) return;
-        setAlarmConfig(prev => {
+        if (!localAlarmConfig) return;
+        setLocalAlarmConfig(prev => {
             if (!prev) return prev;
             const exists = prev.monitoredActions.includes(action);
             return {
@@ -130,19 +138,9 @@ export function AuditLogList() {
         });
     };
 
-    const toggleActionFilter = (action: AuditAction) => {
-        setActionFilter(prev =>
-            prev.includes(action) ? prev.filter(a => a !== action) : [...prev, action]
-        );
-    };
-
-    const stats = useMemo(() => {
-        return {
-            total: logs.length,
-            warning: logs.filter(l => l.severity === 'warning').length,
-            critical: logs.filter(l => l.severity === 'critical').length,
-        };
-    }, [logs]);
+    const stats = useMemo(() => ({
+        total: pagination?.total ?? 0,
+    }), [pagination]);
 
     const allActions = Object.keys(ACTION_DISPLAY_NAMES) as AuditAction[];
 
@@ -150,7 +148,7 @@ export function AuditLogList() {
         <div className="space-y-6 px-4 py-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-gray-900">감사 로그</h1>
-                <Button variant="outline" onClick={() => setIsAlarmModalOpen(true)}>
+                <Button variant="outline" onClick={openAlarmModal}>
                     <span className="flex items-center gap-2">
                         <BellOutlined className="text-blue-500" /> 알림 설정
                     </span>
@@ -177,10 +175,10 @@ export function AuditLogList() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-orange-600 mb-1">주의 단계 (Warning)</p>
-                                <h3 className="text-2xl font-bold text-orange-900 font-mono">
-                                    {stats.warning.toLocaleString()}건
-                                </h3>
+                                <Tooltip content="로그인 실패, 마스킹 해제, 비밀번호 변경, 사용자 상태 변경, 데이터 삭제 등 주의가 필요한 행위" position="bottom">
+                                    <p className="text-sm font-medium text-orange-600 mb-1 border-b border-dashed border-orange-300">주의 단계 (Warning)</p>
+                                </Tooltip>
+                                <h3 className="text-2xl font-bold text-orange-900 font-mono">-</h3>
                             </div>
                             <WarningOutlined style={{ fontSize: 32 }} className="text-orange-200" />
                         </div>
@@ -191,10 +189,10 @@ export function AuditLogList() {
                     <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-red-600 mb-1">심각 단계 (Critical)</p>
-                                <h3 className="text-2xl font-bold text-red-900 font-mono">
-                                    {stats.critical.toLocaleString()}건
-                                </h3>
+                                <Tooltip content="사용자 삭제, 권한 변경, 접근 거부 등 보안 사고 가능성이 높은 행위" position="bottom">
+                                    <p className="text-sm font-medium text-red-600 mb-1 border-b border-dashed border-red-300">심각 단계 (Critical)</p>
+                                </Tooltip>
+                                <h3 className="text-2xl font-bold text-red-900 font-mono">-</h3>
                             </div>
                             <ExclamationCircleOutlined style={{ fontSize: 32 }} className="text-red-200" />
                         </div>
@@ -257,7 +255,7 @@ export function AuditLogList() {
                             ))}
                             {actionFilter.length > 0 && (
                                 <button
-                                    onClick={() => setActionFilter([])}
+                                    onClick={clearActionFilter}
                                     className="text-xs text-danger hover:underline"
                                 >
                                     필터 초기화
@@ -349,6 +347,18 @@ export function AuditLogList() {
                     keyExtractor={(item) => item.id}
                     emptyMessage="로그가 존재하지 않습니다."
                 />
+                {pagination && pagination.totalPages > 0 && (
+                    <div className="border-t">
+                        <Pagination
+                            page={page}
+                            totalPages={pagination.totalPages}
+                            onPageChange={handlePageChange}
+                            totalElements={pagination.total}
+                            limit={limit}
+                            unit="건"
+                        />
+                    </div>
+                )}
             </Card>
 
             {/* 상세 모달 */}
@@ -403,7 +413,7 @@ export function AuditLogList() {
             )}
 
             {/* 알림 설정 모달 */}
-            {alarmConfig && (
+            {localAlarmConfig && (
                 <Modal
                     isOpen={isAlarmModalOpen}
                     onClose={() => setIsAlarmModalOpen(false)}
@@ -426,8 +436,8 @@ export function AuditLogList() {
                                 <label className="flex items-center gap-2 p-3 border border-border rounded-lg cursor-pointer hover:bg-bg-muted transition-colors">
                                     <input
                                         type="checkbox"
-                                        checked={alarmConfig.receiveEmail}
-                                        onChange={(e) => setAlarmConfig({ ...alarmConfig, receiveEmail: e.target.checked })}
+                                        checked={localAlarmConfig.receiveEmail}
+                                        onChange={(e) => setLocalAlarmConfig({ ...localAlarmConfig, receiveEmail: e.target.checked })}
                                         className="rounded border-border"
                                     />
                                     <span className="font-medium">이메일 수신</span>
@@ -435,8 +445,8 @@ export function AuditLogList() {
                                 <label className="flex items-center gap-2 p-3 border border-border rounded-lg cursor-pointer hover:bg-bg-muted transition-colors">
                                     <input
                                         type="checkbox"
-                                        checked={alarmConfig.receivePush}
-                                        onChange={(e) => setAlarmConfig({ ...alarmConfig, receivePush: e.target.checked })}
+                                        checked={localAlarmConfig.receivePush}
+                                        onChange={(e) => setLocalAlarmConfig({ ...localAlarmConfig, receivePush: e.target.checked })}
                                         className="rounded border-border"
                                     />
                                     <span className="font-medium">앱 푸시 알림</span>
@@ -454,7 +464,7 @@ export function AuditLogList() {
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={alarmConfig.monitoredActions.includes(action)}
+                                            checked={localAlarmConfig.monitoredActions.includes(action)}
                                             onChange={() => toggleMonitoredAction(action)}
                                             className="rounded border-border"
                                         />

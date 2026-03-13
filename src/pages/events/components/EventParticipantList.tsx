@@ -3,7 +3,7 @@
  */
 import { useState } from 'react';
 import { DownloadOutlined } from '@ant-design/icons';
-import { Button, SearchInput, Badge, Spinner, MaskedData } from '@/components/ui';
+import { Button, SearchInput, Badge, Spinner, MaskedData, Pagination } from '@/components/ui';
 import { useEventParticipants } from '@/hooks/useEvents';
 import { PARTICIPANT_ACTION_LABELS } from '@/types/event';
 import type { ParticipantActionType } from '@/types/event';
@@ -25,34 +25,93 @@ const ACTION_BADGE_VARIANT: Record<ParticipantActionType, 'info' | 'success' | '
   share: 'warning',
 };
 
+// 내보내기 사유 입력 모달
+const ExportReasonModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+  count: number;
+}> = ({ isOpen, onClose, onConfirm, count }) => {
+  const [reason, setReason] = useState('');
+
+  const handleConfirm = () => {
+    if (!reason.trim()) return;
+    onConfirm(reason.trim());
+    setReason('');
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-bg-main rounded-lg shadow-xl w-full max-w-md p-6">
+        <h3 className="text-lg font-semibold text-txt-main mb-4">
+          참여자 데이터 내보내기 ({count}명)
+        </h3>
+        <div>
+          <label className="block text-sm font-medium text-txt-main mb-2">
+            내보내기 사유 <span className="text-critical">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="예: 이벤트 당첨자 선별"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+          />
+          <p className="text-xs text-txt-muted mt-1">
+            개인정보보호법에 따라 다운로드 사유가 감사 로그에 기록됩니다.
+          </p>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <Button variant="outline" onClick={onClose}>
+            취소
+          </Button>
+          <Button onClick={handleConfirm} disabled={!reason.trim()}>
+            <DownloadOutlined className="mr-1" />
+            내보내기
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function EventParticipantList({ eventId }: EventParticipantListProps) {
   const [keyword, setKeyword] = useState('');
   const [actionFilter, setActionFilter] = useState<ParticipantActionType | 'all'>('all');
+  const [page, setPage] = useState(1);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const limit = 20;
 
   const { data: participantData, isLoading } = useEventParticipants(eventId, {
     keyword,
     actionType: actionFilter === 'all' ? undefined : actionFilter,
+    page,
+    limit,
   });
 
   const participants = participantData?.data ?? [];
-  const total = participantData?.pagination?.total ?? 0;
+  const pagination = participantData?.pagination;
+  const total = pagination?.total ?? 0;
 
-  const handleExport = () => {
-    // CSV 내보내기 - 개인정보 마스킹 처리
-    const maskPhone = (v: string) => v.replace(/^(\d{3})-(\d{4})-(\d{4})$/, '$1-****-$3');
-    const maskEmail = (v: string) => {
-      const [local, domain] = v.split('@');
-      if (!local || !domain) return '****';
-      const masked = local.length > 4 ? local.slice(0, 4) + '****' : local.slice(0, 1) + '***';
-      return `${masked}@${domain}`;
-    };
-    const maskName = (v: string) => v.length > 1 ? v[0] + '*'.repeat(v.length - 1) : '***';
+  const handleExport = (reason: string) => {
+    // 감사 로그: 개인정보 원본 내보내기 사유 기록 (개인정보보호법)
+    // eslint-disable-next-line no-console
+    console.info('[AUDIT] 이벤트 참여자 데이터 내보내기', {
+      eventId,
+      reason,
+      count: participants.length,
+      exportedAt: new Date().toISOString(),
+    });
 
+    // CSV 내보내기 - 원본 데이터 (암호화 해제)
     const csvContent = [
       '이름,전화번호,이메일,참여유형,참여일시,동의여부',
       ...participants.map(
         (p) =>
-          `${maskName(p.memberName)},${maskPhone(p.memberPhone)},${maskEmail(p.memberEmail)},${PARTICIPANT_ACTION_LABELS[p.actionType]},${new Date(p.participatedAt).toLocaleString('ko-KR')},${p.hasConsented ? '동의' : '미동의'}`,
+          `${p.memberName},${p.memberPhone},${p.memberEmail},${PARTICIPANT_ACTION_LABELS[p.actionType]},${new Date(p.participatedAt).toLocaleString('ko-KR')},${p.hasConsented ? '동의' : '미동의'}`,
       ),
     ].join('\n');
 
@@ -71,7 +130,7 @@ export function EventParticipantList({ eventId }: EventParticipantListProps) {
         <span className="text-sm font-medium text-gray-700">
           참여자 목록 ({total}명)
         </span>
-        <Button variant="outline" size="sm" onClick={handleExport} disabled={participants.length === 0}>
+        <Button variant="outline" size="sm" onClick={() => setIsExportModalOpen(true)} disabled={participants.length === 0}>
           <DownloadOutlined className="mr-1" />
           CSV 내보내기
         </Button>
@@ -82,7 +141,7 @@ export function EventParticipantList({ eventId }: EventParticipantListProps) {
         <div className="flex-1">
           <SearchInput
             value={keyword}
-            onChange={setKeyword}
+            onChange={(v) => { setKeyword(v); setPage(1); }}
             placeholder="이름, 전화번호, 이메일 검색..."
           />
         </div>
@@ -90,7 +149,7 @@ export function EventParticipantList({ eventId }: EventParticipantListProps) {
           {ACTION_FILTER_OPTIONS.map((opt) => (
             <button
               key={opt.value}
-              onClick={() => setActionFilter(opt.value)}
+              onClick={() => { setActionFilter(opt.value); setPage(1); }}
               className={`px-2.5 py-1 text-xs rounded-full transition-colors ${
                 actionFilter === opt.value
                   ? 'bg-blue-100 text-blue-700 font-medium'
@@ -152,8 +211,28 @@ export function EventParticipantList({ eventId }: EventParticipantListProps) {
               ))}
             </tbody>
           </table>
+
+          {/* 페이지네이션 */}
+          {pagination && (
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+              totalElements={total}
+              limit={limit}
+              unit="명"
+            />
+          )}
         </div>
       )}
+
+      {/* 내보내기 사유 입력 모달 */}
+      <ExportReasonModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        onConfirm={handleExport}
+        count={total}
+      />
     </div>
   );
 }

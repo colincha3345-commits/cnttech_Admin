@@ -19,6 +19,7 @@ interface UseProductsReturn {
   deleteProduct: (id: string) => Promise<void>;
   uploadImage: (file: File) => Promise<{ imageUrl: string }>;
   updateDisplayOrders: (updates: DisplayOrderUpdate[]) => Promise<void>;
+  searchProducts: (search: string, limit?: number) => Promise<Product[]>;
 }
 
 /**
@@ -164,6 +165,12 @@ export const useProducts = (options: UseProductsOptions = {}): UseProductsReturn
     }
   }, [autoLoad, fetchProducts]);
 
+  const searchProducts = useCallback(
+    (search: string, limit = 10) =>
+      productService.getProducts({ search, limit }).then((res) => res.data),
+    []
+  );
+
   return {
     products,
     loading,
@@ -174,5 +181,6 @@ export const useProducts = (options: UseProductsOptions = {}): UseProductsReturn
     deleteProduct,
     uploadImage,
     updateDisplayOrders,
+    searchProducts,
   };
 };

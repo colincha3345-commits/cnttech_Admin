@@ -12,6 +12,7 @@ import {
   Badge,
   SearchInput,
   MaskedData,
+  Pagination,
 } from '@/components/ui';
 import { useAppMembers, useAppMemberStats } from '@/hooks';
 import type { MemberListFilter } from '@/types/app-member';
@@ -321,115 +322,57 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
 
       {/* 회원 목록 테이블 */}
       <Card>
-        <div
-          className="cursor-pointer"
-          onClick={(e) => {
-            const target = e.target as HTMLElement;
-            const row = target.closest('tr');
-            if (row) {
-              const memberId = row.getAttribute('data-member-id');
-              if (memberId) {
-                const member = members.find((m) => m.id === memberId);
-                if (member) {
-                  handleRowClick(member);
-                }
-              }
-            }
-          }}
-        >
-          <table className="data-table">
-            <thead>
+        <table className="data-table">
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th key={column.key}>{column.header}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading ? (
               <tr>
-                {columns.map((column) => (
-                  <th key={column.key}>{column.header}</th>
-                ))}
+                <td colSpan={columns.length} className="text-center py-12">
+                  <div className="text-txt-muted">로딩 중...</div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center py-12">
-                    <div className="text-txt-muted">로딩 중...</div>
-                  </td>
+            ) : members.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center py-12">
+                  <div className="text-txt-muted">
+                    <SearchOutlined className="text-3xl mb-2 opacity-50" />
+                    <p>조건에 맞는 회원이 없습니다.</p>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              members.map((member) => (
+                <tr
+                  key={member.id}
+                  onClick={() => handleRowClick(member)}
+                  className="hover:bg-bg-hover cursor-pointer"
+                >
+                  {columns.map((column) => (
+                    <td key={column.key} data-label={column.header}>
+                      {column.render(member)}
+                    </td>
+                  ))}
                 </tr>
-              ) : members.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="text-center py-12">
-                    <div className="text-txt-muted">
-                      <SearchOutlined className="text-3xl mb-2 opacity-50" />
-                      <p>조건에 맞는 회원이 없습니다.</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                members.map((member) => (
-                  <tr
-                    key={member.id}
-                    data-member-id={member.id}
-                    className="hover:bg-bg-hover cursor-pointer"
-                  >
-                    {columns.map((column) => (
-                      <td key={column.key} data-label={column.header}>
-                        {column.render(member)}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
 
         {/* 페이지네이션 */}
-        {pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-border">
-            <p className="text-sm text-txt-muted">
-              총 {formatCurrency(pagination.total)}명 중{' '}
-              {(page - 1) * limit + 1}-{Math.min(page * limit, pagination.total)}명 표시
-            </p>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 rounded border border-border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-bg-hover"
-              >
-                이전
-              </button>
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (pagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (page <= 3) {
-                  pageNum = i + 1;
-                } else if (page >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
-                } else {
-                  pageNum = page - 2 + i;
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`w-8 h-8 rounded text-sm ${
-                      page === pageNum
-                        ? 'bg-primary text-white'
-                        : 'border border-border hover:bg-bg-hover'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-                className="px-3 py-1 rounded border border-border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-bg-hover"
-              >
-                다음
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          totalPages={pagination.totalPages}
+          onPageChange={setPage}
+          totalElements={pagination.total}
+          limit={limit}
+          unit="명"
+        />
       </Card>
     </div>
   );

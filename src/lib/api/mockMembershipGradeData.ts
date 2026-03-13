@@ -16,15 +16,6 @@ export const mockMembershipGrades: MembershipGrade[] = [
       calculationPeriod: { type: 'recent_months', months: 12 },
       retentionMonths: 12,
     },
-    benefits: {
-      point: { earnMultiplier: 2.0 },
-      coupon: {
-        autoIssueCouponIds: ['4'],
-        issueOnUpgrade: true,
-        issueMonthly: true,
-        monthlyIssueDay: 1,
-      },
-    },
     isActive: true,
     isDefault: false,
     memberCount: 123,
@@ -43,15 +34,6 @@ export const mockMembershipGrades: MembershipGrade[] = [
       minOrderCount: 30,
       calculationPeriod: { type: 'recent_months', months: 12 },
       retentionMonths: 12,
-    },
-    benefits: {
-      point: { earnMultiplier: 1.5 },
-      coupon: {
-        autoIssueCouponIds: [],
-        issueOnUpgrade: true,
-        issueMonthly: false,
-        monthlyIssueDay: null,
-      },
     },
     isActive: true,
     isDefault: false,
@@ -72,15 +54,6 @@ export const mockMembershipGrades: MembershipGrade[] = [
       calculationPeriod: { type: 'recent_months', months: 12 },
       retentionMonths: 12,
     },
-    benefits: {
-      point: { earnMultiplier: 1.2 },
-      coupon: {
-        autoIssueCouponIds: [],
-        issueOnUpgrade: true,
-        issueMonthly: false,
-        monthlyIssueDay: null,
-      },
-    },
     isActive: true,
     isDefault: false,
     memberCount: 789,
@@ -99,15 +72,6 @@ export const mockMembershipGrades: MembershipGrade[] = [
       minOrderCount: null,
       calculationPeriod: { type: 'lifetime', months: null },
       retentionMonths: null,
-    },
-    benefits: {
-      point: { earnMultiplier: 1.0 },
-      coupon: {
-        autoIssueCouponIds: [],
-        issueOnUpgrade: false,
-        issueMonthly: false,
-        monthlyIssueDay: null,
-      },
     },
     isActive: true,
     isDefault: true,

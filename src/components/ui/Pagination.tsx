@@ -7,6 +7,7 @@ interface PaginationProps {
     className?: string;
     totalElements?: number;
     limit?: number;
+    unit?: string;
 }
 
 export function Pagination({
@@ -16,6 +17,7 @@ export function Pagination({
     className = '',
     totalElements,
     limit,
+    unit = '개',
 }: PaginationProps) {
     if (totalPages <= 1) return null;
 
@@ -49,8 +51,8 @@ export function Pagination({
         <div className={`flex items-center justify-between mt-4 pt-4 border-t border-border ${className}`}>
             {totalElements !== undefined && limit !== undefined && (
                 <p className="text-sm text-txt-muted">
-                    총 {totalElements}개 중 {(page - 1) * limit + 1}-
-                    {Math.min(page * limit, totalElements)}개 표시
+                    총 {totalElements.toLocaleString()}{unit} 중 {(page - 1) * limit + 1}-
+                    {Math.min(page * limit, totalElements)}{unit} 표시
                 </p>
             )}
             <div className="flex items-center justify-center gap-2 flex-1">

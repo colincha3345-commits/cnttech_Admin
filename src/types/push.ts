@@ -24,6 +24,37 @@ export interface PushNotification {
     updatedAt: Date;
 }
 
+export type PushDeliveryStatus = 'delivered' | 'opened' | 'failed';
+
+export interface PushStats {
+    sent: number;
+    delivered: number;
+    failed: number;
+    opened: number;
+    openRate: number;
+}
+
+export interface PushDetail extends PushNotification {
+    sentAt?: Date;
+    stats: PushStats;
+}
+
+export interface PushRecipient {
+    id: string;
+    userId: string;
+    name: string;
+    phone: string;
+    status: PushDeliveryStatus;
+    openedAt: string | null;
+}
+
+export interface PushListParams {
+    keyword?: string;
+    status?: PushStatus;
+    page?: number;
+    limit?: number;
+}
+
 export interface PushNotificationForm {
     type: PushType;
     title: string;
@@ -45,4 +76,11 @@ export interface PushNotificationForm {
 
     // 특정 시간 제한 이벤트 선택
     timeLimitEventId?: string;
+}
+
+export interface PushEstimateParams {
+    grades: string[];
+    regions: string[];
+    ages: string[];
+    triggerType: TriggerType;
 }

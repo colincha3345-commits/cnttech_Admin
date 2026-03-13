@@ -138,19 +138,21 @@ export interface MemberOrder {
  * 포인트 타입
  */
 export type PointType =
-  | 'earn_order'       // 주문 적립
-  | 'earn_event'       // 이벤트 적립
-  | 'earn_manual'      // 수동 지급
-  | 'use_order'        // 주문 사용
-  | 'withdraw_manual'  // 수동 회수
-  | 'expired';         // 만료
+  | 'earn_order'        // 주문확정 적립
+  | 'earn_event'        // 이벤트 적립
+  | 'earn_manual'       // 수동 지급
+  | 'use_order'         // 주문 사용
+  | 'withdraw_manual'   // 수동 회수
+  | 'withdraw_cancel'   // 주문취소 회수 (마이너스 잔고 발생 가능)
+  | 'expired';          // 만료
 
 export const POINT_TYPE_LABELS: Record<PointType, string> = {
-  earn_order: '주문 적립',
+  earn_order: '적립완료',
   earn_event: '이벤트 적립',
   earn_manual: '수동 지급',
   use_order: '주문 사용',
   withdraw_manual: '수동 회수',
+  withdraw_cancel: '주문취소 회수',
   expired: '기간 만료',
 };
 

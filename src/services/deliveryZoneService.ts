@@ -106,10 +106,12 @@ class DeliveryZoneService {
 
   async getDeliveryZones(
     params?: DeliveryZoneListParams
-  ): Promise<DeliveryZone[]> {
+  ): Promise<{ data: DeliveryZone[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
     await this.delay();
 
     const { storeId, isActive, keyword } = params || {};
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 20;
     let result = [...this.zones];
 
     if (storeId) {
@@ -130,12 +132,19 @@ class DeliveryZoneService {
     }
 
     // 메인상권 우선, 생성일 내림차순
-    return result.sort((a, b) => {
+    result.sort((a, b) => {
       if (a.zoneLevel !== b.zoneLevel) {
         return a.zoneLevel === 'main' ? -1 : 1;
       }
       return b.createdAt.getTime() - a.createdAt.getTime();
     });
+
+    const total = result.length;
+    const totalPages = Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+    const paged = result.slice(start, start + limit);
+
+    return { data: paged, pagination: { page, limit, total, totalPages } };
   }
 
   async getDeliveryZone(id: string): Promise<DeliveryZone | null> {

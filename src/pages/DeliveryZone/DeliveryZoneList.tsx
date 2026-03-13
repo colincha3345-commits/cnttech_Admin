@@ -17,6 +17,7 @@ import {
   Badge,
   Spinner,
   ConfirmDialog,
+  Pagination,
 } from '@/components/ui';
 import {
   useDeliveryZones,
@@ -121,6 +122,8 @@ export const DeliveryZoneList: React.FC = () => {
 
   // 필터 상태
   const [filterStoreId, setFilterStoreId] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const limit = 20;
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
 
   // 삭제 모달
@@ -128,8 +131,8 @@ export const DeliveryZoneList: React.FC = () => {
 
   // 데이터
   const { data: stores = [] } = useStoreSummaries();
-  const { data: zones = [], isLoading } = useDeliveryZones(
-    filterStoreId ? { storeId: filterStoreId } : undefined
+  const { zones, pagination, isLoading } = useDeliveryZones(
+    { storeId: filterStoreId || undefined, page, limit }
   );
 
   const deleteZone = useDeleteDeliveryZone();
@@ -186,6 +189,7 @@ export const DeliveryZoneList: React.FC = () => {
                 onChange={(e) => {
                   setFilterStoreId(e.target.value);
                   setSelectedZone(null);
+                  setPage(1);
                 }}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
@@ -224,10 +228,17 @@ export const DeliveryZoneList: React.FC = () => {
               )}
             </div>
 
-            {/* 통계 */}
-            {zones.length > 0 && (
-              <div className="p-3 border-t text-xs text-gray-500">
-                전체 {zones.length}개 | 활성 {zones.filter((z) => z.isActive).length}개
+            {/* 페이지네이션 */}
+            {pagination && pagination.totalPages > 0 && (
+              <div className="border-t">
+                <Pagination
+                  page={page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={setPage}
+                  totalElements={pagination.total}
+                  limit={limit}
+                  unit="개"
+                />
               </div>
             )}
           </Card>

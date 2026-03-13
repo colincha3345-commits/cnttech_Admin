@@ -14,6 +14,7 @@ import type {
     IconBadge,
     IconBadgeFormData,
     MainSection,
+    RecommendedMenu,
     BannerStatus,
     PopupStatus,
     BadgeStatus
@@ -50,6 +51,11 @@ const MOCK_SECTIONS: MainSection[] = [
     { id: 'sec-6', type: 'notice', title: '공지사항', isVisible: true, sortOrder: 6 },
 ];
 
+const MOCK_RECOMMENDED_MENUS: RecommendedMenu[] = [
+    { productId: 'prod-1', sortOrder: 1 },
+    { productId: 'prod-2', sortOrder: 2 },
+];
+
 // ============================================================
 // Mock 구현 (인메모리)
 // ============================================================
@@ -58,6 +64,7 @@ class MockDesignService {
     private popups: Popup[] = [...MOCK_POPUPS];
     private badges: IconBadge[] = [...MOCK_BADGES];
     private sections: MainSection[] = [...MOCK_SECTIONS];
+    private recommendedMenus: RecommendedMenu[] = [...MOCK_RECOMMENDED_MENUS];
 
     private delay(ms: number = 300): Promise<void> {
         return new Promise((resolve) => setTimeout(resolve, ms));
@@ -156,6 +163,16 @@ class MockDesignService {
         await this.delay();
         this.sections = sections;
     }
+
+    // ── Recommended Menus ──
+    async getRecommendedMenus(): Promise<RecommendedMenu[]> {
+        await this.delay();
+        return [...this.recommendedMenus].sort((a, b) => a.sortOrder - b.sortOrder);
+    }
+    async updateRecommendedMenus(menus: RecommendedMenu[]): Promise<void> {
+        await this.delay();
+        this.recommendedMenus = menus;
+    }
 }
 
 // ============================================================
@@ -231,6 +248,15 @@ class RealDesignService {
     }
     async updateMainSections(sections: MainSection[]): Promise<void> {
         await apiClient.put(`${this.BASE}/main-sections`, { sections });
+    }
+
+    // ── Recommended Menus ──
+    async getRecommendedMenus(): Promise<RecommendedMenu[]> {
+        const res = await apiClient.get<{ data: RecommendedMenu[] }>(`${this.BASE}/main-sections/recommended-menus`);
+        return res.data;
+    }
+    async updateRecommendedMenus(menus: RecommendedMenu[]): Promise<void> {
+        await apiClient.put(`${this.BASE}/main-sections/recommended-menus`, { recommendedMenus: menus });
     }
 }
 

@@ -6,90 +6,9 @@ import {
     CalendarOutlined,
     DollarOutlined,
 } from '@ant-design/icons';
-import { Card, CardContent, Button, Badge } from '@/components/ui';
-import type { SettlementDetailData } from '@/types/settlement';
+import { Card, CardContent, Button, Badge, Spinner } from '@/components/ui';
+import { useSettlementDetail } from '@/hooks/useSettlement';
 import { format } from 'date-fns';
-
-// Mock 상세 데이터 (실제는 API 통신)
-const MOCK_SETTLEMENT_DETAIL: SettlementDetailData = {
-    id: 'SET-20240225-001',
-    storeId: 'store-1',
-    storeName: '강남점',
-    period: '2024-02-01 ~ 2024-02-15',
-    totalSales: 15450000,
-    deliveryFee: 1250000,
-    promotionDiscount: 450000,
-    hqSupport: 150000,
-    pointsUsed: 50000,
-    couponsUsed: 200000,
-    vouchersUsed: 200000,
-    platformFee: 772500,
-    netAmount: 15477500,
-    status: 'completed',
-    paymentDate: '2024-02-20',
-    orderCount: 124,
-    createdAt: '2024-02-16',
-    orders: [
-        {
-            orderId: 'ORD-1001',
-            orderNumber: 'A1001',
-            orderDate: '2024-02-01T12:30:00Z',
-            menus: [
-                {
-                    productId: 'P01',
-                    productName: '아메리카노',
-                    categoryName: '커피',
-                    quantity: 2,
-                    unitPrice: 4500,
-                    totalPrice: 9000,
-                    options: [],
-                },
-            ],
-            totalAmount: 12000,
-            discount: {
-                couponAmount: 2000,
-                pointUsed: 1000,
-                discountAmount: 3000,
-            },
-            paymentMethod: 'card',
-            netAmount: 11000,
-        },
-        {
-            orderId: 'ORD-1002',
-            orderNumber: 'A1002',
-            orderDate: '2024-02-02T13:15:00Z',
-            menus: [
-                {
-                    productId: 'P02',
-                    productName: '카페라떼',
-                    categoryName: '커피',
-                    quantity: 1,
-                    unitPrice: 5000,
-                    totalPrice: 5000,
-                    options: [{ name: '샷추가', price: 500 }],
-                },
-            ],
-            totalAmount: 8500,
-            discount: {
-                couponAmount: 0,
-                pointUsed: 0,
-                discountAmount: 0,
-                eCoupons: [
-                    {
-                        eCouponId: 'EC001',
-                        eCouponName: '카페라떼 교환권',
-                        eCouponType: 'exchange',
-                        amount: 5000,
-                        couponCompany: '카카오',
-                        pinNumber: '1234-5678-9012',
-                    }
-                ]
-            },
-            paymentMethod: 'mobile_voucher',
-            netAmount: 8000,
-        }
-    ],
-};
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
     card: '카드',
@@ -105,8 +24,23 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 export function SettlementDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { data, isLoading } = useSettlementDetail(id);
 
-    const data = { ...MOCK_SETTLEMENT_DETAIL, id: id || MOCK_SETTLEMENT_DETAIL.id };
+    if (isLoading) {
+        return (
+            <div className="flex justify-center py-20">
+                <Spinner />
+            </div>
+        );
+    }
+
+    if (!data) {
+        return (
+            <div className="text-center py-20 text-txt-muted">
+                정산 데이터를 찾을 수 없습니다.
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

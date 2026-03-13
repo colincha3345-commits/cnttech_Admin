@@ -31,13 +31,13 @@ export function Sidebar({ isMobileOpen, onMobileClose }: SidebarProps) {
   useEffect(() => {
     const parent = findParentPath(pathname);
     if (parent && !openMenus.includes(parent)) {
-      setOpenMenus((prev) => prev.includes(parent) ? prev : [...prev, parent]);
+      setOpenMenus((prev) => prev.includes(parent) ? prev : [parent]);
     }
   }, [pathname]);
 
   const toggleMenu = (path: string) => {
     setOpenMenus((prev) =>
-      prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]
+      prev.includes(path) ? [] : [path]
     );
   };
 

@@ -1,73 +1,85 @@
-import { useState, useCallback, useEffect } from 'react';
+/**
+ * 디자인 관리 React Query 훅
+ */
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { designService } from '@/services/designService';
 import type {
     Banner, BannerFormData, BannerStatus,
     Popup, PopupFormData, PopupStatus,
     IconBadge, IconBadgeFormData, BadgeStatus,
-    MainSection
+    MainSection, RecommendedMenu
 } from '@/types/design';
 import { useToast } from '@/hooks/useToast';
 
+const DESIGN_KEYS = {
+    banners: ['design', 'banners'] as const,
+    popups: ['design', 'popups'] as const,
+    badges: ['design', 'badges'] as const,
+    mainSections: ['design', 'mainSections'] as const,
+    recommendedMenus: ['design', 'recommendedMenus'] as const,
+};
+
+// ── Banners ──
+
 export function useBanners() {
-    const [banners, setBanners] = useState<Banner[]>([]);
-    const [loading, setLoading] = useState(false);
+    const queryClient = useQueryClient();
     const toast = useToast();
 
-    const fetchBanners = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await designService.getBanners();
-            setBanners(data);
-        } catch (error) {
-            toast.error('배너 목록을 불러오는데 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    }, [toast]);
+    const { data: banners = [], isLoading: loading, refetch } = useQuery({
+        queryKey: DESIGN_KEYS.banners,
+        queryFn: () => designService.getBanners(),
+    });
 
-    useEffect(() => {
-        fetchBanners();
-    }, [fetchBanners]);
+    const createMutation = useMutation({
+        mutationFn: (data: BannerFormData) => designService.createBanner(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.banners });
+            toast.success('배너가 등록되었습니다.');
+        },
+        onError: () => toast.error('배너 등록에 실패했습니다.'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<BannerFormData> & { status?: BannerStatus; sortOrder?: number } }) =>
+            designService.updateBanner(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.banners });
+            toast.success('배너가 수정되었습니다.');
+        },
+        onError: () => toast.error('배너 수정에 실패했습니다.'),
+    });
+
+    const orderMutation = useMutation({
+        mutationFn: (newBanners: Banner[]) => designService.updateBannersOrders(newBanners),
+        onMutate: async (newBanners) => {
+            await queryClient.cancelQueries({ queryKey: DESIGN_KEYS.banners });
+            const previous = queryClient.getQueryData<Banner[]>(DESIGN_KEYS.banners);
+            queryClient.setQueryData(DESIGN_KEYS.banners, newBanners);
+            return { previous };
+        },
+        onError: (_err, _vars, context) => {
+            if (context?.previous) queryClient.setQueryData(DESIGN_KEYS.banners, context.previous);
+            toast.error('순서 변경에 실패했습니다.');
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.banners }),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => designService.deleteBanner(id),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.banners }),
+        onError: () => toast.error('배너 삭제에 실패했습니다.'),
+    });
 
     const createBanner = async (data: BannerFormData) => {
-        setLoading(true);
-        try {
-            await designService.createBanner(data);
-            await fetchBanners();
-            toast.success('배너가 등록되었습니다.');
-            return true;
-        } catch (error) {
-            toast.error('배너 등록에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        try { await createMutation.mutateAsync(data); return true; } catch { return false; }
     };
 
     const updateBanner = async (id: string, data: Partial<BannerFormData> & { status?: BannerStatus; sortOrder?: number }) => {
-        setLoading(true);
-        try {
-            await designService.updateBanner(id, data);
-            await fetchBanners();
-            toast.success('배너가 수정되었습니다.');
-            return true;
-        } catch (error) {
-            toast.error('배너 수정에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        try { await updateMutation.mutateAsync({ id, data }); return true; } catch { return false; }
     };
 
     const updateBannersOrders = async (newBanners: Banner[]) => {
-        try {
-            setBanners(newBanners);
-            await designService.updateBannersOrders(newBanners);
-            return true;
-        } catch (error) {
-            toast.error('순서 변경에 실패했습니다.');
-            return false;
-        }
+        try { await orderMutation.mutateAsync(newBanners); return true; } catch { return false; }
     };
 
     const toggleStatus = async (banner: Banner) => {
@@ -76,83 +88,77 @@ export function useBanners() {
     };
 
     const deleteBanner = async (id: string, title: string) => {
-        setLoading(true);
         try {
-            await designService.deleteBanner(id);
-            await fetchBanners();
+            await deleteMutation.mutateAsync(id);
             toast.success(`"${title}" 배너가 삭제되었습니다.`);
             return true;
-        } catch (error) {
-            toast.error('배너 삭제에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        } catch { return false; }
     };
 
-    return { banners, loading, createBanner, updateBanner, updateBannersOrders, toggleStatus, deleteBanner, refetch: fetchBanners };
+    return { banners, loading, createBanner, updateBanner, updateBannersOrders, toggleStatus, deleteBanner, refetch };
 }
 
+// ── Popups ──
+
 export function usePopups() {
-    const [popups, setPopups] = useState<Popup[]>([]);
-    const [loading, setLoading] = useState(false);
+    const queryClient = useQueryClient();
     const toast = useToast();
 
-    const fetchPopups = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await designService.getPopups();
-            setPopups(data);
-        } catch (error) {
-            toast.error('팝업 목록을 불러오는데 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    }, [toast]);
+    const { data: popups = [], isLoading: loading, refetch } = useQuery({
+        queryKey: DESIGN_KEYS.popups,
+        queryFn: () => designService.getPopups(),
+    });
 
-    useEffect(() => {
-        fetchPopups();
-    }, [fetchPopups]);
+    const createMutation = useMutation({
+        mutationFn: (data: PopupFormData) => designService.createPopup(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.popups });
+            toast.success('팝업이 등록되었습니다.');
+        },
+        onError: () => toast.error('팝업 등록에 실패했습니다.'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<PopupFormData> & { status?: PopupStatus; sortOrder?: number } }) =>
+            designService.updatePopup(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.popups });
+            toast.success('팝업이 수정되었습니다.');
+        },
+        onError: () => toast.error('팝업 수정에 실패했습니다.'),
+    });
+
+    const orderMutation = useMutation({
+        mutationFn: (newPopups: Popup[]) => designService.updatePopupsOrders(newPopups),
+        onMutate: async (newPopups) => {
+            await queryClient.cancelQueries({ queryKey: DESIGN_KEYS.popups });
+            const previous = queryClient.getQueryData<Popup[]>(DESIGN_KEYS.popups);
+            queryClient.setQueryData(DESIGN_KEYS.popups, newPopups);
+            return { previous };
+        },
+        onError: (_err, _vars, context) => {
+            if (context?.previous) queryClient.setQueryData(DESIGN_KEYS.popups, context.previous);
+            toast.error('순서 변경에 실패했습니다.');
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.popups }),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => designService.deletePopup(id),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.popups }),
+        onError: () => toast.error('팝업 삭제에 실패했습니다.'),
+    });
 
     const createPopup = async (data: PopupFormData) => {
-        setLoading(true);
-        try {
-            await designService.createPopup(data);
-            await fetchPopups();
-            toast.success('팝업이 등록되었습니다.');
-            return true;
-        } catch (error) {
-            toast.error('팝업 등록에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        try { await createMutation.mutateAsync(data); return true; } catch { return false; }
     };
 
     const updatePopup = async (id: string, data: Partial<PopupFormData> & { status?: PopupStatus; sortOrder?: number }) => {
-        setLoading(true);
-        try {
-            await designService.updatePopup(id, data);
-            await fetchPopups();
-            toast.success('팝업이 수정되었습니다.');
-            return true;
-        } catch (error) {
-            toast.error('팝업 수정에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        try { await updateMutation.mutateAsync({ id, data }); return true; } catch { return false; }
     };
 
     const updatePopupsOrders = async (newPopups: Popup[]) => {
-        try {
-            setPopups(newPopups);
-            await designService.updatePopupsOrders(newPopups);
-            return true;
-        } catch (error) {
-            toast.error('순서 변경에 실패했습니다.');
-            return false;
-        }
+        try { await orderMutation.mutateAsync(newPopups); return true; } catch { return false; }
     };
 
     const toggleStatus = async (popup: Popup) => {
@@ -161,83 +167,77 @@ export function usePopups() {
     };
 
     const deletePopup = async (id: string, title: string) => {
-        setLoading(true);
         try {
-            await designService.deletePopup(id);
-            await fetchPopups();
+            await deleteMutation.mutateAsync(id);
             toast.success(`"${title}" 팝업이 삭제되었습니다.`);
             return true;
-        } catch (error) {
-            toast.error('팝업 삭제에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        } catch { return false; }
     };
 
-    return { popups, loading, createPopup, updatePopup, updatePopupsOrders, toggleStatus, deletePopup, refetch: fetchPopups };
+    return { popups, loading, createPopup, updatePopup, updatePopupsOrders, toggleStatus, deletePopup, refetch };
 }
 
+// ── Icon Badges ──
+
 export function useIconBadges() {
-    const [badges, setBadges] = useState<IconBadge[]>([]);
-    const [loading, setLoading] = useState(false);
+    const queryClient = useQueryClient();
     const toast = useToast();
 
-    const fetchIconBadges = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await designService.getIconBadges();
-            setBadges(data);
-        } catch (error) {
-            toast.error('뱃지 목록을 불러오는데 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    }, [toast]);
+    const { data: badges = [], isLoading: loading, refetch } = useQuery({
+        queryKey: DESIGN_KEYS.badges,
+        queryFn: () => designService.getIconBadges(),
+    });
 
-    useEffect(() => {
-        fetchIconBadges();
-    }, [fetchIconBadges]);
+    const createMutation = useMutation({
+        mutationFn: (data: IconBadgeFormData) => designService.createIconBadge(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.badges });
+            toast.success('뱃지가 등록되었습니다.');
+        },
+        onError: () => toast.error('뱃지 등록에 실패했습니다.'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string; data: Partial<IconBadgeFormData> & { status?: BadgeStatus; sortOrder?: number } }) =>
+            designService.updateIconBadge(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.badges });
+            toast.success('뱃지가 수정되었습니다.');
+        },
+        onError: () => toast.error('뱃지 수정에 실패했습니다.'),
+    });
+
+    const orderMutation = useMutation({
+        mutationFn: (newBadges: IconBadge[]) => designService.updateIconBadgesOrders(newBadges),
+        onMutate: async (newBadges) => {
+            await queryClient.cancelQueries({ queryKey: DESIGN_KEYS.badges });
+            const previous = queryClient.getQueryData<IconBadge[]>(DESIGN_KEYS.badges);
+            queryClient.setQueryData(DESIGN_KEYS.badges, newBadges);
+            return { previous };
+        },
+        onError: (_err, _vars, context) => {
+            if (context?.previous) queryClient.setQueryData(DESIGN_KEYS.badges, context.previous);
+            toast.error('순서 변경에 실패했습니다.');
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.badges }),
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => designService.deleteIconBadge(id),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.badges }),
+        onError: () => toast.error('뱃지 삭제에 실패했습니다.'),
+    });
 
     const createIconBadge = async (data: IconBadgeFormData) => {
-        setLoading(true);
-        try {
-            await designService.createIconBadge(data);
-            await fetchIconBadges();
-            toast.success('뱃지가 등록되었습니다.');
-            return true;
-        } catch (error) {
-            toast.error('뱃지 등록에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        try { await createMutation.mutateAsync(data); return true; } catch { return false; }
     };
 
     const updateIconBadge = async (id: string, data: Partial<IconBadgeFormData> & { status?: BadgeStatus; sortOrder?: number }) => {
-        setLoading(true);
-        try {
-            await designService.updateIconBadge(id, data);
-            await fetchIconBadges();
-            toast.success('뱃지가 수정되었습니다.');
-            return true;
-        } catch (error) {
-            toast.error('뱃지 수정에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        try { await updateMutation.mutateAsync({ id, data }); return true; } catch { return false; }
     };
 
     const updateIconBadgesOrders = async (newBadges: IconBadge[]) => {
-        try {
-            setBadges(newBadges);
-            await designService.updateIconBadgesOrders(newBadges);
-            return true;
-        } catch (error) {
-            toast.error('순서 변경에 실패했습니다.');
-            return false;
-        }
+        try { await orderMutation.mutateAsync(newBadges); return true; } catch { return false; }
     };
 
     const toggleStatus = async (badge: IconBadge) => {
@@ -246,53 +246,44 @@ export function useIconBadges() {
     };
 
     const deleteIconBadge = async (id: string, name: string) => {
-        setLoading(true);
         try {
-            await designService.deleteIconBadge(id);
-            await fetchIconBadges();
+            await deleteMutation.mutateAsync(id);
             toast.success(`"${name}" 뱃지가 삭제되었습니다.`);
             return true;
-        } catch (error) {
-            toast.error('뱃지 삭제에 실패했습니다.');
-            return false;
-        } finally {
-            setLoading(false);
-        }
+        } catch { return false; }
     };
 
-    return { badges, loading, createIconBadge, updateIconBadge, updateIconBadgesOrders, toggleStatus, deleteIconBadge, refetch: fetchIconBadges };
+    return { badges, loading, createIconBadge, updateIconBadge, updateIconBadgesOrders, toggleStatus, deleteIconBadge, refetch };
 }
 
+// ── Main Sections ──
+
 export function useMainScreens() {
-    const [sections, setSections] = useState<MainSection[]>([]);
-    const [loading, setLoading] = useState(false);
+    const queryClient = useQueryClient();
     const toast = useToast();
 
-    const fetchMainScreens = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await designService.getMainSections();
-            setSections(data);
-        } catch (error) {
-            toast.error('메인화면 구성을 불러오는데 실패했습니다.');
-        } finally {
-            setLoading(false);
-        }
-    }, [toast]);
+    const { data: sections = [], isLoading: loading, refetch } = useQuery({
+        queryKey: DESIGN_KEYS.mainSections,
+        queryFn: () => designService.getMainSections(),
+    });
 
-    useEffect(() => {
-        fetchMainScreens();
-    }, [fetchMainScreens]);
+    const updateMutation = useMutation({
+        mutationFn: (newSections: MainSection[]) => designService.updateMainSections(newSections),
+        onMutate: async (newSections) => {
+            await queryClient.cancelQueries({ queryKey: DESIGN_KEYS.mainSections });
+            const previous = queryClient.getQueryData<MainSection[]>(DESIGN_KEYS.mainSections);
+            queryClient.setQueryData(DESIGN_KEYS.mainSections, newSections);
+            return { previous };
+        },
+        onError: (_err, _vars, context) => {
+            if (context?.previous) queryClient.setQueryData(DESIGN_KEYS.mainSections, context.previous);
+            toast.error('메인화면 상태 변경에 실패했습니다.');
+        },
+        onSettled: () => queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.mainSections }),
+    });
 
     const updateMainSections = async (newSections: MainSection[]) => {
-        try {
-            setSections(newSections);
-            await designService.updateMainSections(newSections);
-            return true;
-        } catch (error) {
-            toast.error('메인화면 상태 변경에 실패했습니다.');
-            return false;
-        }
+        try { await updateMutation.mutateAsync(newSections); return true; } catch { return false; }
     };
 
     const toggleVisibility = async (id: string) => {
@@ -303,36 +294,59 @@ export function useMainScreens() {
     const moveUp = async (index: number) => {
         if (index === 0) return;
         const next = [...sections];
-        const a = next[index - 1]!;
-        const b = next[index]!;
-        next[index - 1] = b;
-        next[index] = a;
+        [next[index - 1], next[index]] = [next[index]!, next[index - 1]!];
         return await updateMainSections(next.map((s, i) => ({ ...s, sortOrder: i + 1 })));
     };
 
     const moveDown = async (index: number) => {
         if (index === sections.length - 1) return;
         const next = [...sections];
-        const a = next[index]!;
-        const b = next[index + 1]!;
-        next[index] = b;
-        next[index + 1] = a;
+        [next[index], next[index + 1]] = [next[index + 1]!, next[index]!];
         return await updateMainSections(next.map((s, i) => ({ ...s, sortOrder: i + 1 })));
     };
 
     const saveConfiguration = async () => {
-        setLoading(true);
         try {
             await designService.updateMainSections(sections);
             toast.success('메인화면 구성이 저장되었습니다.');
             return true;
-        } catch (error) {
+        } catch {
             toast.error('메인화면 구성 저장에 실패했습니다.');
             return false;
-        } finally {
-            setLoading(false);
         }
     };
 
-    return { sections, loading, toggleVisibility, moveUp, moveDown, saveConfiguration, refetch: fetchMainScreens };
+    return { sections, loading, toggleVisibility, moveUp, moveDown, saveConfiguration, refetch };
+}
+
+// ── Recommended Menus ──
+
+export function useRecommendedMenus() {
+    const queryClient = useQueryClient();
+    const toast = useToast();
+
+    const { data: recommendedMenus = [], isLoading: loading, refetch } = useQuery({
+        queryKey: DESIGN_KEYS.recommendedMenus,
+        queryFn: () => designService.getRecommendedMenus(),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: (menus: RecommendedMenu[]) => designService.updateRecommendedMenus(menus),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: DESIGN_KEYS.recommendedMenus });
+            toast.success('추천메뉴 설정이 저장되었습니다.');
+        },
+        onError: () => toast.error('추천메뉴 설정 저장에 실패했습니다.'),
+    });
+
+    const saveRecommendedMenus = async (menus: RecommendedMenu[]) => {
+        try {
+            await updateMutation.mutateAsync(menus);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    return { recommendedMenus, loading, saveRecommendedMenus, refetch };
 }

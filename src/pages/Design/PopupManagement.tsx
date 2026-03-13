@@ -573,6 +573,24 @@ export function PopupManagement() {
   );
 }
 
+const LinkButtons: React.FC<{ webLinkUrl?: string; deepLinkUrl?: string }> = ({ webLinkUrl, deepLinkUrl }) => {
+  if (!webLinkUrl && !deepLinkUrl) return null;
+  return (
+    <div className="flex gap-2 px-6 py-3">
+      {webLinkUrl && (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-medium rounded-full border border-blue-200">
+          🔗 웹 링크
+        </span>
+      )}
+      {deepLinkUrl && (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-600 text-xs font-medium rounded-full border border-purple-200">
+          📱 앱 딥링크
+        </span>
+      )}
+    </div>
+  );
+};
+
 const PopupPreviewModal: React.FC<{ isOpen: boolean; onClose: () => void; popupData: PopupFormData }> = ({ isOpen, onClose, popupData }) => {
   if (!isOpen) return null;
 
@@ -599,6 +617,7 @@ const PopupPreviewModal: React.FC<{ isOpen: boolean; onClose: () => void; popupD
               <h3 className="text-xl font-bold mb-2">{popupData.title || '제목 없음'}</h3>
               <p className="text-gray-600 whitespace-pre-wrap">{popupData.content}</p>
             </div>
+            <LinkButtons webLinkUrl={popupData.webLinkUrl} deepLinkUrl={popupData.deepLinkUrl} />
             {popupData.showOncePerDay && (
               <div className="px-6 py-4 flex justify-between text-sm text-txt-muted border-t border-gray-100 bg-gray-50 absolute bottom-0 w-full">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -623,6 +642,7 @@ const PopupPreviewModal: React.FC<{ isOpen: boolean; onClose: () => void; popupD
               <h3 className="text-3xl font-bold mb-4">{popupData.title || '제목 없음'}</h3>
               <p className="text-lg text-gray-600 whitespace-pre-wrap leading-relaxed">{popupData.content}</p>
             </div>
+            <LinkButtons webLinkUrl={popupData.webLinkUrl} deepLinkUrl={popupData.deepLinkUrl} />
             {popupData.showOncePerDay && (
               <div className="absolute bottom-0 w-full p-6 flex justify-between text-white bg-black/30 backdrop-blur-sm z-20">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -646,6 +666,7 @@ const PopupPreviewModal: React.FC<{ isOpen: boolean; onClose: () => void; popupD
                 <h3 className="text-xl font-bold mb-2 text-txt-main">{popupData.title || '제목 없음'}</h3>
                 <p className="text-gray-600 whitespace-pre-wrap">{popupData.content}</p>
               </div>
+              <LinkButtons webLinkUrl={popupData.webLinkUrl} deepLinkUrl={popupData.deepLinkUrl} />
             </div>
             <div className="p-4 border-t border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
               {popupData.showOncePerDay ? (

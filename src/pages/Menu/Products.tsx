@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { format, differenceInDays, isBefore, isAfter } from 'date-fns';
 import {
   PlusOutlined,
   SaveOutlined,
   CloseOutlined,
-  DeleteOutlined,
   CopyOutlined,
   DownloadOutlined,
   UploadOutlined,
@@ -33,30 +32,20 @@ import {
   CardHeader,
   CardContent,
   Button,
-  Input,
-  Label,
-  Switch,
-  Textarea,
-  Select,
   Badge,
-  ImageUpload,
-  MultiImageUpload,
-  StoreSelector,
   CategoryFilter,
   DraggableProductItem,
-  OptionGroupSelector,
-  SalesPeriodPicker,
   SearchInput,
   ProductImage,
   ConfirmDialog,
 } from '@/components/ui';
 import { BulkEditModal } from '@/components/ui/BulkEditModal';
-import { PlusOutlined as PlusIcon, MinusOutlined } from '@ant-design/icons';
+import { ProductForm } from './ProductForm';
 
 import { useProducts, useStores, useOptionGroupList, useToast } from '@/hooks';
 import { useIconBadges } from '@/hooks/useDesign';
-import type { Product, ProductFormData, ProductStatus, BulkEditUpdate, BulkUpdateResult, DisplayOrderUpdate, CategoryPair, NutritionBySize, NutritionInfo } from '@/types/product';
-import { POS_COLOR_PALETTE, CHANNEL_LABELS, CHANNEL_STATUS_LABELS, DEFAULT_CHANNELS } from '@/types/product';
+import type { Product, ProductFormData, BulkEditUpdate, BulkUpdateResult, DisplayOrderUpdate } from '@/types/product';
+import { DEFAULT_CHANNELS } from '@/types/product';
 import type { ProductChannels } from '@/types/product';
 import { multiFieldSearch } from '@/utils/search';
 import { useAuthStore } from '@/stores/authStore';
@@ -148,16 +137,38 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   displayOrder,
 });
 
-// 기본 영양정보 생성 헬퍼
-const getDefaultNutrition = (): NutritionInfo => ({
-  calories: 0,
-  sodium: 0,
-  carbs: 0,
-  sugar: 0,
-  fat: 0,
-  protein: 0,
-  servingSize: '',
-});
+// 채널별 판매상태 배지 계산
+function getChannelBadges(channels?: ProductChannels) {
+  if (!channels) return null;
+  const active: string[] = [];
+  const partial: string[] = [];
+  if (channels.app) { channels.app === 'active' ? active.push('앱') : partial.push('앱'); }
+  if (channels.pos) { channels.pos === 'active' ? active.push('POS') : partial.push('POS'); }
+  if (channels.kiosk) { channels.kiosk === 'active' ? active.push('키오스크') : partial.push('키오스크'); }
+  if (channels.tableOrder) { channels.tableOrder === 'active' ? active.push('테이블') : partial.push('테이블'); }
+  const total = active.length + partial.length;
+  if (total === 4 && partial.length === 0) return null;
+  return { active, partial };
+}
+
+// 채널 배지 렌더링 컴포넌트
+function ChannelBadges({ channels }: { channels?: ProductChannels }) {
+  const badges = getChannelBadges(channels);
+  if (!badges) return null;
+  return (
+    <>
+      {badges.active.length > 0 && <Badge variant="secondary">{badges.active.join('·')}</Badge>}
+      {badges.partial.length > 0 && <Badge variant="warning">{badges.partial.join('·')}</Badge>}
+    </>
+  );
+}
+
+// 판매기간 배지 렌더링 컴포넌트
+function SalesPeriodBadgeDisplay({ startDate, endDate }: { startDate?: Date; endDate?: Date }) {
+  const badge = getSalesPeriodBadge(startDate, endDate);
+  if (!badge) return null;
+  return <Badge variant={badge.color}>{badge.label}</Badge>;
+}
 
 export function Products() {
   usePageViewLog('products');
@@ -205,9 +216,10 @@ export function Products() {
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   // 검색된 메뉴 목록 (다중 필드 검색: 이름, 설명, 포스코드)
-  const filteredProducts = products.filter((product) =>
-    multiFieldSearch(product, searchTerm, ['name', 'description', 'productCode', 'posCode'])
-  );
+  const filteredProducts = useMemo(() =>
+    products.filter((product) =>
+      multiFieldSearch(product, searchTerm, ['name', 'description', 'productCode', 'posCode'])
+    ), [products, searchTerm]);
 
   // 메뉴 선택
   const handleSelectProduct = (product: Product) => {
@@ -951,39 +963,17 @@ export function Products() {
                               <p className="font-medium text-txt-main truncate">{product.name}</p>
                               <p className="text-sm text-txt-secondary">
                                 {product.price.toLocaleString()}원
+                                {product.productCode && (
+                                  <span className="ml-2 text-txt-muted">({product.productCode})</span>
+                                )}
                               </p>
                               <div className="flex gap-2 mt-1 flex-wrap">
                                 <Badge variant={statusMap[product.status].color}>
                                   {statusMap[product.status].label}
                                 </Badge>
                                 {/* 채널별 판매상태 표시 */}
-                                {(() => {
-                                  const ch = product.channels;
-                                  if (!ch) return null;
-                                  const active: string[] = [];
-                                  const partial: string[] = [];
-                                  if (ch.app) { ch.app === 'active' ? active.push('앱') : partial.push('앱'); }
-                                  if (ch.pos) { ch.pos === 'active' ? active.push('POS') : partial.push('POS'); }
-                                  if (ch.kiosk) { ch.kiosk === 'active' ? active.push('키오스크') : partial.push('키오스크'); }
-                                  if (ch.tableOrder) { ch.tableOrder === 'active' ? active.push('테이블') : partial.push('테이블'); }
-                                  const total = active.length + partial.length;
-                                  if (total === 4 && partial.length === 0) return null;
-                                  return (
-                                    <>
-                                      {active.length > 0 && <Badge variant="secondary">{active.join('·')}</Badge>}
-                                      {partial.length > 0 && <Badge variant="warning">{partial.join('·')}</Badge>}
-                                    </>
-                                  );
-                                })()}
-                                {(() => {
-                                  const periodBadge = getSalesPeriodBadge(
-                                    product.salesStartDate,
-                                    product.salesEndDate
-                                  );
-                                  return periodBadge ? (
-                                    <Badge variant={periodBadge.color}>{periodBadge.label}</Badge>
-                                  ) : null;
-                                })()}
+                                <ChannelBadges channels={product.channels} />
+                                <SalesPeriodBadgeDisplay startDate={product.salesStartDate} endDate={product.salesEndDate} />
                               </div>
                             </div>
                           </button>
@@ -1033,831 +1023,18 @@ export function Products() {
               </div>
             </CardContent>
           ) : (
-            <>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-txt-main">
-                    {selectedProduct ? '메뉴 수정' : '메뉴 등록'}
-                  </h2>
-                  {selectedProduct && (
-                    <Button variant="danger" size="sm" onClick={handleDelete}>
-                      <DeleteOutlined />
-                      삭제
-                    </Button>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* 탭 메뉴 */}
-                <div className="flex gap-2 mb-6 border-b border-border">
-                  {[
-                    { key: 'basic' as const, label: '기본 정보' },
-                    { key: 'options' as const, label: '옵션 설정' },
-                    { key: 'details' as const, label: '상세 정보' },
-                  ].map((tab) => (
-                    <button
-                      key={tab.key}
-                      onClick={() => setActiveTab(tab.key)}
-                      className={`
-                    px-4 py-2 text-sm font-medium transition-colors
-                    border-b-2 -mb-px
-                    ${activeTab === tab.key
-                          ? 'border-primary text-primary'
-                          : 'border-transparent text-txt-muted hover:text-txt-main'
-                        }
-                  `}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 탭 컨텐츠 */}
-                <div className="space-y-6">
-                  {activeTab === 'basic' && (
-                    <>
-                      {/* 이미지 섹션 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">이미지</h3>
-
-                        {/* 대표 이미지 */}
-                        <div>
-                          <Label required>대표 이미지</Label>
-                          <ImageUpload
-                            value={formData.imageUrl}
-                            onChange={(file) => setImageFile(file)}
-                          />
-                        </div>
-
-                        {/* 서브 이미지 */}
-                        <div>
-                          <Label>서브 이미지 (최대 5개)</Label>
-                          <MultiImageUpload
-                            value={formData.subImageUrls || []}
-                            onChange={(files) => setFormData({ ...formData, subImageFiles: files })}
-                            maxFiles={5}
-                          />
-                        </div>
-                      </div>
-
-                      {/* 메뉴명 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="name" required>메뉴명</Label>
-                        <Textarea
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val.replace(/<br\s*\/?>/g, '').length <= 50) {
-                              setFormData({ ...formData, name: val });
-                            }
-                          }}
-                          placeholder="예: 뿌링클 (<br> 태그로 줄바꿈 가능)"
-                          rows={2}
-                          maxLength={200}
-                        />
-                        <p className="text-xs text-txt-muted">
-                          {formData.name.replace(/<br\s*\/?>/g, '').length}/50자 · &lt;br&gt; 태그로 줄바꿈 가능
-                        </p>
-                      </div>
-
-                      {/* POS 표시명 (메뉴명 하단) */}
-                      <div className="space-y-2">
-                        <Label htmlFor="posDisplayName">POS 표시명</Label>
-                        <Input
-                          id="posDisplayName"
-                          value={formData.posDisplayName || ''}
-                          onChange={(e) => setFormData({ ...formData, posDisplayName: e.target.value })}
-                          placeholder={formData.name ? `미입력 시 "${formData.name.replace(/<br\s*\/?>/g, ' ')}" 사용` : '미입력 시 메뉴명 사용'}
-                          maxLength={20}
-                        />
-                        <p className="text-xs text-txt-muted">POS 버튼에 표시할 이름 (최대 20자) · 미입력 시 메뉴명 사용</p>
-                      </div>
-
-                      {/* 상품코드 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="productCode">상품코드</Label>
-                        <Input
-                          id="productCode"
-                          value={formData.productCode || ''}
-                          onChange={(e) => setFormData({ ...formData, productCode: e.target.value })}
-                          placeholder="예: PRD-001"
-                          maxLength={20}
-                        />
-                        <p className="text-xs text-txt-muted">서비스 내 상품 식별 코드 (최대 20자)</p>
-                      </div>
-
-                      {/* 포스 코드 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="posCode">포스 코드</Label>
-                        <Input
-                          id="posCode"
-                          value={formData.posCode || ''}
-                          onChange={(e) => setFormData({ ...formData, posCode: e.target.value })}
-                          placeholder="예: M001"
-                          maxLength={20}
-                        />
-                        <p className="text-xs text-txt-muted">POS 시스템 연동 식별 코드 (최대 20자)</p>
-                      </div>
-
-                      {/* 가격 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="price" required>가격</Label>
-                        <Input
-                          id="price"
-                          type="number"
-                          value={formData.price}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            if (val >= 0 && val <= 9999999) {
-                              setFormData({ ...formData, price: val });
-                            }
-                          }}
-                          min={0}
-                          max={9999999}
-                          placeholder="15000"
-                        />
-                      </div>
-
-                      {/* POS 버튼 색상 (가격 하단) */}
-                      <div className="space-y-2">
-                        <Label>POS 버튼 색상</Label>
-                        <div className="flex flex-wrap gap-2">
-                          {POS_COLOR_PALETTE.map((color) => (
-                            <button
-                              key={color}
-                              type="button"
-                              onClick={() => setFormData({ ...formData, posColor: formData.posColor === color ? '' : color })}
-                              className={`
-                                w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all
-                                ${formData.posColor === color
-                                  ? 'border-primary ring-2 ring-primary/30 scale-110'
-                                  : 'border-border hover:border-primary/50'
-                                }
-                                ${color === '#FFFFFF' ? 'bg-white' : ''}
-                              `}
-                              style={{ backgroundColor: color }}
-                            >
-                              {formData.posColor === color && (
-                                <CheckOutlined className={`text-xs ${color === '#FFFFFF' || color === '#FADB14' ? 'text-gray-800' : 'text-white'}`} />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                        {formData.posColor && (
-                          <p className="text-xs text-txt-muted">선택: {formData.posColor}</p>
-                        )}
-                      </div>
-
-                      {/* 메뉴 설명 */}
-                      <div className="space-y-2">
-                        <Label htmlFor="description" required>메뉴 설명</Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                          placeholder="메뉴에 대한 설명을 입력하세요"
-                          rows={3}
-                          maxLength={500}
-                        />
-                        <p className="text-xs text-txt-muted">{formData.description.length}/500자</p>
-                      </div>
-
-
-                      {/* 아이콘뱃지 설정 */}
-                      <div className="space-y-2">
-                        <Label>아이콘뱃지</Label>
-                        {activeBadges.length === 0 ? (
-                          <p className="text-xs text-txt-muted">등록된 뱃지가 없습니다. 디자인관리 &gt; 아이콘뱃지관리에서 추가하세요.</p>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {activeBadges.map((badge) => {
-                              const isSelected = formData.badgeIds.includes(badge.id);
-                              return (
-                                <button
-                                  key={badge.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setFormData({
-                                      ...formData,
-                                      badgeIds: isSelected
-                                        ? formData.badgeIds.filter((id) => id !== badge.id)
-                                        : [...formData.badgeIds, badge.id],
-                                    });
-                                  }}
-                                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm transition-all ${isSelected
-                                    ? 'border-primary bg-primary/10 text-primary'
-                                    : 'border-border bg-bg-card text-txt-muted hover:border-primary/50'
-                                    }`}
-                                >
-                                  {badge.displayType === 'text' ? (
-                                    <span
-                                      className="text-[10px] font-bold px-1 py-0.5 rounded"
-                                      style={{ color: badge.textColor, backgroundColor: badge.bgColor }}
-                                    >
-                                      {badge.text}
-                                    </span>
-                                  ) : (
-                                    <img src={badge.imageUrl} alt={badge.name} className="w-4 h-4 object-contain" />
-                                  )}
-                                  <span>{badge.name}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 카테고리 설정 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">카테고리 설정</h3>
-
-                        {formData.categoryPairs.map((pair, index) => {
-                          const subCategories = MOCK_CATEGORIES.find(
-                            (cat) => cat.id === pair.mainCategoryId
-                          )?.children || [];
-
-                          return (
-                            <div key={pair.id} className="flex gap-3 items-end">
-                              {/* 1차 카테고리 */}
-                              <div className="flex-1">
-                                {index === 0 && (
-                                  <Label className="text-xs text-txt-muted mb-1">1차 카테고리</Label>
-                                )}
-                                <Select
-                                  value={pair.mainCategoryId}
-                                  onChange={(e) => {
-                                    const newPairs = formData.categoryPairs.map((p) =>
-                                      p.id === pair.id
-                                        ? { ...p, mainCategoryId: e.target.value, subCategoryId: '' }
-                                        : p
-                                    );
-                                    setFormData({
-                                      ...formData,
-                                      categoryPairs: newPairs,
-                                      mainCategoryId: newPairs[0]?.mainCategoryId || '',
-                                    });
-                                  }}
-                                >
-                                  <option value="">1차 카테고리 선택</option>
-                                  {MOCK_CATEGORIES
-                                    .filter((cat) => cat.depth === 1)
-                                    .map((category) => (
-                                      <option key={category.id} value={category.id}>
-                                        {category.name}
-                                      </option>
-                                    ))}
-                                </Select>
-                              </div>
-
-                              {/* 2차 카테고리 */}
-                              <div className="flex-1">
-                                {index === 0 && (
-                                  <Label className="text-xs text-txt-muted mb-1">2차 카테고리</Label>
-                                )}
-                                <Select
-                                  value={pair.subCategoryId}
-                                  onChange={(e) => {
-                                    const newPairs = formData.categoryPairs.map((p) =>
-                                      p.id === pair.id
-                                        ? { ...p, subCategoryId: e.target.value }
-                                        : p
-                                    );
-                                    setFormData({
-                                      ...formData,
-                                      categoryPairs: newPairs,
-                                      subCategoryIds: newPairs.map((p) => p.subCategoryId).filter(Boolean),
-                                    });
-                                  }}
-                                  disabled={!pair.mainCategoryId || subCategories.length === 0}
-                                >
-                                  <option value="">2차 카테고리 선택</option>
-                                  {subCategories.map((subCategory) => (
-                                    <option key={subCategory.id} value={subCategory.id}>
-                                      {subCategory.name}
-                                    </option>
-                                  ))}
-                                </Select>
-                              </div>
-
-                              {/* 삭제/추가 버튼 */}
-                              <div className="flex gap-1">
-                                {formData.categoryPairs.length > 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newPairs = formData.categoryPairs.filter((p) => p.id !== pair.id);
-                                      setFormData({ ...formData, categoryPairs: newPairs });
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:bg-critical/10 hover:border-critical transition-colors"
-                                    title="삭제"
-                                  >
-                                    <MinusOutlined className="text-xs text-txt-muted" />
-                                  </button>
-                                )}
-                                {index === formData.categoryPairs.length - 1 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      const newPair: CategoryPair = {
-                                        id: `pair-${Date.now()}`,
-                                        mainCategoryId: '',
-                                        subCategoryId: '',
-                                      };
-                                      setFormData({
-                                        ...formData,
-                                        categoryPairs: [...formData.categoryPairs, newPair],
-                                      });
-                                    }}
-                                    className="w-8 h-8 flex items-center justify-center rounded border border-border hover:bg-primary/10 hover:border-primary transition-colors"
-                                    title="추가"
-                                  >
-                                    <PlusIcon className="text-xs text-txt-muted" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* 판매 설정 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">판매 설정</h3>
-                        <p className="text-xs text-txt-muted">채널별로 노출 여부와 판매상태를 설정합니다</p>
-
-                        {(Object.keys(CHANNEL_LABELS) as (keyof ProductChannels)[]).map((key) => {
-                          const ch = formData.channels || DEFAULT_CHANNELS;
-                          const value = ch[key];
-                          const isEnabled = value !== false;
-                          return (
-                            <div key={key} className="flex items-center gap-3">
-                              <Switch
-                                checked={isEnabled}
-                                onCheckedChange={(checked) => setFormData({
-                                  ...formData,
-                                  channels: { ...ch, [key]: checked ? 'active' : false },
-                                })}
-                              />
-                              <Label className="w-20 flex-shrink-0">{CHANNEL_LABELS[key]}</Label>
-                              {isEnabled && (
-                                <Select
-                                  value={value as string}
-                                  onChange={(e) => setFormData({
-                                    ...formData,
-                                    channels: { ...ch, [key]: e.target.value as ProductStatus },
-                                  })}
-                                  className="flex-1"
-                                >
-                                  {(Object.entries(CHANNEL_STATUS_LABELS) as [ProductStatus, string][]).map(([v, l]) => (
-                                    <option key={v} value={v}>{l}</option>
-                                  ))}
-                                </Select>
-                              )}
-                              {!isEnabled && (
-                                <span className="text-xs text-txt-muted">비노출</span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* 판매기간 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">판매기간 (선택사항)</h3>
-                        <p className="text-xs text-txt-muted">
-                          판매 시작일과 종료일을 설정하면 해당 기간 동안만 판매됩니다
-                        </p>
-                        <SalesPeriodPicker
-                          value={{
-                            startDate: formData.salesStartDate,
-                            endDate: formData.salesEndDate,
-                          }}
-                          onChange={(period) =>
-                            setFormData({
-                              ...formData,
-                              salesStartDate: period.startDate,
-                              salesEndDate: period.endDate,
-                            })
-                          }
-                        />
-                      </div>
-
-                      {/* 가맹점 적용 */}
-                      <StoreSelector
-                        stores={stores}
-                        selectedStores={formData.storeIds}
-                        onChange={(ids) => setFormData({ ...formData, storeIds: ids })}
-                        applyToAll={formData.applyToAll}
-                        onApplyToAllChange={(value) =>
-                          setFormData({ ...formData, applyToAll: value })
-                        }
-                      />
-                    </>
-                  )}
-
-                  {activeTab === 'options' && (
-                    <OptionGroupSelector
-                      optionGroups={optionGroups}
-                      selectedGroupIds={formData.optionGroupIds}
-                      onChange={(groupIds) => setFormData({ ...formData, optionGroupIds: groupIds })}
-                    />
-                  )}
-
-                  {activeTab === 'details' && (
-                    <div className="space-y-6">
-                      {/* 결제 정책 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <h3 className="text-sm font-semibold text-txt-main">결제 정책</h3>
-
-                        <div className="flex items-center justify-between">
-                          <Label>쿠폰 사용 허용</Label>
-                          <Switch
-                            checked={formData.allowCoupon}
-                            onCheckedChange={(checked) => setFormData({ ...formData, allowCoupon: checked })}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label>교환권 사용 허용</Label>
-                          <Switch
-                            checked={formData.allowVoucher}
-                            onCheckedChange={(checked) => setFormData({ ...formData, allowVoucher: checked })}
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label>금액권 사용 허용</Label>
-                          <Switch
-                            checked={formData.allowGiftCard}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, allowGiftCard: checked })
-                            }
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label>자사할인 허용</Label>
-                          <Switch
-                            checked={formData.allowOwnDiscount}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, allowOwnDiscount: checked })
-                            }
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label>제휴할인 허용</Label>
-                          <Switch
-                            checked={formData.allowPartnerDiscount}
-                            onCheckedChange={(checked) =>
-                              setFormData({ ...formData, allowPartnerDiscount: checked })
-                            }
-                          />
-                        </div>
-                      </div>
-
-                      {/* 영양 정보 */}
-                      <div className="space-y-4 p-4 bg-hover rounded-lg border border-border">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-sm font-semibold text-txt-main">영양 정보</h3>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newSize: NutritionBySize = {
-                                id: `nutrition-${Date.now()}`,
-                                sizeName: '',
-                                nutrition: getDefaultNutrition(),
-                              };
-                              setFormData({
-                                ...formData,
-                                nutritionBySize: [...(formData.nutritionBySize || []), newSize],
-                              });
-                            }}
-                            className="text-xs text-primary hover:underline"
-                          >
-                            + 사이즈별 영양정보 추가
-                          </button>
-                        </div>
-
-                        {/* 기본 영양정보 */}
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <Input
-                              value={formData.nutrition.sizeName || ''}
-                              onChange={(e) =>
-                                setFormData({
-                                  ...formData,
-                                  nutrition: {
-                                    ...formData.nutrition,
-                                    sizeName: e.target.value,
-                                  },
-                                })
-                              }
-                              placeholder="사이즈명 (예: 레귤러)"
-                              className="w-40"
-                            />
-                            <span className="text-xs text-txt-muted flex-1">기본 영양정보</span>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
-                              <Label htmlFor="calories">칼로리 (kcal)</Label>
-                              <Input
-                                id="calories"
-                                type="number"
-                                value={formData.nutrition.calories}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      calories: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="servingSize">제공량</Label>
-                              <Input
-                                id="servingSize"
-                                value={formData.nutrition.servingSize}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      servingSize: e.target.value,
-                                    },
-                                  })
-                                }
-                                placeholder="예: 1마리"
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="sodium">나트륨 (mg)</Label>
-                              <Input
-                                id="sodium"
-                                type="number"
-                                value={formData.nutrition.sodium}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      sodium: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="carbs">탄수화물 (g)</Label>
-                              <Input
-                                id="carbs"
-                                type="number"
-                                value={formData.nutrition.carbs}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      carbs: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="sugar">당류 (g)</Label>
-                              <Input
-                                id="sugar"
-                                type="number"
-                                value={formData.nutrition.sugar}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      sugar: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="fat">지방 (g)</Label>
-                              <Input
-                                id="fat"
-                                type="number"
-                                value={formData.nutrition.fat}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      fat: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="protein">단백질 (g)</Label>
-                              <Input
-                                id="protein"
-                                type="number"
-                                value={formData.nutrition.protein}
-                                onChange={(e) =>
-                                  setFormData({
-                                    ...formData,
-                                    nutrition: {
-                                      ...formData.nutrition,
-                                      protein: Number(e.target.value),
-                                    },
-                                  })
-                                }
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* 사이즈별 영양정보 */}
-                        {(formData.nutritionBySize || []).map((sizeNutrition, index) => (
-                          <div key={sizeNutrition.id} className="space-y-3 pt-4 border-t border-border">
-                            <div className="flex items-center gap-3">
-                              <Input
-                                value={sizeNutrition.sizeName}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                      i === index ? { ...item, sizeName: value } : item
-                                    ),
-                                  }));
-                                }}
-                                placeholder="사이즈명 (예: 라지)"
-                                className="w-40"
-                              />
-                              <span className="text-xs text-txt-muted flex-1">영양정보</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setFormData((prev) => ({
-                                    ...prev,
-                                    nutritionBySize: (prev.nutritionBySize || []).filter((_, i) => i !== index),
-                                  }));
-                                }}
-                                className="text-xs text-critical hover:underline"
-                              >
-                                삭제
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="space-y-1.5">
-                                <Label>칼로리 (kcal)</Label>
-                                <Input
-                                  type="number"
-                                  value={sizeNutrition.nutrition.calories}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, calories: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                />
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <Label>제공량</Label>
-                                <Input
-                                  value={sizeNutrition.nutrition.servingSize}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, servingSize: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                  placeholder="예: 1.5마리"
-                                />
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <Label>나트륨 (mg)</Label>
-                                <Input
-                                  type="number"
-                                  value={sizeNutrition.nutrition.sodium}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, sodium: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                />
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <Label>탄수화물 (g)</Label>
-                                <Input
-                                  type="number"
-                                  value={sizeNutrition.nutrition.carbs}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, carbs: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                />
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <Label>당류 (g)</Label>
-                                <Input
-                                  type="number"
-                                  value={sizeNutrition.nutrition.sugar}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, sugar: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                />
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <Label>지방 (g)</Label>
-                                <Input
-                                  type="number"
-                                  value={sizeNutrition.nutrition.fat}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, fat: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                />
-                              </div>
-
-                              <div className="space-y-1.5">
-                                <Label>단백질 (g)</Label>
-                                <Input
-                                  type="number"
-                                  value={sizeNutrition.nutrition.protein}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value);
-                                    setFormData((prev) => ({
-                                      ...prev,
-                                      nutritionBySize: (prev.nutritionBySize || []).map((item, i) =>
-                                        i === index ? { ...item, nutrition: { ...item.nutrition, protein: value } } : item
-                                      ),
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        {/* 안내 메시지 */}
-                        {(formData.nutritionBySize?.length || 0) > 0 && (
-                          <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                            <p className="text-xs text-blue-700">
-                              💡 사이즈별로 다른 영양정보가 있는 경우 각 사이즈명과 영양정보를 입력하세요
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </>
+            <ProductForm
+              formData={formData}
+              onFormDataChange={setFormData}
+              selectedProduct={selectedProduct}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onImageFileChange={setImageFile}
+              onDelete={handleDelete}
+              stores={stores}
+              optionGroups={optionGroups}
+              activeBadges={activeBadges}
+            />
           )}
         </Card>
       </div>

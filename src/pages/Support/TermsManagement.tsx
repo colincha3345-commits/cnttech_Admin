@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     PlusOutlined,
     DeleteOutlined,
@@ -68,10 +68,6 @@ export function TermsManagement() {
     const [deleteTarget, setDeleteTarget] = useState<Terms | null>(null);
     const [_attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
 
-    useEffect(() => {
-        fetchTerms();
-    }, [fetchTerms]);
-
     const handleNew = () => {
         setEditingTerms(null);
         setFormData(DEFAULT_FORM);
@@ -119,13 +115,17 @@ export function TermsManagement() {
         setDeleteTarget(null);
     };
 
+    const handleSearch = () => {
+        fetchTerms({
+            type: typeFilter || undefined,
+            status: statusFilter || undefined,
+            keyword: keyword || undefined,
+        });
+    };
+
     const filteredTerms = termsList.filter((t) => {
         if (typeFilter && t.type !== typeFilter) return false;
         if (statusFilter && t.status !== statusFilter) return false;
-        if (keyword) {
-            const kw = keyword.toLowerCase();
-            return t.title.toLowerCase().includes(kw) || t.content.toLowerCase().includes(kw);
-        }
         return true;
     });
 
@@ -304,14 +304,14 @@ export function TermsManagement() {
             <Card>
                 <CardContent className="p-4 flex flex-col md:flex-row gap-4 items-end">
                     <div className="flex-1">
-                        <SearchInput placeholder="제목 또는 내용 검색" value={keyword} onChange={setKeyword} />
+                        <SearchInput placeholder="제목 또는 내용 검색" value={keyword} onChange={setKeyword} onSearch={handleSearch} />
                     </div>
                     <div className="w-full md:w-40">
                         <label className="block text-xs font-medium text-txt-muted mb-1">약관 유형</label>
                         <select
                             className="w-full border border-border rounded-lg p-2 text-sm h-10 bg-bg-main text-txt-main"
                             value={typeFilter}
-                            onChange={(e) => setTypeFilter(e.target.value as TermsType | '')}
+                            onChange={(e) => { setTypeFilter(e.target.value as TermsType | ''); fetchTerms({ type: (e.target.value as TermsType) || undefined, status: statusFilter || undefined, keyword: keyword || undefined }); }}
                         >
                             <option value="">전체</option>
                             {Object.entries(TERMS_TYPE_LABELS).map(([v, l]) => (
@@ -324,7 +324,7 @@ export function TermsManagement() {
                         <select
                             className="w-full border border-border rounded-lg p-2 text-sm h-10 bg-bg-main text-txt-main"
                             value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value as TermsStatus | '')}
+                            onChange={(e) => { setStatusFilter(e.target.value as TermsStatus | ''); fetchTerms({ type: typeFilter || undefined, status: (e.target.value as TermsStatus) || undefined, keyword: keyword || undefined }); }}
                         >
                             <option value="">전체</option>
                             {Object.entries(TERMS_STATUS_LABELS).map(([v, l]) => (

@@ -51,6 +51,7 @@ export interface UsePolicy {
   minUsePoints: number;       // 최소 사용 포인트
   maxUseRate: number;         // 최대 사용 비율 (결제금액의 N%)
   useUnit: UseUnit;           // 사용 단위
+  allowNegativeBalance: boolean; // 주문취소 시 마이너스 잔고 허용 (방안 A)
 }
 
 // ============================================
@@ -105,6 +106,7 @@ export const POINT_TYPE_BADGE: Record<PointType, BadgeVariant> = {
   earn_manual: 'info',
   use_order: 'critical',
   withdraw_manual: 'warning',
+  withdraw_cancel: 'critical',
   expired: 'secondary',
 };
 
@@ -138,6 +140,7 @@ export interface PointSettingsFormData {
   minUsePoints: number;
   maxUseRate: number;
   useUnit: UseUnit;
+  allowNegativeBalance: boolean;
 
   // 유효기간
   defaultValidityDays: number;
@@ -159,6 +162,7 @@ export const DEFAULT_POINT_SETTINGS_FORM: PointSettingsFormData = {
   minUsePoints: 100,
   maxUseRate: 50,
   useUnit: 100,
+  allowNegativeBalance: true,
 
   defaultValidityDays: 365,
   expiryNotificationDays: 30,

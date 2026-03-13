@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import {
-    CheckCircleOutlined,
-    ExclamationCircleOutlined,
     ArrowLeftOutlined,
 } from '@ant-design/icons';
 import {
@@ -11,6 +9,7 @@ import {
     Badge,
     SearchInput,
     DataTable,
+    Pagination,
 } from '@/components/ui';
 import { useInquiries } from '@/hooks/useSupport';
 import type { Inquiry, InquiryType, InquiryStatus, InquiryCategory } from '@/types/support';
@@ -40,16 +39,24 @@ interface InquiryListProps {
 }
 
 export function InquiryList({ type, title }: InquiryListProps) {
-    const { inquiries, loading, fetchInquiries, answerInquiry } = useInquiries(type);
+    const { inquiries, pagination, loading, fetchInquiries, answerInquiry } = useInquiries(type);
     const [keyword, setKeyword] = useState('');
     const [statusFilter, setStatusFilter] = useState<InquiryStatus | ''>('');
+    const [page, setPage] = useState(1);
+    const limit = 20;
     const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
     const [answer, setAnswer] = useState('');
     const [answerStatus, setAnswerStatus] = useState<InquiryStatus>('resolved');
     const [sendEmail, setSendEmail] = useState(true);
 
     const handleSearch = () => {
-        fetchInquiries({ keyword, status: statusFilter || undefined });
+        setPage(1);
+        fetchInquiries({ keyword, status: statusFilter || undefined, page: 1, limit });
+    };
+
+    const handlePageChange = (newPage: number) => {
+        setPage(newPage);
+        fetchInquiries({ keyword, status: statusFilter || undefined, page: newPage, limit });
     };
 
     const handleSelectInquiry = (item: Inquiry) => {
@@ -68,15 +75,6 @@ export function InquiryList({ type, title }: InquiryListProps) {
         });
         if (success) setSelectedInquiry(null);
     };
-
-    const filteredInquiries = inquiries.filter(i => {
-        if (statusFilter && i.status !== statusFilter) return false;
-        if (keyword) {
-            const kw = keyword.toLowerCase();
-            return i.title.toLowerCase().includes(kw) || i.authorName.toLowerCase().includes(kw);
-        }
-        return true;
-    });
 
     if (selectedInquiry) {
         return (
@@ -156,21 +154,8 @@ export function InquiryList({ type, title }: InquiryListProps) {
         <div className="space-y-6 px-4 py-6">
             <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
 
-            {/* 통계 카드 */}
-            <div className="grid grid-cols-2 gap-4">
-                {(['pending', 'resolved'] as InquiryStatus[]).map(s => (
-                    <Card key={s} className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => { setStatusFilter(s); handleSearch(); }}>
-                        <CardContent className="p-4 flex items-center gap-3">
-                            {s === 'pending' && <ExclamationCircleOutlined className="text-yellow-500 text-xl" />}
-                            {s === 'resolved' && <CheckCircleOutlined className="text-green-500 text-xl" />}
-                            <div>
-                                <p className="text-xs text-gray-500">{STATUS_LABELS[s]}</p>
-                                <p className="text-lg font-bold">{inquiries.filter(i => i.status === s).length}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
+            {/* 통계 */}
+            <p className="text-sm text-gray-500">총 {pagination?.total ?? 0}건</p>
 
             {/* 필터 */}
             <Card>
@@ -178,7 +163,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
                     <div className="flex-1">
                         <SearchInput placeholder="제목 또는 작성자 검색" value={keyword} onChange={setKeyword} onSearch={handleSearch} />
                     </div>
-                    <select className="form-input w-full md:w-40" value={statusFilter} onChange={e => setStatusFilter(e.target.value as InquiryStatus)}>
+                    <select className="form-input w-full md:w-40" value={statusFilter} onChange={e => { setStatusFilter(e.target.value as InquiryStatus | ''); setPage(1); fetchInquiries({ keyword, status: (e.target.value as InquiryStatus) || undefined, page: 1, limit }); }}>
                         <option value="">전체 상태</option>
                         {Object.entries(STATUS_LABELS).map(([v, l]) => (
                             <option key={v} value={v}>{l}</option>
@@ -243,10 +228,20 @@ export function InquiryList({ type, title }: InquiryListProps) {
                             ),
                         },
                     ]}
-                    data={filteredInquiries}
+                    data={inquiries}
                     isLoading={loading}
                     keyExtractor={(item) => item.id}
                 />
+                {pagination && (
+                    <Pagination
+                        page={page}
+                        totalPages={pagination.totalPages}
+                        onPageChange={handlePageChange}
+                        totalElements={pagination.total}
+                        limit={limit}
+                        unit="건"
+                    />
+                )}
             </Card>
         </div>
     );

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
-import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput } from '@/components/ui';
+import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput, Pagination } from '@/components/ui';
 import {
   useHeadquartersStaff,
   useTeams,
@@ -233,53 +233,15 @@ export const HeadquartersStaff: React.FC = () => {
         </div>
 
         {/* 페이지네이션 */}
-        {pagination && pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between p-4 border-t border-border">
-            <p className="text-sm text-txt-muted">
-              총 {pagination.total}명 중 {(page - 1) * limit + 1}-
-              {Math.min(page * limit, pagination.total)}명 표시
-            </p>
-            <div className="flex gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 rounded border border-border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-bg-hover"
-              >
-                이전
-              </button>
-              {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (pagination.totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (page <= 3) {
-                  pageNum = i + 1;
-                } else if (page >= pagination.totalPages - 2) {
-                  pageNum = pagination.totalPages - 4 + i;
-                } else {
-                  pageNum = page - 2 + i;
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setPage(pageNum)}
-                    className={`w-8 h-8 rounded text-sm ${page === pageNum
-                      ? 'bg-primary text-white'
-                      : 'border border-border hover:bg-bg-hover'
-                      }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-                className="px-3 py-1 rounded border border-border text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-bg-hover"
-              >
-                다음
-              </button>
-            </div>
-          </div>
+        {pagination && (
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            onPageChange={setPage}
+            totalElements={pagination.total}
+            limit={limit}
+            unit="명"
+          />
         )}
       </Card>
 

@@ -1,7 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks';
-import type { PushNotificationForm, PushType, TriggerType } from '@/types/push';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useCreatePush, usePushEstimateCount } from '@/hooks/usePush';
+import type { PushNotificationForm, PushEstimateParams, PushType, TriggerType } from '@/types/push';
 
 // 회원 세그먼트 옵션
 const GRADE_OPTIONS = ['전체', 'VIP', 'GOLD', 'SILVER', 'BRONZE'];
@@ -11,6 +14,8 @@ const WEEK_DAYS = ['월', '화', '수', '목', '금', '토', '일'];
 
 export const PushNotificationFormPage = () => {
     const toast = useToast();
+    const navigate = useNavigate();
+    const createPush = useCreatePush();
     const [formData, setFormData] = useState<PushNotificationForm>({
         type: 'ad',
         title: '',
@@ -39,8 +44,6 @@ export const PushNotificationFormPage = () => {
     const smallIconFileInputRef = useRef<HTMLInputElement>(null);
     const bigPictureFileInputRef = useRef<HTMLInputElement>(null);
 
-    const [estimatedCount, setEstimatedCount] = useState(12400);
-
     // 세그먼트 옵션 토글
     const toggleOption = (
         value: string,
@@ -60,15 +63,15 @@ export const PushNotificationFormPage = () => {
         }
     };
 
-    // 예상 발송 대상 수 반영
-    useEffect(() => {
-        const hasFilter =
-            !selectedGrades.includes('전체') ||
-            !selectedRegions.includes('전체') ||
-            !selectedAges.includes('전체') ||
-            formData.triggerType !== 'none';
-        setEstimatedCount(hasFilter ? Math.floor(Math.random() * 3000) + 100 : 12400);
-    }, [selectedGrades, selectedRegions, selectedAges, formData.triggerType]);
+    // 예상 발송 대상자 수 (Debounce → API 조회)
+    const estimateParams = useMemo<PushEstimateParams>(() => ({
+        grades: selectedGrades,
+        regions: selectedRegions,
+        ages: selectedAges,
+        triggerType: formData.triggerType,
+    }), [selectedGrades, selectedRegions, selectedAges, formData.triggerType]);
+    const debouncedEstimateParams = useDebounce(estimateParams, 500);
+    const { estimatedCount, isLoading: isEstimating } = usePushEstimateCount(debouncedEstimateParams);
 
     // 야간 발송(광고성) 경고
     const [isNightTimeWarning, setIsNightTimeWarning] = useState(false);
@@ -217,11 +220,10 @@ export const PushNotificationFormPage = () => {
             if (smallIconFile) apiPayload.append('androidSmallIcon', smallIconFile);
             if (bigPictureFile) apiPayload.append('androidBigPicture', bigPictureFile);
 
-            // TODO: 백엔드 API 연동 시 pushService.send(apiPayload) 호출
-
+            await createPush.mutateAsync(apiPayload);
             toast.success('푸시 발송(예약)이 접수되었습니다.');
-        } catch (error) {
-            console.error('푸시 전송 중 에러:', error);
+            navigate('/marketing/push');
+        } catch {
             toast.error('전송 중 오류가 발생했습니다.');
         }
     };
@@ -356,7 +358,7 @@ export const PushNotificationFormPage = () => {
                     <Card className="p-4 space-y-4">
                         <div className="flex justify-between items-center border-b pb-2">
                             <h2 className="font-semibold text-lg">회원 세그먼트</h2>
-                            <span className="text-sm text-blue-600 font-semibold">예상 대상: {estimatedCount.toLocaleString()}명</span>
+                            <span className="text-sm text-blue-600 font-semibold">예상 대상: {isEstimating ? '계산 중...' : `${estimatedCount.toLocaleString()}명`}</span>
                         </div>
                         <ChipGroup label="등급별" options={GRADE_OPTIONS} selected={selectedGrades} setSelected={setSelectedGrades} />
                         <ChipGroup label="지역 (배달지 기준)" options={REGION_OPTIONS} selected={selectedRegions} setSelected={setSelectedRegions} />
@@ -465,11 +467,11 @@ export const PushNotificationFormPage = () => {
                         <Input placeholder="휴대폰 번호 (- 제외)" className="flex-1" />
                         <Button variant="secondary">발송</Button>
                     </Card>
-                </div >
+                </div>
 
                 {/* Right: Mockup Preview */}
-                < div className="col-span-1" >
-                    <Card className="p-4 bg-gray-50 sticky top-4 space-y-4">
+                <div className="col-span-1">
+                    <Card className="p-4 bg-gray-50 space-y-4 sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto">
                         <h3 className="font-bold text-center text-gray-700">푸시 미리보기</h3>
 
                         {/* iOS 스타일 */}
@@ -525,8 +527,8 @@ export const PushNotificationFormPage = () => {
                             </p>
                         )}
                     </Card>
-                </div >
-            </div >
-        </div >
+                </div>
+            </div>
+        </div>
     );
 };

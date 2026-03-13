@@ -178,3 +178,324 @@
 각 메모에 createdBy(작성자 ID) + createdAt(작성 시각) 필수 기록
 ```
 
+
+
+### 공통 규칙 (Common Rules)
+- Base URL: `{VITE_API_URL}`
+- 인증: HttpOnly 쿠키 기반 세션 인증
+- 공통 응답: `{ "data": ... }` 또는 `{ "data": [...], "pagination": {...} }`
+- 에러 응답: `{ "error": { "code": "...", "message": "..." } }`
+
+
+---
+
+## 주문 (Order) API
+
+### 2-1. 주문 목록 조회
+
+```
+GET /orders
+```
+
+**Query Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| dateFrom | DateString | N | 조회 시작일 |
+| dateTo | DateString | N | 조회 종료일 |
+| orderType | string | N | `delivery` \| `pickup` \| `dine_in` |
+| status | string | N | `pending` \| `confirmed` \| `preparing` \| `ready` \| `delivered` \| `completed` \| `cancelled` |
+| storeId | string | N | 가맹점 ID |
+| keyword | string | N | 통합 검색 (주문번호, 주문자명, 전화번호, 매장명, 배달주소, 메뉴명) |
+| page | number | N | 페이지 (기본값: 1) |
+| limit | number | N | 페이지당 건수 (기본값: 20) |
+
+**Response** `200 OK`
+```json
+{
+  "data": [Order],
+  "pagination": { "page": 1, "limit": 20, "total": 100, "totalPages": 5 }
+}
+```
+
+### 2-2. 주문 상세 조회
+
+```
+GET /orders/:id
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": Order
+}
+```
+
+**Order 스키마**
+```typescript
+interface Order {
+  id: string;
+  orderNumber: string;
+  orderType: 'delivery' | 'pickup' | 'dine_in';
+  channel: 'app' | 'kiosk' | 'pos' | 'web';
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'delivered' | 'completed' | 'cancelled';
+  orderDate: DateString;
+
+  // 주문자
+  memberId: string;
+  memberName: string;
+  memberPhone: string;
+
+  // 가맹점
+  storeId: string;
+  storeName: string;
+
+  // 메뉴
+  items: OrderMenuItem[];
+
+  // 금액
+  subtotalAmount: number;
+  discount: OrderDiscount;
+  deliveryFee: number;
+  totalAmount: number;
+
+  // 결제
+  paymentMethod: PaymentMethod;
+  cashReceipt: CashReceipt;
+  payments?: OrderPaymentItem[];
+
+  // 배달
+  deliveryAddress?: string;
+
+  // 부가
+  memos: OrderMemo[];
+  cancelInfo?: OrderCancelInfo;
+  customerRequest?: string;
+
+  createdAt: DateString;
+  updatedAt: DateString;
+}
+
+type PaymentMethod = 'card' | 'cash' | 'kakao_pay' | 'naver_pay' | 'toss_pay' | 'mobile_gift_card' | 'mobile_voucher' | 'mixed';
+
+interface OrderMenuItem {
+  productId: string;
+  productName: string;
+  categoryName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  options: { name: string; price: number }[];
+}
+
+interface OrderDiscount {
+  couponId?: string;
+  couponName?: string;
+  couponAmount: number;
+  pointUsed: number;
+  discountAmount: number;
+  productDiscount?: number;
+  affiliateDiscount?: number;
+  eCouponDiscount?: number;
+  eCoupons?: ECouponUsage[];
+  couponCancelled?: boolean;
+  couponCancelledAt?: DateString;
+  couponCancelledBy?: string;
+  affiliateDiscountCancelled?: boolean;
+  affiliateDiscountCancelledAt?: DateString;
+  affiliateDiscountCancelledBy?: string;
+}
+
+interface ECouponUsage {
+  eCouponId: string;
+  eCouponName: string;
+  eCouponType: 'voucher' | 'exchange';
+  amount: number;
+  productId?: string;
+  productName?: string;
+  couponCompany: string;
+  pinNumber: string;
+}
+
+interface CashReceipt {
+  requested: boolean;
+  type?: 'income_deduction' | 'expense_proof';
+  number?: string;
+}
+
+interface OrderPaymentItem {
+  id: string;
+  method: PaymentMethod | 'voucher' | 'exchange';
+  label: string;
+  amount: number;
+  status: 'paid' | 'cancelled';
+  cancelInfo?: PaymentItemCancelInfo;
+  eCouponId?: string;
+  eCouponName?: string;
+  productName?: string;
+  couponCompany?: string;
+  pinNumber?: string;
+}
+
+interface OrderMemo {
+  id: string;
+  content: string;
+  createdBy: string;
+  createdAt: DateString;
+}
+
+interface OrderCancelInfo {
+  reason: 'customer_request' | 'out_of_stock' | 'store_closed' | 'other';
+  reasonDetail?: string;
+  cancelledBy: string;
+  cancelledAt: DateString;
+}
+```
+
+### 2-3. 전체 주문 조회 (엑셀 다운로드용)
+
+```
+GET /orders/all
+```
+
+**Query Parameters**: 2-1과 동일 (page, limit 제외)
+
+**Response** `200 OK`
+```json
+{
+  "data": [Order]
+}
+```
+
+### 2-4. 주문 통계
+
+```
+GET /orders/stats
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": {
+    "totalOrders": 150,
+    "pendingOrders": 5,
+    "completedToday": 42,
+    "cancelledToday": 3,
+    "todayRevenue": 1250000
+  }
+}
+```
+
+### 2-5. 주문 취소
+
+```
+POST /orders/:id/cancel
+```
+
+**Request Body**
+```json
+{
+  "reason": "customer_request",
+  "reasonDetail": "고객 변심"
+}
+```
+
+| 필드 | 타입 | 필수 | 설명 |
+|------|------|------|------|
+| reason | string | Y | `customer_request` \| `out_of_stock` \| `store_closed` \| `other` |
+| reasonDetail | string | N | 상세 사유 |
+
+**Response** `200 OK`
+```json
+{
+  "data": Order
+}
+```
+
+**비즈니스 규칙**: `pending`, `confirmed` 상태에서만 취소 가능
+
+### 2-6. 주문 상태 변경
+
+```
+PATCH /orders/:id/status
+```
+
+**Request Body**
+```json
+{
+  "status": "confirmed"
+}
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": Order
+}
+```
+
+### 2-7. 주문 메모 추가
+
+```
+POST /orders/:id/memos
+```
+
+**Request Body**
+```json
+{
+  "content": "고객 요청: 소스 별도 포장"
+}
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": Order
+}
+```
+
+### 2-8. 개별 결제수단 취소 (복합결제)
+
+```
+POST /orders/:id/payments/:paymentItemId/cancel
+```
+
+**Request Body**
+```json
+{
+  "reason": "customer_request",
+  "reasonDetail": "카드 결제분 취소"
+}
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": Order
+}
+```
+
+**비즈니스 규칙**: `paid` 상태인 결제수단만 취소 가능. 모든 결제수단 취소 시 주문 상태도 `cancelled`로 변경.
+
+### 2-9. 쿠폰/제휴할인 취소
+
+```
+POST /orders/:id/discounts/:type/cancel
+```
+
+**Path Parameters**
+
+| 파라미터 | 설명 |
+|----------|------|
+| type | `coupon` \| `affiliate` |
+
+**Response** `200 OK`
+```json
+{
+  "data": Order
+}
+```
+
+**비즈니스 규칙**: 취소된 주문은 할인 취소 불가. 취소 금액만큼 `totalAmount` 증가.
+
+---

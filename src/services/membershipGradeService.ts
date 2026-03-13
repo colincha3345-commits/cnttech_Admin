@@ -143,15 +143,6 @@ class MockMembershipGradeService {
         },
         retentionMonths: formData.retentionMonths,
       },
-      benefits: {
-        point: { earnMultiplier: formData.pointEarnMultiplier },
-        coupon: {
-          autoIssueCouponIds: formData.autoIssueCouponIds,
-          issueOnUpgrade: formData.couponIssueOnUpgrade,
-          issueMonthly: formData.couponIssueMonthly,
-          monthlyIssueDay: formData.couponMonthlyIssueDay,
-        },
-      },
       isActive: formData.isActive,
       isDefault,
     };

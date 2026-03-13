@@ -34,13 +34,12 @@
 ### P1. 상품 판매상태 정책
 | 상태값 | 라벨 | 설명 |
 | :--- | :--- | :--- |
-| `active` | 판매중 | 해당 채널에서 정상 노출·주문 가능 |
-| `soldout` | 품절 | 해당 채널에서 노출되나 주문 불가 (품절 표시) |
+| `active` | 판매중 | 메뉴 정상 노출 및 주문 가능 |
+| `soldout` | 품절 | 메뉴 노출되나 주문 불가 (품절 표시) |
 
-- 별도의 전체 판매상태(`status`) 필드는 사용하지 않는다.
-- 판매상태는 **채널별(`channels`)로 개별 관리**한다 (주문앱 / POS / 키오스크 / 테이블오더).
-- 채널 값이 `false`이면 해당 채널에 비노출, `'active'` 또는 `'soldout'`이면 노출+해당 상태 적용.
-- 기본값: 모든 채널 `'active'` (판매중).
+- 기본적으로 **전체 판매상태(`status`) 필드를 사용하여 일괄 변경** 및 앱 전반의 노출/품절 상태를 다룬다.
+- 별도로 **채널별(`channels`)** (주문앱 / POS / 키오스크 / 테이블오더) 판매상태 및 노출 여부 세부 설정을 병행한다.
+- 기본값: 전체 상태 `'active'` (판매중), 전 채널 `'active'`.
 
 ### P2. 채널별 판매 설정 정책
 | 채널 | 키 | 설명 |
@@ -62,8 +61,7 @@
 ### P4. 상품코드·포스코드 정책
 - **상품코드(`productCode`)**: 서비스 내부 상품 식별 코드. 최대 20자.
 - **포스코드(`posCode`)**: POS 시스템 연동 식별 코드. 최대 20자.
-- 배치 순서: 상품코드 → 포스코드 → 가격 (가격 상단에 위치).
-- 두 코드 모두 선택 입력이며, POS 채널 활성화 여부와 무관하게 항상 노출한다.
+- 두 코드 모두 선택 입력사항이며, 등록 폼에서만 입력/관리된다.
 
 ### P5. POS 버튼 색상 정책
 - POS 버튼 색상(`posColor`)은 가격 하단에 배치한다.
@@ -87,8 +85,8 @@
 | 11 | 판매 설정 (채널별) | 채널별 노출+상태 통합 |
 | 12 | 판매기간 | 선택 |
 | 13 | 가맹점 적용 | 전체/선택 |
-| 14 | 결제수단 허용 | 쿠폰/교환권/금액권 |
-| 15 | 상세정보 | 원산지/영양정보/알레르기 |
+| 14 | 결제수단 허용 | 쿠폰/교환권/금액권/할인 등 |
+| 15 | 형태/영양 상세정보 | 영양정보/사이즈별 영양정보 |
 
 ### P7. 일괄 변경 정책
 | 변경 항목 | 설명 |
@@ -103,11 +101,10 @@
 ### P8. 삭제된 필드 (미사용)
 | 필드 | 사유 |
 | :--- | :--- |
-| `isVisible` (앱 노출) | `channels.app`으로 통합 |
-| `status` (전체 판매상태) | 채널별 판매상태로 통합 |
+| `isVisible` (앱 노출) | 별도의 활성화 대신 판매상태(`status`) 및 채널별 설정으로 대체 |
 | `scheduledAt` (게시 예약) | `pending` 상태 제거에 따라 삭제 |
 | `tags` (속성 태그) | 기능 삭제 |
-| 일괄변경 `stock` 탭 | 판매상태에 `soldout` 통합 |
+| 일괄변경 `stock` 탭 | 일괄변경 항목을 판매상태(`status`)로 통합 |
 
 ### P9. 옵션 그룹 선택 타입 정책
 | 선택 타입 | 라벨 | 설명 |
@@ -129,13 +126,15 @@
 1. **카테고리 트리 조회** — 좌측에 1depth/2depth 트리 구조를 렌더링한다. 각 노드에는 이름, 노출 여부 아이콘, 표시 순서를 표기한다.
 2. **카테고리 등록** — 우측 폼에서 이름, 설명, 노출 여부를 입력한다. 1depth 선택 시 하위 2depth를 추가할 수 있다.
 3. **카테고리 수정/삭제** — 트리 노드 클릭 시 우측 폼에 기존 데이터를 바인딩한다. 삭제 시 하위 카테고리 존재 여부를 확인 후 ConfirmDialog를 노출한다.
+4. **연결된 상품 순서 설정** — 2차 카테고리를 선택했을 때, 우측 패널 상단에 `[연결된 상품 순서 설정]` 버튼이 노출되며, 해당 창에서 드래그 앤 드롭 또는 숫자 입력(▲/▼ 방향 아이콘)으로 노출 순서를 변경한다.
+  - **사용 상세**: "상품 순서 설정" 버튼 클릭 시 모달이 오픈되며, 해당 카테고리에 속한 전체 상품이 현재 지정된 순위표에 맞게 나열된다. 위/아래 방향키를 이용해 직접 순위를 교체하고 저장 버튼으로 API 반영이 이루어진다.
 
 ### 1.2 메뉴(상품) 관리 (`/menu/products`)
 
 1. **메뉴 목록 조회** — 카테고리, 키워드 필터를 조합하여 목록을 조회한다. 채널별 판매상태(판매중/품절/비노출)를 Badge로 표출한다.
-2. **메뉴 등록/수정** — 상세 페이지에서 기본정보(이름, POS표시명, 상품코드, 포스코드, 가격, POS색상, 설명, 이미지), 카테고리 설정, 옵션 그룹 연결, 판매 설정(채널별 통합), 가맹점 적용, 상세 정보(원산지/영양정보/알레르기)를 입력한다.
-3. **판매 설정 (채널별 통합)** — 4개 채널(주문앱/POS/키오스크/테이블오더)별로 노출 여부(Switch)와 판매상태(판매중/품절)를 개별 설정한다. 별도 전체 판매상태 필드는 없다.
-4. **일괄 변경** — 목록에서 다중 선택 후 판매상태(판매중/품절)/가격을 일괄 변경한다. 변경 결과(성공/실패 건수)를 Toast로 안내한다.
+2. **메뉴 등록/수정** — 상세 페이지에서 기본정보(이름, POS표시명, 상품코드, 포스코드, 가격, POS색상, 설명, 이미지), 카테고리 설정, 옵션 그룹 연결, 판매 설정(채널별 관리), 결제 정책(쿠폰/금액권 등), 영양정보를 입력한다.
+3. **판매 설정 (채널 통합 관리)** — 전체의 판매/품절 상태(`status`)와 4개 채널(주문앱/POS/키오스크/테이블오더)의 개별 설정(`channels`)을 동시에 관리한다.
+4. **일괄 변경** — 목록에서 다중 선택 후 전체 판매상태(`status`) 또는 판매가를 일괄 변경한다. 변경 결과(성공/실패 건수)를 Toast로 안내한다.
 5. **노출 순서 관리** — 드래그 앤 드롭 또는 순서 입력으로 표시 순서를 조정한다.
 
 ### 1.3 옵션 카테고리 관리 (`/menu/options`)
@@ -191,10 +190,8 @@
 | **쿠폰 허용** | Checkbox | Y | Boolean | 기본 true다. |
 | **교환권 허용** | Checkbox | Y | Boolean | 기본 true다. |
 | **금액권 허용** | Checkbox | Y | Boolean | 기본 true다. |
-| **원산지 정보** | Dynamic List | N | 재료명 30자, 원산지 30자 | '+행 추가' 버튼으로 동적 행을 추가한다. |
 | **영양 정보** | Number Inputs | N | 0 이상 | 칼로리/나트륨/탄수화물/당류/지방/단백질 6항목이다. |
 | **사이즈별 영양정보** | Dynamic List | N | 사이즈명 20자 | 사이즈별 영양정보 세트를 추가한다. |
-| **알레르기 정보** | Multi Checkbox | N | - | 사전 정의 알레르겐 목록에서 선택한다. |
 | **아이콘뱃지** | Multi Select | N | - | 등록된 뱃지 중 선택한다. |
 | **표시 순서** | Number | Y | 1 이상 | 카테고리 내 정렬 순서다. |
 
@@ -366,3 +363,402 @@ maxSelect=1: 라디오 버튼, maxSelect>1: 체크박스
 옵션 추가금액: 메뉴 기본가격 + Σ(선택 옵션 추가금액) = 최종 가격
 ```
 
+
+
+### 공통 규칙 (Common Rules)
+- Base URL: `{VITE_API_URL}`
+- 인증: HttpOnly 쿠키 기반 세션 인증
+- 공통 응답: `{ "data": ... }` 또는 `{ "data": [...], "pagination": {...} }`
+- 에러 응답: `{ "error": { "code": "...", "message": "..." } }`
+
+
+---
+
+## 상품 (Product) API
+
+### 1-1. 상품 목록 조회
+
+```
+GET /products
+```
+
+**Query Parameters**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| categoryId | string | N | 1차 카테고리 ID |
+| status | string | N | `active` \| `soldout` |
+| search | string | N | 상품명/설명 검색 |
+| page | number | N | 페이지 (기본값: 1) |
+| limit | number | N | 페이지당 건수 (기본값: 20) |
+
+**Response** `200 OK`
+```json
+{
+  "data": [Product],
+  "pagination": { "page": 1, "limit": 20, "total": 100, "totalPages": 5 }
+}
+```
+
+### 1-2. 상품 상세 조회
+
+```
+GET /products/:id
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": Product
+}
+```
+
+**Product 스키마**
+```typescript
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  imageUrl: string;
+  subImageUrls?: string[];
+
+  // 카테고리
+  categoryPairs?: CategoryPair[];
+  mainCategoryId: string;
+  mainCategoryName?: string;
+  subCategoryIds: string[];
+  subCategoryNames?: string[];
+
+  // 옵션
+  optionGroups: ProductOptionGroup[];
+
+  // 판매 설정
+  status: 'active' | 'soldout';
+  salesStartDate?: DateString;
+  salesEndDate?: DateString;
+
+  // 가맹점
+  applyToAll: boolean;
+  storeIds: string[];
+
+  // 코드
+  productCode?: string;
+  posCode?: string;
+  posDisplayName?: string;
+  posColor?: string;
+
+  // 채널별 노출
+  channels?: ProductChannels;
+
+  // 결제 정책
+  allowCoupon: boolean;
+  allowVoucher: boolean;
+  allowGiftCard: boolean;
+  allowOwnDiscount: boolean;
+  allowPartnerDiscount: boolean;
+
+  // 상세 정보
+  origin: OriginInfo[];
+  nutrition: NutritionInfo;
+  nutritionBySize?: NutritionBySize[];
+  allergens: Allergen[];
+
+  // 뱃지
+  badgeIds: string[];
+  displayOrder: number;
+
+  // 메타
+  createdAt: DateString;
+  updatedAt: DateString;
+  createdBy: string;
+}
+
+interface CategoryPair {
+  id: string;
+  mainCategoryId: string;
+  subCategoryId: string;
+}
+
+interface ProductChannels {
+  app: 'active' | 'soldout' | false;
+  pos: 'active' | 'soldout' | false;
+  kiosk: 'active' | 'soldout' | false;
+  tableOrder: 'active' | 'soldout' | false;
+}
+
+interface ProductOptionGroup {
+  id: string;
+  name: string;
+  isRequired: boolean;
+  isApplied: boolean;
+  options: ProductOption[];
+}
+
+interface ProductOption {
+  id: string;
+  name: string;
+  price: number;
+}
+
+interface OriginInfo {
+  ingredient: string;
+  origin: string;
+}
+
+interface NutritionInfo {
+  calories: number;
+  sodium: number;
+  carbs: number;
+  sugar: number;
+  fat: number;
+  protein: number;
+  servingSize: string;
+  sizeName?: string;
+}
+
+interface NutritionBySize {
+  id: string;
+  sizeName: string;
+  nutrition: NutritionInfo;
+}
+
+interface Allergen {
+  code: string;
+  name: string;
+}
+```
+
+### 1-3. 상품 생성
+
+```
+POST /products
+```
+
+**Request Body**
+```typescript
+interface CreateProductRequest {
+  name: string;
+  price: number;
+  description: string;
+  imageUrl?: string;
+  subImageUrls?: string[];
+
+  categoryPairs: CategoryPair[];
+  mainCategoryId: string;
+  subCategoryIds: string[];
+
+  optionGroupIds: string[];
+
+  status: 'active' | 'soldout';
+  salesStartDate?: DateString;
+  salesEndDate?: DateString;
+
+  applyToAll: boolean;
+  storeIds: string[];
+
+  productCode?: string;
+  posCode?: string;
+  posDisplayName?: string;
+  posColor?: string;
+  channels?: ProductChannels;
+
+  allowCoupon: boolean;
+  allowVoucher: boolean;
+  allowGiftCard: boolean;
+  allowOwnDiscount: boolean;
+  allowPartnerDiscount: boolean;
+
+  origin: OriginInfo[];
+  nutrition: NutritionInfo;
+  nutritionBySize?: NutritionBySize[];
+  allergens: string[]; // 알레르겐 코드 배열
+
+  badgeIds: string[];
+  displayOrder: number;
+}
+```
+
+**Response** `201 Created`
+```json
+{
+  "data": Product
+}
+```
+
+### 1-4. 상품 수정
+
+```
+PUT /products/:id
+```
+
+**Request Body**: `Partial<CreateProductRequest>` (변경 필드만 전송)
+
+**Response** `200 OK`
+```json
+{
+  "data": Product
+}
+```
+
+### 1-5. 상품 삭제
+
+```
+DELETE /products/:id
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": {
+    "message": "메뉴가 삭제되었습니다",
+    "meta": { "affectedStores": 5 }
+  }
+}
+```
+
+### 1-6. 이미지 업로드
+
+```
+POST /products/upload-image
+Content-Type: multipart/form-data
+```
+
+**Request Body**
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| file | File | 이미지 파일 |
+
+**Response** `200 OK`
+```json
+{
+  "data": { "imageUrl": "https://cdn.example.com/products/xxx.jpg" }
+}
+```
+
+### 1-7. POS 코드 중복 검증
+
+```
+POST /products/validate-pos-code
+```
+
+**Request Body**
+```json
+{
+  "posCode": "M001",
+  "productId": "prod-1"  // 수정 시 자기 자신 제외용 (선택)
+}
+```
+
+**Response** `200 OK`
+```json
+{
+  "data": { "isValid": true }
+}
+```
+
+### 1-8. 일괄 노출순서 변경
+
+```
+PATCH /products/display-orders
+```
+
+**Request Body**
+```json
+{
+  "updates": [
+    { "productId": "prod-1", "displayOrder": 1 },
+    { "productId": "prod-2", "displayOrder": 2 }
+  ]
+}
+```
+
+**Response** `204 No Content`
+
+---
+
+
+---
+
+## 카테고리 및 옵션 (Category & Option) API
+
+### 7-1. 카테고리 트리 전체 조회
+```
+GET /categories/tree
+```
+**Response** `200 OK`
+```json
+{
+  "data": [
+    {
+      "id": "cat-main-1",
+      "name": "치킨",
+      "displayOrder": 1,
+      "subCategories": [
+        {
+          "id": "cat-sub-1",
+          "name": "후라이드",
+          "displayOrder": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 7-2. 옵션 그룹 목록 조회
+```
+GET /options/groups
+```
+**Query Parameters**: `search`, `page`, `limit`
+**Response** `200 OK`
+
+### 7-3. 옵션 그룹 생성
+```
+POST /options/groups
+```
+**Request Body**
+```json
+{
+  "name": "소스 추가",
+  "isRequired": false,
+  "maxSelect": 3,
+  "options": [
+    { "name": "양념 소스", "price": 500 },
+    { "name": "머스타드", "price": 500 }
+  ]
+}
+```
+**Response** `201 Created`
+
+### 7-4. 카테고리별 상품 노출 순서 조회
+```http
+GET /categories/:id/products/orders
+```
+**Response** `200 OK`
+```json
+{
+  "data": [
+    { "productId": "prod-1", "productName": "뿌링클", "sortOrder": 1 },
+    { "productId": "prod-2", "productName": "맛초킹", "sortOrder": 2 }
+  ]
+}
+```
+
+### 7-5. 카테고리별 상품 노출 순서 업데이트
+```http
+PUT /categories/:id/products/orders
+```
+**Request Body**
+```json
+{
+  "orders": [
+    { "productId": "prod-1", "sortOrder": 1 },
+    { "productId": "prod-2", "sortOrder": 2 }
+  ]
+}
+```
+**Response** `200 OK`
+
+---

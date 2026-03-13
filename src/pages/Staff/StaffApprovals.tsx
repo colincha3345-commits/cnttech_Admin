@@ -4,17 +4,21 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Card, Button, Badge, Spinner } from '@/components/ui';
+import { Card, Button, Badge, Spinner, Pagination } from '@/components/ui';
 import { usePendingApprovals, useTeams, useStores } from '@/hooks';
 import { STAFF_TYPE_LABELS } from '@/types/staff';
 import type { StaffType } from '@/types/staff';
 
 export const StaffApprovals: React.FC = () => {
   const [staffTypeFilter, setStaffTypeFilter] = useState<StaffType | ''>('');
+  const [page, setPage] = useState(1);
+  const limit = 20;
   const navigate = useNavigate();
 
   const { data, isLoading } = usePendingApprovals({
     staffType: staffTypeFilter || undefined,
+    page,
+    limit,
   });
 
   const { data: teams } = useTeams();
@@ -58,7 +62,7 @@ export const StaffApprovals: React.FC = () => {
           <span className="text-sm text-txt-muted">직원 유형:</span>
           <select
             value={staffTypeFilter}
-            onChange={(e) => setStaffTypeFilter(e.target.value as StaffType | '')}
+            onChange={(e) => { setStaffTypeFilter(e.target.value as StaffType | ''); setPage(1); }}
             className="h-9 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             <option value="">전체</option>
@@ -131,6 +135,17 @@ export const StaffApprovals: React.FC = () => {
             </tbody>
           </table>
         </div>
+
+        {pagination && (
+          <Pagination
+            page={page}
+            totalPages={pagination.totalPages}
+            onPageChange={setPage}
+            totalElements={pagination.total}
+            limit={limit}
+            unit="건"
+          />
+        )}
       </Card>
     </div>
   );

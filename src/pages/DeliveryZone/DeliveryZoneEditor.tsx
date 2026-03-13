@@ -36,7 +36,7 @@ export const DeliveryZoneEditor: React.FC = () => {
 
   // 데이터
   const { data: editingZone, isLoading: isLoadingZone } = useDeliveryZone(id);
-  const { data: zones = [] } = useDeliveryZones();
+  const { zones } = useDeliveryZones();
   const { data: stores = [] } = useStoreSummaries();
 
   const createZone = useCreateDeliveryZone();

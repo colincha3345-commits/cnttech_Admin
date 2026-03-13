@@ -17,3 +17,9 @@ export interface CategoryFormData {
     parentId?: string;
     depth: number;
 }
+
+export interface CategoryProductOrder {
+    productId: string;
+    productName?: string;
+    sortOrder: number;
+}

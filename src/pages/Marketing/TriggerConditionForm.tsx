@@ -24,7 +24,7 @@ const MAX_CSV_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_UPLOAD_MEMBERS = 50000;
 const MAX_PROMO_CODE_QUANTITY = 100000;
 const REFERRAL_CODE_PATTERN = /^[A-Z0-9]{3,20}$/;
-const UPGRADE_GRADES: MemberGrade[] = ['vip', 'gold', 'silver', 'bronze'];
+const UPGRADE_GRADES: MemberGrade[] = ['grade-vip', 'grade-gold', 'grade-silver', 'grade-normal'];
 
 interface TriggerConditionFormProps {
   formData: BenefitCampaignFormData;

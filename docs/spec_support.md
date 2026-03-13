@@ -147,3 +147,55 @@ Terms: id, type, title, content(50,000자), version(Unique per type), status, is
 | 2 | 정보 입력 후 [저장] | `POST /api/faqs` → 목록 갱신 | 순서 지정 |
 | 3 | 고객앱 FAQ에 즉시 반영 | 카테고리별 FAQ 목록 노출 | 노출 순서 확인 |
 
+
+
+### 공통 규칙 (Common Rules)
+- Base URL: `{VITE_API_URL}`
+- 인증: HttpOnly 쿠키 기반 세션 인증
+- 공통 응답: `{ "data": ... }` 또는 `{ "data": [...], "pagination": {...} }`
+- 에러 응답: `{ "error": { "code": "...", "message": "..." } }`
+
+
+---
+
+## 고객지원 및 리뷰 (Support & Reviews) API
+
+### 12-1. 공지사항 목록 조회
+```
+GET /support/notices
+```
+**Query Parameters**: `search`, `page`, `limit`
+**Response** `200 OK`
+
+### 12-2. 1:1 문의(QnA) 답변 등록
+```
+POST /support/qna/:id/reply
+```
+**Request Body**
+```json
+{
+  "content": "불편을 드려 죄송합니다. 해당 매장에 주의를 주겠습니다."
+}
+```
+**Response** `200 OK`
+
+### 12-3. 매장 리뷰 목록 조회
+```
+GET /support/reviews
+```
+**Query Parameters**: `storeId`, `rating`, `hasReply`, `page`, `limit`
+**Response** `200 OK`
+
+### 12-4. 리뷰 블라인드 (숨김) 처리
+```
+PATCH /support/reviews/:id/blind
+```
+**Request Body**
+```json
+{
+  "reason": "욕설 및 비방"
+}
+```
+**Response** `200 OK`
+
+---

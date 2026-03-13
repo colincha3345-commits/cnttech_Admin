@@ -5,6 +5,10 @@ import { PROMOTION_ORDER_TYPE_LABELS } from './promotion-common';
 export type { DiscountMethod, PromotionOrderType, TimeSlot } from './promotion-common';
 export { PROMOTION_ORDER_TYPE_LABELS } from './promotion-common';
 
+// 쿠폰 삭제 유예기간 상수
+export const COUPON_GRACE_PERIOD_DAYS = 7;
+export const COUPON_GRACE_PERIOD_MS = COUPON_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000;
+
 /** @deprecated DiscountMethod 사용 권장 */
 export type CouponDiscountType = DiscountMethod;
 

@@ -1,67 +1,40 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Badge, SearchInput } from '@/components/ui';
-import type { PushNotification, PushStatus, PushType } from '@/types/push';
+import { Card, Button, Badge, SearchInput, Spinner, Pagination } from '@/components/ui';
+import { usePushList } from '@/hooks/usePush';
+import type { BadgeVariant } from '@/types';
+import type { PushStatus, PushType } from '@/types/push';
 
-// Mock Data
-const MOCK_PUSH_LIST: PushNotification[] = [
-    {
-        id: '1',
-        type: 'ad',
-        title: '[깜짝할인] 저녁 한정 치킨 3,000원 할인!',
-        body: '오늘 저녁은 치킨이닭! 매장 방문 시 화면을 보여주세요.',
-        status: 'completed',
-        targetCount: 15200,
-        triggerType: 'none',
-        createdAt: new Date('2026-02-20T10:00:00'),
-        updatedAt: new Date('2026-02-20T10:00:00'),
-        scheduledAt: new Date('2026-02-20T18:00:00'),
-    },
-    {
-        id: '2',
-        type: 'info',
-        title: '장바구니에 담긴 상품을 확인해보세요',
-        body: '회원님이 담아두신 상품이 아직 남아있어요. 지금 결제하시면 내일 바로 픽업 가능합니다!',
-        status: 'sending',
-        targetCount: 300,
-        triggerType: 'cart_abandoned',
-        createdAt: new Date('2026-02-25T09:00:00'),
-        updatedAt: new Date('2026-02-25T09:00:00'),
-    },
-    {
-        id: '3',
-        type: 'ad',
-        title: '신메뉴 마라치킨 출시 완료',
-        body: '가장 먼저 만나보는 신메뉴 혜택! 지금 바로 앱에서 확인하세요.',
-        status: 'scheduled',
-        targetCount: 50000,
-        triggerType: 'none',
-        createdAt: new Date('2026-02-25T09:30:00'),
-        updatedAt: new Date('2026-02-25T09:30:00'),
-        scheduledAt: new Date('2026-02-28T12:00:00'),
-    }
-];
+const STATUS_BADGE: Record<PushStatus, { variant: BadgeVariant; label: string }> = {
+    completed: { variant: 'success', label: '발송 완료' },
+    scheduled: { variant: 'warning', label: '예약됨' },
+    sending: { variant: 'info', label: '발송 중 (자동)' },
+    draft: { variant: 'default', label: '임시 저장' },
+    failed: { variant: 'critical', label: '발송 실패' },
+    cancelled: { variant: 'secondary', label: '취소됨' },
+};
 
 export const PushList = () => {
     const navigate = useNavigate();
     const [keyword, setKeyword] = useState('');
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [page, setPage] = useState(1);
+    const limit = 20;
 
-    const getStatusBadge = (status: PushStatus) => {
-        switch (status) {
-            case 'completed': return <Badge variant="success">발송 완료</Badge>;
-            case 'scheduled': return <Badge variant="warning">예약됨</Badge>;
-            case 'sending': return <Badge variant="info">발송 중 (자동)</Badge>;
-            case 'draft': return <Badge variant="default">임시 저장</Badge>;
-            case 'failed': return <Badge variant="critical">발송 실패</Badge>;
-            default: return null;
-        }
+    const { pushList, pagination, isLoading } = usePushList({
+        keyword: searchKeyword || undefined,
+        page,
+        limit,
+    });
+
+    const handleSearch = () => {
+        setSearchKeyword(keyword);
+        setPage(1);
     };
 
     const getPushTypeBadge = (type: PushType) => {
         return type === 'ad' ? <Badge variant="warning">광고성</Badge> : <Badge variant="info">정보성</Badge>;
     };
-
-    const filteredList = MOCK_PUSH_LIST.filter(p => p.title.includes(keyword) || p.body.includes(keyword));
 
     return (
         <div className="space-y-6">
@@ -79,6 +52,7 @@ export const PushList = () => {
                         placeholder="캠페인 제목 또는 내용 검색"
                         value={keyword}
                         onChange={setKeyword}
+                        onSearch={handleSearch}
                     />
                 </div>
             </Card>
@@ -96,30 +70,50 @@ export const PushList = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y text-sm">
-                        {filteredList.map((item) => (
-                            <tr key={item.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/marketing/push/${item.id}`)}>
-                                <td className="p-4">{getPushTypeBadge(item.type)}</td>
-                                <td className="p-4">
-                                    <p className="font-semibold">{item.title}</p>
-                                    <p className="text-gray-500 text-xs mt-1 truncate max-w-[250px]">{item.body}</p>
-                                </td>
-                                <td className="p-4">{getStatusBadge(item.status)}</td>
-                                <td className="p-4 text-right font-medium">{item.targetCount.toLocaleString()}명</td>
-                                <td className="p-4 text-gray-500">{item.createdAt.toLocaleDateString()}</td>
-                                <td className="p-4 text-gray-500">
-                                    {item.scheduledAt ? item.scheduledAt.toLocaleString() : '-'}
+                        {isLoading ? (
+                            <tr>
+                                <td colSpan={6} className="text-center py-12">
+                                    <Spinner size="sm" />
                                 </td>
                             </tr>
-                        ))}
-                        {filteredList.length === 0 && (
+                        ) : pushList.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="text-center p-8 text-gray-500">
                                     검색된 푸시 알림이 없습니다.
                                 </td>
                             </tr>
+                        ) : (
+                            pushList.map((item) => (
+                                <tr key={item.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/marketing/push/${item.id}`)}>
+                                    <td className="p-4">{getPushTypeBadge(item.type)}</td>
+                                    <td className="p-4">
+                                        <p className="font-semibold">{item.title}</p>
+                                        <p className="text-gray-500 text-xs mt-1 truncate max-w-[250px]">{item.body}</p>
+                                    </td>
+                                    <td className="p-4">
+                                        <Badge variant={STATUS_BADGE[item.status].variant}>
+                                            {STATUS_BADGE[item.status].label}
+                                        </Badge>
+                                    </td>
+                                    <td className="p-4 text-right font-medium">{item.targetCount.toLocaleString()}명</td>
+                                    <td className="p-4 text-gray-500">{new Date(item.createdAt).toLocaleDateString('ko-KR')}</td>
+                                    <td className="p-4 text-gray-500">
+                                        {item.scheduledAt ? new Date(item.scheduledAt).toLocaleString('ko-KR') : '-'}
+                                    </td>
+                                </tr>
+                            ))
                         )}
                     </tbody>
                 </table>
+
+                <Pagination
+                    page={page}
+                    totalPages={pagination.totalPages}
+                    onPageChange={setPage}
+                    totalElements={pagination.total}
+                    limit={limit}
+                    unit="건"
+                />
             </Card>
         </div>
     );

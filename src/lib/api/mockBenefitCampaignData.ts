@@ -57,7 +57,7 @@ export const mockBenefitCampaigns: BenefitCampaign[] = [
     name: 'VIP 등급 달성 보상',
     description: 'VIP 달성 시 특별 쿠폰 지급',
     trigger: 'membership_upgrade',
-    membershipCondition: { targetGrades: ['vip'] },
+    membershipCondition: { targetGrades: ['grade-vip'] },
     benefitConfig: {
       couponBenefits: [{ couponId: '4', couponName: 'VIP 전용 쿠폰 (30% 할인)' }],
       pointBenefits: [],

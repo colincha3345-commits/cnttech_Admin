@@ -9,6 +9,7 @@ import {
   DownOutlined,
   SaveOutlined,
   CloseOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -27,6 +28,7 @@ import {
 import { useCategories } from '@/hooks/useCategories';
 import { useToast } from '@/hooks';
 import type { Category, CategoryFormData } from '@/types/category';
+import { CategoryProductOrderManager } from './components/CategoryProductOrderManager';
 
 export function Categories() {
   const toast = useToast();
@@ -35,6 +37,7 @@ export function Categories() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [categoryMode, setCategoryMode] = useState<'1depth' | '2depth'>('1depth');
+  const [isProductOrderManagerOpen, setIsProductOrderManagerOpen] = useState(false);
   const [formData, setFormData] = useState<CategoryFormData>({
     name: '',
     order: 1,
@@ -263,7 +266,23 @@ export function Categories() {
                 <p>카테고리를 선택하거나 새로 추가해주세요.</p>
               </div>
             ) : (
-              <>
+              <div className="flex flex-col h-full gap-4">
+                {/* 2depth일 때 상단에 상품 노출 순서 관리 버튼 */}
+                {selectedCategory && categoryMode === '2depth' && !isEditing && (
+                  <div className="flex justify-between items-center bg-bg-card border border-border rounded-lg p-4">
+                    <div>
+                      <p className="font-semibold text-sm">연결된 상품 순서 설정</p>
+                      <p className="text-xs text-txt-muted">선택한 카테고리에 속한 상품들의 노출 순서를 변경합니다.</p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsProductOrderManagerOpen(true)}
+                    >
+                      <AppstoreOutlined /> 순서 설정
+                    </Button>
+                  </div>
+                )}
+                
                 {/* 카테고리 구분 (신규 등록 시) */}
                 {!selectedCategory && (
                   <div className="space-y-2">
@@ -399,11 +418,20 @@ export function Categories() {
                     수정
                   </Button>
                 )}
-              </>
+              </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {isProductOrderManagerOpen && selectedCategory && (
+        <CategoryProductOrderManager
+          isOpen={isProductOrderManagerOpen}
+          onClose={() => setIsProductOrderManagerOpen(false)}
+          categoryId={selectedCategory.id}
+          categoryName={selectedCategory.name}
+        />
+      )}
     </div>
   );
 }

@@ -234,7 +234,7 @@ export const auditService = {
   /**
    * 감사 로그 조회
    */
-  async getLogs(filter?: AuditLogFilter): Promise<ApiResponse<AuditLogEntry[]>> {
+  async getLogs(filter?: AuditLogFilter): Promise<{ data: AuditLogEntry[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> {
     await delay(300);
 
     let logs = [...mockAuditLogs];
@@ -269,41 +269,39 @@ export const auditService = {
       }
     }
 
-    return {
-      success: true,
-      data: logs,
-      meta: {
-        page: 1,
-        limit: 100,
-        total: logs.length,
-      },
-    };
+    // 최신순 정렬
+    logs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const page = filter?.page ?? 1;
+    const limit = filter?.limit ?? 20;
+    const total = logs.length;
+    const totalPages = Math.ceil(total / limit);
+    const start = (page - 1) * limit;
+    const paged = logs.slice(start, start + limit);
+
+    return { data: paged, pagination: { page, limit, total, totalPages } };
   },
 
   /**
    * 사용자별 활동 이력 조회
    */
-  async getUserActivityHistory(userId: string): Promise<ApiResponse<AuditLogEntry[]>> {
+  async getUserActivityHistory(userId: string) {
     return this.getLogs({ userId });
   },
 
   /**
    * 보안 알림 조회 (warning, critical 심각도)
    */
-  async getSecurityAlerts(): Promise<ApiResponse<AuditLogEntry[]>> {
+  async getSecurityAlerts() {
     return this.getLogs({ severity: ['warning', 'critical'] });
   },
 
   /**
    * 최근 로그인 기록 조회
    */
-  async getRecentLogins(limit: number = 10): Promise<ApiResponse<AuditLogEntry[]>> {
-    const result = await this.getLogs({ action: ['LOGIN', 'LOGIN_FAILED'] });
-
-    return {
-      ...result,
-      data: result.data.slice(0, limit),
-    };
+  async getRecentLogins(recentLimit: number = 10) {
+    const result = await this.getLogs({ action: ['LOGIN', 'LOGIN_FAILED'], limit: recentLimit });
+    return result;
   },
 
   /**

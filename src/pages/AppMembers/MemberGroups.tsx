@@ -10,7 +10,7 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 
-import { Card, Button, Badge, ConfirmDialog, SearchInput } from '@/components/ui';
+import { Card, Button, Badge, ConfirmDialog, SearchInput, Pagination } from '@/components/ui';
 import { useMemberGroups, useDeleteGroup } from '@/hooks/useMemberGroups';
 import { useToast } from '@/hooks';
 import type { MemberGroup } from '@/types/member-segment';
@@ -175,50 +175,11 @@ export const MemberGroups: React.FC = () => {
             </table>
 
             {/* 페이지네이션 */}
-            {pagination.totalPages > 1 && (
-              <div className="p-4 border-t border-border flex items-center justify-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  이전
-                </Button>
-                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  let pageNum: number;
-                  if (pagination.totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (page <= 3) {
-                    pageNum = i + 1;
-                  } else if (page >= pagination.totalPages - 2) {
-                    pageNum = pagination.totalPages - 4 + i;
-                  } else {
-                    pageNum = page - 2 + i;
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => setPage(pageNum)}
-                      className={`w-8 h-8 rounded text-sm ${page === pageNum
-                        ? 'bg-primary text-white'
-                        : 'border border-border hover:bg-bg-hover'
-                        }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                  disabled={page === pagination.totalPages}
-                >
-                  다음
-                </Button>
-              </div>
-            )}
+            <Pagination
+              page={page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+            />
           </>
         )}
       </Card>

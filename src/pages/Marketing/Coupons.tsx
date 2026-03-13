@@ -36,10 +36,49 @@ import {
   COUPON_STATUS_LABELS,
   COUPON_STATUS_FILTER_OPTIONS,
   DEFAULT_COUPON_FORM,
+  COUPON_GRACE_PERIOD_DAYS,
+  COUPON_GRACE_PERIOD_MS,
   validateCouponForm,
 } from '@/types/coupon';
 import { ToggleButtonGroup, ConfirmDialog } from '@/components/ui';
 import { useToast, useStores, useCouponList, useCreateCoupon, useUpdateCoupon, useSuspendCoupon, useActivateCoupon, useDeleteCoupon, useDuplicateCoupon, useCouponStats } from '@/hooks';
+
+// 쿠폰 삭제 유예기간 경과 판정
+function isGracePeriodPassed(status: CouponStatus, endDate?: string | null, suspendedAt?: Date | null): boolean {
+  const now = Date.now();
+  if (status === 'suspended') {
+    return !suspendedAt || new Date(suspendedAt).getTime() + COUPON_GRACE_PERIOD_MS < now;
+  }
+  return !endDate || new Date(endDate).getTime() + COUPON_GRACE_PERIOD_MS < now;
+}
+
+function getGraceDateLabel(status: CouponStatus, endDate?: string | null, suspendedAt?: Date | null): string {
+  const base = status === 'suspended' ? suspendedAt : endDate;
+  if (!base) return '';
+  return new Date(new Date(base).getTime() + COUPON_GRACE_PERIOD_MS).toLocaleDateString('ko-KR');
+}
+
+// 쿠폰 삭제 버튼 (유예기간 로직 포함)
+function CouponDeleteButton({ coupon, onDelete }: {
+  coupon: Coupon;
+  onDelete: (id: string, name: string) => void;
+}) {
+  const gracePassed = isGracePeriodPassed(coupon.status, coupon.endDate, coupon.suspendedAt);
+  const graceDate = getGraceDateLabel(coupon.status, coupon.endDate, coupon.suspendedAt);
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        if (gracePassed) onDelete(coupon.id, coupon.name);
+      }}
+      disabled={!gracePassed}
+      className={`p-1.5 rounded transition-colors ${gracePassed ? 'hover:bg-danger/10' : 'opacity-40 cursor-not-allowed'}`}
+      title={gracePassed ? '삭제' : `${coupon.status === 'suspended' ? '정지' : '만료'} 후 ${COUPON_GRACE_PERIOD_DAYS}일 경과 시 삭제 가능 (삭제 가능일: ${graceDate})`}
+    >
+      <DeleteOutlined style={{ fontSize: 14 }} className="text-danger" />
+    </button>
+  );
+}
 
 // 요일 라벨
 const DAY_LABELS: Record<number, string> = {
@@ -429,16 +468,10 @@ export function Coupons() {
                           }
                         </button>
                         {(coupon.status === 'suspended' || coupon.status === 'expired') && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteTarget({ id: coupon.id, name: coupon.name });
-                            }}
-                            className="p-1.5 rounded transition-colors hover:bg-danger/10"
-                            title="삭제"
-                          >
-                            <DeleteOutlined style={{ fontSize: 14 }} className="text-danger" />
-                          </button>
+                          <CouponDeleteButton
+                            coupon={coupon}
+                            onDelete={(id, name) => setDeleteTarget({ id, name })}
+                          />
                         )}
                       </div>
                     </div>
@@ -1072,7 +1105,7 @@ export function Coupons() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
         title="쿠폰 삭제"
-        message={`"${deleteTarget?.name}" 쿠폰을 삭제하시겠습니까? 고객에게 발급된 쿠폰도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.`}
+        message={`"${deleteTarget?.name}" 쿠폰을 삭제하면 고객 쿠폰함에서도 즉시 제거됩니다. 이 작업은 되돌릴 수 없습니다. 삭제하시겠습니까?`}
         confirmText="삭제"
         type="warning"
       />

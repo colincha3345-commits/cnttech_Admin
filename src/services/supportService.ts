@@ -26,7 +26,10 @@ let inquiries = [...MOCK_INQUIRIES];
 let faqs = [...MOCK_FAQS];
 
 // 문의 서비스
-async function getInquiries(params?: { type?: InquiryType; status?: InquiryStatus; keyword?: string }) {
+async function getInquiries(params?: { type?: InquiryType; status?: InquiryStatus; keyword?: string; page?: number; limit?: number }) {
+    const page = params?.page ?? 1;
+    const limit = params?.limit ?? 20;
+
     if (IS_MOCK_MODE) {
         let filtered = [...inquiries];
         if (params?.type) filtered = filtered.filter(i => i.type === params.type);
@@ -35,13 +38,20 @@ async function getInquiries(params?: { type?: InquiryType; status?: InquiryStatu
             const kw = params.keyword.toLowerCase();
             filtered = filtered.filter(i => i.title.toLowerCase().includes(kw) || i.authorName.toLowerCase().includes(kw));
         }
-        return { data: filtered.sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
+        filtered.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const total = filtered.length;
+        const totalPages = Math.ceil(total / limit);
+        const start = (page - 1) * limit;
+        const paged = filtered.slice(start, start + limit);
+        return { data: paged, pagination: { page, limit, total, totalPages } };
     }
     const query = new URLSearchParams();
     if (params?.type) query.set('type', params.type);
     if (params?.status) query.set('status', params.status);
     if (params?.keyword) query.set('keyword', params.keyword);
-    return apiClient.get<{ data: Inquiry[] }>(`/support/inquiries?${query.toString()}`);
+    query.set('page', String(page));
+    query.set('limit', String(limit));
+    return apiClient.get<{ data: Inquiry[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/support/inquiries?${query.toString()}`);
 }
 
 async function getInquiry(id: string) {

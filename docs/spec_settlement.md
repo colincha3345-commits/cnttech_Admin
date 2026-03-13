@@ -171,3 +171,48 @@ on_hold → calculated : 보류 해제 시 (관리자 수동)
 예: 할인 10,000원, 본사 70% → hqSupport = 7,000원 (가맹점 수입에 합산)
 ```
 
+
+
+### 공통 규칙 (Common Rules)
+- Base URL: `{VITE_API_URL}`
+- 인증: HttpOnly 쿠키 기반 세션 인증
+- 공통 응답: `{ "data": ... }` 또는 `{ "data": [...], "pagination": {...} }`
+- 에러 응답: `{ "error": { "code": "...", "message": "..." } }`
+
+
+---
+
+## 정산 (Settlement) API
+
+### 9-1. 매장별 월별 정산 내역 조회
+```
+GET /settlements/monthly
+```
+**Query Parameters**
+- `yearMonth` (string, Y) - 예: `2026-03`
+- `storeId` (string, N)
+- `page`, `limit`
+
+**Response** `200 OK`
+```json
+{
+  "data": [
+    {
+      "storeId": "store-1",
+      "totalSales": 15000000,
+      "headquartersFee": 1500000,
+      "couponFranchiseBurden": 200000,
+      "finalSettlementAmount": 13300000
+    }
+  ],
+  "pagination": { ... }
+}
+```
+
+### 9-2. 정산 엑셀 리포트 다운로드
+```
+GET /settlements/monthly/export
+```
+**Response** `200 OK` (Excel 파일 바이너리 스트림)
+
+---

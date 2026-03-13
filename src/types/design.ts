@@ -102,3 +102,8 @@ export interface MainSection {
     isVisible: boolean;
     sortOrder: number;
 }
+
+export interface RecommendedMenu {
+    productId: string;
+    sortOrder: number;
+}

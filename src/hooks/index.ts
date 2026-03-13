@@ -176,3 +176,4 @@ export {
   useUpdateDeliveryZone,
   useDeleteDeliveryZone,
 } from './useDeliveryZones';
+export { useBrandConfig } from './useSettings';
