@@ -462,10 +462,12 @@ export const PushNotificationFormPage = () => {
                     </Card>
 
                     {/* 테스트 발송 */}
-                    <Card className="p-4 flex gap-2 items-center">
-                        <h2 className="font-semibold text-sm w-24 shrink-0">테스트 발송</h2>
-                        <Input placeholder="휴대폰 번호 (- 제외)" className="flex-1" />
-                        <Button variant="secondary">발송</Button>
+                    <Card className="p-4 space-y-3">
+                        <h2 className="font-semibold text-lg border-b pb-2">테스트 발송</h2>
+                        <div className="flex gap-2 items-end">
+                            <Input label="테스트 발송" placeholder="휴대폰 번호 (- 제외)" className="flex-1" />
+                            <Button variant="secondary" className="shrink-0">발송</Button>
+                        </div>
                     </Card>
                 </div>
 

@@ -1,22 +1,20 @@
 /**
  * 메인화면 관리 페이지
- * 추천메뉴 관리 기능 중심, 나머지 섹션은 연동 예정 표시
+ * 추천메뉴 설정 전용
  */
-import { useMainScreens, useRecommendedMenus } from '@/hooks/useDesign';
+import { useRecommendedMenus } from '@/hooks/useDesign';
 import { useProducts } from '@/hooks/useProducts';
-import type { SectionType, RecommendedMenu } from '@/types/design';
+import type { RecommendedMenu } from '@/types/design';
 import type { Product } from '@/types/product';
 import {
     SaveOutlined,
-    EyeOutlined,
-    EyeInvisibleOutlined,
     MenuOutlined,
-    LayoutOutlined,
     SettingOutlined,
     StarOutlined,
-    LockOutlined,
     SearchOutlined,
     CloseOutlined,
+    RightOutlined,
+    DownOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -27,66 +25,66 @@ import {
     Badge,
     Input,
 } from '@/components/ui';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useDeferredValue } from 'react';
 import { useToast } from '@/hooks';
 
-const SECTION_TYPE_LABELS: Record<SectionType, string> = {
-    banner_carousel: '배너 캐러셀',
-    quick_menu: '퀵 메뉴',
-    recommended: '추천 메뉴',
-    new_menu: '신메뉴',
-    event_list: '이벤트 목록',
-    notice: '공지사항',
-};
-
 export function MainScreenManagement() {
-    const { sections, loading, toggleVisibility, moveUp, moveDown, saveConfiguration } = useMainScreens();
     const { recommendedMenus, saveRecommendedMenus, loading: recLoading } = useRecommendedMenus();
-    const { searchProducts } = useProducts({ autoLoad: false });
+    const { products } = useProducts({ autoLoad: true });
     const toast = useToast();
 
     // 추천메뉴 인라인 관리 상태
     const [localMenus, setLocalMenus] = useState<RecommendedMenu[]>([]);
-    const [productsCache, setProductsCache] = useState<Record<string, Product>>({});
-    const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<Product[]>([]);
-    const [isSearching, setIsSearching] = useState(false);
-    const [hasSearched, setHasSearched] = useState(false);
+    const [filterText, setFilterText] = useState('');
+    const deferredFilter = useDeferredValue(filterText);
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+    // id → Product (우측 목록 표시용)
+    const productsMap = useMemo(() => {
+        const map: Record<string, Product> = {};
+        products.forEach((p) => { map[p.id] = p; });
+        return map;
+    }, [products]);
 
     // 추천메뉴 데이터 초기화
     useEffect(() => {
         setLocalMenus([...recommendedMenus]);
-        if (recommendedMenus.length > 0) {
-            const load = async () => {
-                const products = await searchProducts('', 100);
-                const cache: Record<string, Product> = {};
-                products.forEach((p: Product) => { cache[p.id] = p; });
-                setProductsCache(cache);
-            };
-            load();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [recommendedMenus]);
 
-    const handleSearch = async () => {
-        if (!searchQuery.trim()) { setSearchResults([]); return; }
-        setIsSearching(true);
-        try {
-            const products = await searchProducts(searchQuery, 10);
-            setSearchResults(products);
-            setHasSearched(true);
-            const newCache = { ...productsCache };
-            products.forEach((p: Product) => { newCache[p.id] = p; });
-            setProductsCache(newCache);
-        } catch {
-            toast.error('메뉴 검색에 실패했습니다.');
-        } finally {
-            setIsSearching(false);
+    // 카테고리별 상품 그룹핑 + 필터링
+    const groupedProducts = useMemo(() => {
+        const filtered = products.filter((p) =>
+            !deferredFilter || p.name.toLowerCase().includes(deferredFilter.toLowerCase())
+        );
+        const map = new Map<string, Product[]>();
+        filtered.forEach((p) => {
+            const cat = p.mainCategoryName || '기타';
+            if (!map.has(cat)) map.set(cat, []);
+            map.get(cat)!.push(p);
+        });
+        return map;
+    }, [products, deferredFilter]);
+
+    // 필터 입력 시 매칭 카테고리 자동 펼침, 빈 문자열 시 일괄 닫힘
+    useEffect(() => {
+        if (deferredFilter) {
+            setExpandedCategories(new Set(groupedProducts.keys()));
+        } else {
+            setExpandedCategories(new Set());
         }
+    }, [deferredFilter, groupedProducts]);
+
+    const toggleCategory = (cat: string) => {
+        setExpandedCategories((prev) => {
+            const next = new Set(prev);
+            if (next.has(cat)) next.delete(cat);
+            else next.add(cat);
+            return next;
+        });
     };
 
     const handleAdd = (product: Product) => {
-        if (localMenus.find(m => m.productId === product.id)) {
+        if (localMenus.find((m) => m.productId === product.id)) {
             toast.error('이미 추가된 메뉴입니다.');
             return;
         }
@@ -94,7 +92,7 @@ export function MainScreenManagement() {
     };
 
     const handleRemove = (productId: string) => {
-        const updated = localMenus.filter(m => m.productId !== productId);
+        const updated = localMenus.filter((m) => m.productId !== productId);
         setLocalMenus(updated.map((m, idx) => ({ ...m, sortOrder: idx + 1 })));
     };
 
@@ -121,94 +119,11 @@ export function MainScreenManagement() {
         if (!success) toast.error('추천메뉴 저장에 실패했습니다.');
     };
 
-    const addedProductIds = new Set(localMenus.map(m => m.productId));
+    const addedProductIds = new Set(localMenus.map((m) => m.productId));
 
     return (
         <div className="space-y-6">
-            {/* 섹션 순서 관리 */}
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <h2 className="text-lg font-semibold text-txt-main flex items-center gap-2">
-                        <LayoutOutlined style={{ fontSize: 18 }} />
-                        메인화면 섹션 관리
-                    </h2>
-                    <Button size="sm" onClick={saveConfiguration} disabled={loading}>
-                        <SaveOutlined style={{ fontSize: 14, marginRight: 6 }} />
-                        저장
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-txt-muted mb-4">
-                        앱 메인화면에 표시되는 섹션의 순서와 노출 여부를 관리합니다.
-                    </p>
-
-                    <div className="space-y-2">
-                        {sections.map((section, index) => {
-                            const isRecommended = section.type === 'recommended';
-                            return (
-                                <div
-                                    key={section.id}
-                                    className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-                                        isRecommended
-                                            ? 'border-primary/30 bg-primary/5'
-                                            : section.isVisible
-                                                ? 'border-border bg-bg-card'
-                                                : 'border-border bg-bg-hover opacity-60'
-                                    }`}
-                                >
-                                    <MenuOutlined className="text-txt-muted cursor-grab" style={{ fontSize: 16 }} />
-
-                                    <span className={`text-sm font-semibold flex-1 ${isRecommended ? 'text-primary' : 'text-txt-main'}`}>
-                                        {section.title}
-                                    </span>
-
-                                    <Badge variant={isRecommended ? 'info' : 'default'}>
-                                        {SECTION_TYPE_LABELS[section.type]}
-                                    </Badge>
-
-                                    {!isRecommended && (
-                                        <span className="text-[11px] text-txt-muted flex items-center gap-1">
-                                            <LockOutlined /> 연동 예정
-                                        </span>
-                                    )}
-
-                                    <div className="flex gap-1 ml-auto">
-                                        <button
-                                            onClick={() => moveUp(index)}
-                                            disabled={index === 0 || loading}
-                                            className="px-2 py-1 rounded border border-border bg-bg-card text-xs hover:bg-bg-hover disabled:opacity-30 disabled:cursor-not-allowed"
-                                        >
-                                            ▲
-                                        </button>
-                                        <button
-                                            onClick={() => moveDown(index)}
-                                            disabled={index === sections.length - 1 || loading}
-                                            className="px-2 py-1 rounded border border-border bg-bg-card text-xs hover:bg-bg-hover disabled:opacity-30 disabled:cursor-not-allowed"
-                                        >
-                                            ▼
-                                        </button>
-                                    </div>
-
-                                    <button
-                                        onClick={() => toggleVisibility(section.id)}
-                                        disabled={loading}
-                                        className={`px-2 py-1 rounded text-sm cursor-pointer ${
-                                            section.isVisible
-                                                ? 'bg-primary/10 text-primary'
-                                                : 'bg-bg-hover text-txt-muted'
-                                        }`}
-                                        title={section.isVisible ? '숨기기' : '보이기'}
-                                    >
-                                        {section.isVisible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* 추천메뉴 상세 관리 — 인라인 */}
+            {/* 추천메뉴 관리 */}
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                     <h2 className="text-lg font-semibold text-txt-main flex items-center gap-2">
@@ -224,46 +139,64 @@ export function MainScreenManagement() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                        {/* 왼쪽: 검색 영역 (2/5) */}
-                        <div className="lg:col-span-2 flex flex-col lg:border-r border-border lg:pr-6">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+                        {/* 왼쪽: 카테고리별 메뉴 목록 (2/5) */}
+                        <div className="md:col-span-2 flex flex-col md:border-r border-border md:pr-6">
                             <h3 className="text-sm font-bold text-txt-main mb-3 flex items-center gap-2">
-                                <SearchOutlined /> 메뉴 검색 및 추가
+                                <SearchOutlined /> 메뉴 선택
                             </h3>
-                            <div className="flex gap-2 mb-4">
-                                <Input
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="메뉴명 검색"
-                                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                                />
-                                <Button variant="secondary" onClick={handleSearch} disabled={isSearching}>
-                                    검색
-                                </Button>
-                            </div>
+                            <Input
+                                className="mb-3"
+                                value={filterText}
+                                onChange={(e) => setFilterText(e.target.value)}
+                                placeholder="메뉴명으로 필터링"
+                            />
 
-                            <div className="flex-1 overflow-y-auto space-y-2 max-h-[360px]">
-                                {!hasSearched && searchResults.length === 0 && !isSearching && (
+                            <div className="flex-1 overflow-y-auto max-h-[400px] space-y-1">
+                                {groupedProducts.size === 0 && (
                                     <div className="text-center text-txt-muted text-sm py-8">
-                                        메뉴명을 입력하여 검색하세요.
+                                        {filterText ? '검색 결과가 없습니다.' : '등록된 메뉴가 없습니다.'}
                                     </div>
                                 )}
-                                {hasSearched && searchResults.length === 0 && !isSearching && (
-                                    <div className="text-center text-txt-muted text-sm py-8">
-                                        검색 결과가 없습니다.
-                                    </div>
-                                )}
-                                {searchResults.map((product) => {
-                                    const isAdded = addedProductIds.has(product.id);
+                                {Array.from(groupedProducts.entries()).map(([categoryName, categoryProducts]) => {
+                                    const isExpanded = expandedCategories.has(categoryName);
                                     return (
-                                        <div key={product.id} className={`flex items-center justify-between p-3 border border-border rounded-lg ${isAdded ? 'opacity-50' : 'bg-bg-card'}`}>
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <Badge variant="secondary">{product.mainCategoryName}</Badge>
-                                                <span className="font-semibold text-sm truncate">{product.name}</span>
-                                            </div>
-                                            <Button size="sm" variant="outline" onClick={() => handleAdd(product)} disabled={isAdded}>
-                                                {isAdded ? '추가됨' : '추가'}
-                                            </Button>
+                                        <div key={categoryName}>
+                                            <button
+                                                onClick={() => toggleCategory(categoryName)}
+                                                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-bg-hover transition-colors text-left"
+                                            >
+                                                {isExpanded
+                                                    ? <DownOutlined style={{ fontSize: 10 }} className="text-txt-muted" />
+                                                    : <RightOutlined style={{ fontSize: 10 }} className="text-txt-muted" />
+                                                }
+                                                <span className="text-sm font-semibold text-txt-main flex-1">{categoryName}</span>
+                                                <Badge variant="secondary">{categoryProducts.length}</Badge>
+                                            </button>
+                                            {isExpanded && (
+                                                <div className="ml-5 space-y-1 mb-2">
+                                                    {categoryProducts.map((product) => {
+                                                        const isAdded = addedProductIds.has(product.id);
+                                                        return (
+                                                            <div
+                                                                key={product.id}
+                                                                className={`flex items-center justify-between px-3 py-2 rounded-lg border border-border ${isAdded ? 'opacity-50 bg-bg-hover' : 'bg-bg-card'}`}
+                                                            >
+                                                                <span className="text-sm truncate flex-1">{product.name}</span>
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => handleAdd(product)}
+                                                                    disabled={isAdded}
+                                                                    className="shrink-0 ml-2"
+                                                                >
+                                                                    {isAdded ? '추가됨' : '추가'}
+                                                                </Button>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -271,19 +204,19 @@ export function MainScreenManagement() {
                         </div>
 
                         {/* 오른쪽: 지정된 추천 메뉴 목록 (3/5) */}
-                        <div className="lg:col-span-3 flex flex-col">
+                        <div className="md:col-span-3 flex flex-col">
                             <h3 className="text-sm font-bold text-txt-main mb-3 flex items-center gap-2">
                                 <SettingOutlined /> 지정된 추천 메뉴 (순서 설정)
                             </h3>
 
-                            <div className="flex-1 overflow-y-auto space-y-2 max-h-[360px]">
+                            <div className="flex-1 overflow-y-auto space-y-2 max-h-[400px]">
                                 {localMenus.length === 0 ? (
                                     <div className="text-center text-txt-muted text-sm py-12 border border-dashed border-border rounded-lg">
-                                        왼쪽에서 메뉴를 검색하여 추천 메뉴를 추가하세요.
+                                        왼쪽에서 메뉴를 선택하여 추천 메뉴를 추가하세요.
                                     </div>
                                 ) : (
                                     localMenus.map((menu, index) => {
-                                        const product = productsCache[menu.productId];
+                                        const product = productsMap[menu.productId];
                                         return (
                                             <div key={menu.productId} className="flex items-center gap-3 p-3 border border-border rounded-lg bg-bg-card">
                                                 <span className="text-xs font-mono text-txt-muted w-5 text-center">{menu.sortOrder}</span>

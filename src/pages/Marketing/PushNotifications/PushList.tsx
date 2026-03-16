@@ -47,7 +47,7 @@ export const PushList = () => {
             </div>
 
             <Card className="p-4">
-                <div className="max-w-[400px]">
+                <div className="max-w-[500px]">
                     <SearchInput
                         placeholder="캠페인 제목 또는 내용 검색"
                         value={keyword}
