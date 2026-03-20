@@ -55,6 +55,10 @@ export const StaffLinkModal: React.FC<StaffLinkModalProps> = ({
 
   const handleSelect = (staff: StaffAccount) => {
     setSelectedStaff(staff);
+    // 1:1 제약: owner 선택 시 isPrimary는 항상 true
+    if (selectedRole === 'owner') {
+      setIsPrimary(true);
+    }
   };
 
   const handleLink = async () => {
@@ -88,10 +92,15 @@ export const StaffLinkModal: React.FC<StaffLinkModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="직원 연결" size="lg">
       <div className="space-y-4">
-        <p className="text-sm text-txt-muted">
-          <span className="font-medium text-txt-main">{storeName}</span> 매장에 연결할 직원을
-          선택하세요.
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-txt-muted">
+            <span className="font-medium text-txt-main">{storeName}</span> 매장에 연결할 직원을
+            선택하세요.
+          </p>
+          <p className="text-xs text-txt-muted">
+            ℹ️ 각 매장은 정확히 1명의 점주 계정과만 매칭됩니다. (1:1 종속)
+          </p>
+        </div>
 
         {/* 검색 */}
         <div className="mb-4">
@@ -165,7 +174,13 @@ export const StaffLinkModal: React.FC<StaffLinkModalProps> = ({
                         name="role"
                         value={value}
                         checked={selectedRole === value}
-                        onChange={() => setSelectedRole(value)}
+                        onChange={() => {
+                          setSelectedRole(value);
+                          // 1:1 제약: owner 선택 시 isPrimary는 항상 true
+                          if (value === 'owner') {
+                            setIsPrimary(true);
+                          }
+                        }}
                         className="w-4 h-4 text-primary border-border focus:ring-primary"
                       />
                       <span className="text-sm">{label}</span>
@@ -177,18 +192,20 @@ export const StaffLinkModal: React.FC<StaffLinkModalProps> = ({
 
             {selectedRole === 'owner' && (
               <div>
-                <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center gap-2 bg-primary/5 p-3 rounded-lg border border-primary/20">
                   <input
                     type="checkbox"
-                    checked={isPrimary}
-                    onChange={(e) => setIsPrimary(e.target.checked)}
-                    className="w-4 h-4 text-primary border-border rounded focus:ring-primary"
+                    checked={true}
+                    disabled
+                    className="w-4 h-4 text-primary border-border rounded focus:ring-primary cursor-not-allowed"
                   />
-                  <span className="text-sm">주 매장으로 설정</span>
-                </label>
-                <p className="text-xs text-txt-muted mt-1 ml-6">
-                  다점주의 경우 주 매장 설정이 가능합니다.
-                </p>
+                  <div>
+                    <p className="text-sm font-medium text-primary">점주 계정 (주 담당자)</p>
+                    <p className="text-xs text-txt-muted">
+                      각 매장은 1명의 점주와만 매칭됩니다. (1:1 종속)
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
           </div>

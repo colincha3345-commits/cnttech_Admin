@@ -638,12 +638,10 @@ class StoreService {
 
     const amenities: StoreAmenities = {
       hasParking: data.hasParking,
-      parkingCapacity: data.parkingCapacity,
       parkingNote: data.parkingNote,
       hasDineIn: data.hasDineIn,
       seatCapacity: data.seatCapacity,
       hasWifi: data.hasWifi,
-      wifiPassword: data.wifiPassword,
     };
 
     store.amenities = amenities;

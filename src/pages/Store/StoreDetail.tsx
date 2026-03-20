@@ -744,9 +744,6 @@ export const StoreDetail: React.FC = () => {
                         </div>
                         {store.amenities.hasParking && (
                           <div className="space-y-1">
-                            {store.amenities.parkingCapacity && (
-                              <p className="text-sm">주차 가능: <span className="font-medium">{store.amenities.parkingCapacity}대</span></p>
-                            )}
                             {store.amenities.parkingNote && (
                               <p className="text-sm text-txt-muted">{store.amenities.parkingNote}</p>
                             )}
@@ -775,9 +772,6 @@ export const StoreDetail: React.FC = () => {
                             {store.amenities.hasWifi ? '제공' : '미제공'}
                           </Badge>
                         </div>
-                        {store.amenities.hasWifi && store.amenities.wifiPassword && (
-                          <p className="text-sm">비밀번호: <MaskedData value={store.amenities.wifiPassword} /></p>
-                        )}
                       </div>
                     </div>
                   </div>

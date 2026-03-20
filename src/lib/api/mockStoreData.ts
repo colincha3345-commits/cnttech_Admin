@@ -97,12 +97,10 @@ export const mockStores: Store[] = [
     // 매장 편의시설
     amenities: {
       hasParking: true,
-      parkingCapacity: 10,
       parkingNote: '건물 지하주차장 2시간 무료',
       hasDineIn: true,
       seatCapacity: 30,
       hasWifi: true,
-      wifiPassword: 'gangnam2023',
     },
 
     // 연동 코드 정보
@@ -230,7 +228,6 @@ export const mockStores: Store[] = [
       hasDineIn: true,
       seatCapacity: 24,
       hasWifi: true,
-      wifiPassword: 'hongdae123',
     },
     integrationCodes: {
       pos: {
@@ -329,7 +326,6 @@ export const mockStores: Store[] = [
     // 매장 편의시설
     amenities: {
       hasParking: true,
-      parkingCapacity: 5,
       parkingNote: '매장 앞 전용주차 5대',
       hasDineIn: true,
       seatCapacity: 20,
@@ -433,12 +429,10 @@ export const mockStores: Store[] = [
     // 매장 편의시설
     amenities: {
       hasParking: true,
-      parkingCapacity: 8,
       parkingNote: '인근 공영주차장 이용 (1시간 무료 주차권 제공)',
       hasDineIn: true,
       seatCapacity: 28,
       hasWifi: true,
-      wifiPassword: 'dongseongro',
     },
     integrationCodes: {
       pos: {
@@ -535,7 +529,6 @@ export const mockStores: Store[] = [
     // 매장 편의시설
     amenities: {
       hasParking: true,
-      parkingCapacity: 15,
       parkingNote: '건물 지하주차장',
       hasDineIn: true,
       seatCapacity: 40,

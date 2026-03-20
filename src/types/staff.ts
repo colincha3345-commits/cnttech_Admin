@@ -26,7 +26,7 @@ export interface StaffAccount {
 
   // 소속 정보
   teamId?: string;       // 본사 직원인 경우
-  storeId?: string;      // 가맹점 직원인 경우
+  storeId?: string;      // 가맹점 직원인 경우 (1:1 매칭 - 1개 가맹점에만 소속 가능)
 
   // 상태 정보
   status: StaffStatus;

@@ -127,7 +127,6 @@ export interface RegularClosedDay {
 export interface StoreAmenities {
   // 주차
   hasParking: boolean;
-  parkingCapacity?: number; // 주차 가능 대수
   parkingNote?: string; // 주차 관련 안내 (예: "건물 지하주차장 2시간 무료")
 
   // 좌석
@@ -136,7 +135,6 @@ export interface StoreAmenities {
 
   // 와이파이
   hasWifi: boolean;
-  wifiPassword?: string; // 와이파이 비밀번호 (고객용)
 }
 
 // 비정기 휴무
@@ -356,12 +354,17 @@ export interface StoreSummary {
 }
 
 // 매장-직원 연결
+/**
+ * 매장-직원 연결 (1:1 제약)
+ * - 각 가맹점(storeId)은 정확히 1명의 직원(staffId)과만 매칭
+ * - 한 직원은 최대 1개 매장에만 소속 가능
+ */
 export interface StoreStaffLink {
   id: string;
   storeId: string;
   staffId: string;
   role: StoreStaffRole;
-  isPrimary: boolean;
+  isPrimary: boolean;  // 1:1 제약에 의해 항상 true (주 담당자는 필연적으로 유일)
   createdAt: Date;
   createdBy: string;
 }
@@ -449,12 +452,16 @@ export interface StoreFormData {
   operatingHours?: string;
 }
 
-// 매장-직원 연결 폼 데이터
+/**
+ * 매장-직원 연결 폼 데이터 (1:1 제약)
+ * - 한 매장에는 1명의 직원만 연결 가능
+ * - 기존 연결이 있으면 덮어쓰기 전 제거 필요
+ */
 export interface StoreStaffLinkFormData {
   storeId: string;
   staffId: string;
   role: StoreStaffRole;
-  isPrimary?: boolean;
+  isPrimary?: boolean;  // 1:1 제약에 의해 항상 true로 설정됨
 }
 
 // 영업 정보 폼 데이터
@@ -526,12 +533,10 @@ export interface VisibilitySettingsFormData {
 // 편의시설 폼 데이터
 export interface AmenitiesFormData {
   hasParking: boolean;
-  parkingCapacity?: number;
   parkingNote?: string;
   hasDineIn: boolean;
   seatCapacity?: number;
   hasWifi: boolean;
-  wifiPassword?: string;
 }
 
 // ============================================

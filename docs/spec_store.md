@@ -27,11 +27,11 @@
 3. **매장 상세** (`StoreDetail`) — 읽기 전용 정보 표시. 앱 운영 상태(open/preparing/break_time/closed/temporarily_closed) 토글 제공. 하위 편집 페이지 진입점 제공.
 4. **영업정보 수정** (`OperatingInfoEdit`) — 평일/주말/공휴일 영업시간, 요일별 개별 시간, 배달/포장 설정, 예약 설정, 라스트오더 시간 관리.
 5. **휴무일 수정** (`ClosedDayEdit`) — 정기휴무(weekly/monthly_nth/monthly_date)와 비정기휴무(날짜+사유) 관리.
-6. **편의시설 수정** (`AmenitiesEdit`) — 주차(대수, 안내문), 매장식사(좌석수), 와이파이(비밀번호) 설정.
+6. **편의시설 수정** (`AmenitiesEdit`) — 주차(체크 시 고객앱 주차 아이콘 노출·주차 안내문 입력), 매장식사(좌석수), 와이파이(체크 시 고객앱 와이파이 아이콘 노출) 설정.
 7. **결제수단 수정** (`PaymentMethodsEdit`) — 현금/카드/간편결제 허용 여부 관리.
 8. **연동코드 수정** (`IntegrationCodesEdit`) — POS/PG 연동 코드 관리. 일괄 업로드(PG/POS Bulk Upload Modal) 지원.
 9. **노출 설정** (`VisibilitySettingsEditModal`) — 채널별(app/web/kiosk/배민/요기요/쿠팡이츠) 매장 노출 on/off 관리.
-10. **직원 연결** (`StaffLinkModal`) — 매장 소유 점주 계정 검색 연결.
+10. **직원 연결** (`StaffLinkModal`) — 매장 소유 점주 계정 검색 연결. (1:1 종속: 각 매장은 정확히 1명의 점주와만 매칭, 한 점주 계정은 1개 매장에만 소속)
 
 ---
 
@@ -79,7 +79,7 @@
 
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 비고 |
 | :--- | :--- | :---: | :--- |
-| **주차/매장식사/와이파이** | Switch + 하위 Input | Y | ON 시 상세 입력(대수, 좌석수, 비밀번호) 노출이다. |
+| **주차/매장식사/와이파이** | Switch + 하위 Input | Y | 주차 ON → 고객앱 주차 아이콘 노출 + 주차 안내문 입력. 와이파이 ON → 고객앱 와이파이 아이콘 노출 (비밀번호 입력 없음). 매장식사 ON → 좌석수 입력이다. |
 | **채널별 노출 (visibilitySettings)** | Switch × N | Y | app/web/kiosk/배민/요기요/쿠팡이츠 개별 제어이다. |
 | **현금/카드/간편결제** | Switch × N | Y | 결제수단별 허용 여부이다. |
 
@@ -97,14 +97,14 @@
 | **businessNumber** | String | Y | 10자 (숫자) | Unique Constraint 필수이다. |
 | **address** | JSON | Y | - | {zipCode, address, addressDetail, lat, lng} 객체이다. |
 | **ownerInfo** | JSON | Y | - | {name, phone, email} 점주 정보이다. |
-| **businessInfo** | JSON | Y | - | {businessNumber, businessName, representativeName} 사업자 정보이다. |
-| **contractInfo** | JSON | Y | - | {startDate, endDate, status, contractType} 계약 정보이다. |
+| **businessInfo** | JSON | Y | - | {businessNumber, businessName, representativeName} 사업자 정보이다. **슈퍼어드민 상속** |
+| **contractInfo** | JSON | Y | - | {startDate, endDate, status, contractType} 계약 정보이다. **슈퍼어드민 상속** |
 | **bankAccountInfo** | JSON | Y | - | {bankName, accountNumber, accountHolder} 계좌 정보이다. |
 | **operatingInfo** | JSON | Y | - | {appOperatingStatus, weekdayHours, weekendHours, holidayHours, dailyHours, regularClosedDays, irregularClosedDays, deliveryFee, freeDeliveryMinAmount, deliveryFeeByDistance, isTemporarilyClosed, temporaryCloseReason, temporaryCloseStartDate, temporaryCloseEndDate, isDeliveryAvailable, isPickupAvailable, deliverySettings, pickupSettings, isVisible}이다. |
 | **visibilitySettings** | JSON | N | - | {channels: [{channel, isVisible, priority}], isSearchable, showNewBadge, newBadgeEndDate, showEventBadge, eventBadgeText, isRecommended, recommendedOrder} 노출 설정이다. |
-| **amenities** | JSON | N | - | {hasParking, parkingCapacity, hasDineIn, seatCapacity, hasWifi, wifiPassword}이다. |
+| **amenities** | JSON | N | - | {hasParking, parkingNote, hasDineIn, seatCapacity, hasWifi}이다. |
 | **paymentMethods** | JSON | N | - | {isCardEnabled, isCashEnabled, isPointEnabled, simplePayments: [{type(kakaopay/naverpay/tosspay/samsungpay/payco/applepay), isEnabled}]}이다. |
-| **integrationCodes** | JSON | N | - | {pos: {posVendor(okcashbag/kcp/unionpos/okpos/other), posCode, isConnected, lastSyncAt}, sk: {storeCode, fullCode, isEnabled}, pg: {pgVendor(smartro/kcp/nicepay/toss/other), mid, apiKey, isTestMode, isEnabled}, voucherVendor: {vendorName, storeCode, isEnabled}}이다. |
+| **integrationCodes** | JSON | N | - | {pos: {posVendor, posCode, isConnected}, pg: {pgVendor, mid, apiKey, isEnabled}} **포스/PG 연동 정보는 슈퍼어드민 시스템에서 상속**된다. |
 | **deliveryFee** | Integer | Y | 0 이상 | 기본 배달비이다. |
 
 #### API 엔드포인트
@@ -129,6 +129,7 @@
 **[API 및 비즈니스 로직 제약사항]**
 - **상태 변경 API** — 영업중→임시휴업 등은 POS앱 실시간 연동 고려하여 경량 단일 API로 분리한다. WebSocket/SSE Push를 권장한다.
 - **예약 가능 시간 유효성** — `reservationLeadTimeMinutes`가 매장 마감시간을 초과하는 모순을 서버에서 밸리데이션한다.
+- **StaffLink 1:1 제약** — 각 가맹점은 정확히 1명의 점주 계정과만 매칭된다. 한 점주 계정은 1개 가맹점에만 소속 가능하다. 중복 연결 시도 시 API 에러(409 CONFLICT) 반환.
 - **StaffLink 트랜잭션** — 매장 생성 후 점주(Owner) 계정 매핑 및 권한 인서트를 트랜잭션 단위로 완료한다.
 - **operatingInfo PATCH** — JSON 전체 교체 방식(PUT semantics)을 권장한다. 부분 병합 시 JSON 깊이 문제 발생 가능하다.
 
@@ -136,6 +137,25 @@
 - **앱 운영 상태 조회** — 고객앱 매장 목록 조회 시 appOperatingStatus 실시간 반영 필요. Redis에 매장별 운영 상태 캐싱, 변경 시 즉시 갱신(Write-through)한다.
 - **매장 목록 API** — 지역+상태 조합 조회가 빈번하므로 `(region, status)` 복합 인덱스를 생성한다.
 - **POS 연동 테스트** — 외부 API 호출이므로 타임아웃(5초)과 Circuit Breaker를 적용한다.
+
+---
+
+## 3.3. 권한 기반 접근 제어
+
+권한별 규칙은 고정 역할 대신 개별 권한 키(permission key)에 기반한다. 각 사용자는 권한 키를 부여받으면 해당 기능에 접근 및 수정 가능하다.
+
+| 권한 키 | 조회 (Read) | 수정 (Write) | 비고 |
+| :--- | :---: | :---: | :--- |
+| `store:read` | ✅ | ❌ | 매장 정보 조회만 가능. 수정 불가. |
+| `store:write` | ✅ | ✅ | 기본정보, 영업정보, 편의시설, 결제수단 수정 가능. |
+| `store:admin` | ✅ | ✅ | 계약정보, 연동코드, 노출설정 등 전체 관리 가능 (최상위 권한). |
+| 권한 없음 | ❌ | ❌ | 접근 차단 (403 반환). |
+
+**룰 적용 원칙:**
+- 권한은 역할(role)에 종속되지 않으며, 계정별 개별 설정된다.
+- `store:write`는 `store:read` 권한을 포함한다.
+- `store:admin`은 `store:write` 권한을 포함한다.
+- 매장 범위(담당 매장만 vs. 전체 매장)는 `scope: own|all` 필드로 별도 제어된다.
 
 ---
 
@@ -317,8 +337,9 @@ POST /stores/:id/delivery-zones
 
 1. **권역 목록 조회** (`DeliveryZoneList`) — 매장별 배달 가능 권역을 목록으로 조회한다. 매장 필터, 권역 레벨(메인/서브) 필터를 제공한다.
 2. **권역 등록/수정** (`DeliveryZoneEditor`) — 지도(MapView/MapCanvas) 기반으로 배달 가능 영역을 설정한다.
-   - **반경형(radius)** — 중심 좌표 + 반경(km)으로 원형 영역을 지정한다.
    - **다각형(polygon)** — 지도에서 꼭짓점을 클릭하여 다각형 영역을 지정한다.
+   - **원형(circle)** — 중심점과 반지름 직접 드래그로 지정.
+   - **반경(radius)** — 매장 중심 반경 배달료 추가 등 자동 설정 기능.
 3. **서브 권역** — 메인 권역 내 세부 권역(SubZone)을 추가하여 권역별 배달비/최소주문금액을 차등 설정한다.
 
 ---
@@ -361,10 +382,10 @@ POST /stores/:id/delivery-zones
 | **id (PK)** | UUID | Y | 고유 식별자다. |
 | **storeId (FK)** | UUID | Y | 매장 참조다. |
 | **name** | String | Y | 2~50자이다. |
-| **zoneType** | Enum | Y | 'radius', 'polygon'이다. |
+| **zoneType** | Enum | Y | 'polygon', 'circle', 'radius'이다. |
 | **level** | Enum | Y | 'main', 'sub'이다. |
-| **center** | JSON | C(radius) | {lat, lng} 중심 좌표다. |
-| **radiusKm** | Decimal | C(radius) | 0.1 이상이다. |
+| **center** | JSON | C(radius/circle) | {lat, lng} 중심 좌표다. |
+| **radiusKm** | Decimal | C(radius/circle) | 0.1 이상이다. |
 | **coordinates** | JSON | C(polygon) | [{lat, lng}] 꼭짓점 배열이다. |
 | **deliveryFee** | Integer | Y | 배달비(원)이다. |
 | **minOrderAmount** | Integer | N | 최소 주문금액이다. |

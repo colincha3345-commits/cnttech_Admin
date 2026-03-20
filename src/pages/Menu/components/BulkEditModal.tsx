@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { CloseOutlined } from '@ant-design/icons';
 import type { ProductStatus, BulkEditType, BulkEditUpdate } from '@/types/product';
-import { Button } from './Button';
+import { Button } from '@/components/ui';
 
 export interface BulkEditModalProps {
   isOpen: boolean;

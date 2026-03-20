@@ -285,7 +285,7 @@ GET /admin/roles
 ### 1.2 가맹점 직원 관리 (`/staff/franchise`)
 
 1. **직원 목록 조회** — 매장별, 상태별 필터를 적용하여 가맹점 직원 목록을 조회한다.
-2. **초대/수정/마이페이지** — 본사 직원과 동일한 프로세스를 따르되, 소속팀 대신 소속매장을 지정한다.
+2. **초대/수정/마이페이지** — 본사 직원과 동일한 프로세스를 따르되, 소속팀 대신 소속매장을 지정한다. (1:1 종속: 각 매장은 정확히 1명의 점주 계정과만 매칭, 한 계정은 1개 매장에만 소속 가능)
 
 ### 1.3 승인 관리 (`/staff/approvals`)
 
@@ -314,7 +314,7 @@ GET /admin/roles
 | **이메일 (email)** | Input | Y | 이메일 정규식 | 유효성 검증 실패 시 에러 텍스트를 노출한다. |
 | **로그인 ID (loginId)** | Input + Button | Y | 4 ~ 20자, 영문+숫자 | [중복확인] 버튼으로 사용 가능 여부를 체크한다. 수정 모드에서는 ReadOnly다. |
 | **소속팀 (teamId)** | Select | C(본사) | - | 본사 직원 초대 시 필수 선택이다. |
-| **소속매장 (storeId)** | Select | C(가맹점) | - | 가맹점 직원 초대 시 필수 선택이다. |
+| **소속매장 (storeId)** | Select | C(가맹점) | - | 가맹점 직원 초대 시 필수 선택이다. (1:1 제약: 각 직원은 1개 매장에만 소속, 각 매장은 1명의 점주만 연결 가능) |
 | **상태 Badge** | Badge | Y | - | invited=info, pending_approval=warning, active=success, inactive=secondary, rejected=critical 색상이다. |
 | **비밀번호 초기화** | Button | C(수정모드) | - | ConfirmDialog 확인 후 임시 비밀번호를 생성하여 알림한다. |
 | **현재 비밀번호** | Password Input | C(마이페이지) | - | 비밀번호 변경 시 본인 인증 용도다. |
@@ -356,6 +356,8 @@ GET /admin/roles
 | **name** | String | Y | 2 ~ 20자 | 이름이다. |
 | **phone** | String | Y | 11자리 | 하이픈 제거 후 저장한다. |
 | **email** | String | Y | 최대 100자 | 이메일 형식 검증 필수다. |
+| **teamId** | UUID | N | - | 본사 직원인 경우 필수 선택. Foreign Key로 Team을 참조한다. |
+| **storeId** | UUID | N | - | 가맹점 직원인 경우 필수 선택. Foreign Key로 Store를 참조한다. (1:1 제약: 각 매장은 1명의 점주만 소속, Unique 제약 필수) |
 | **status** | Enum | Y | - | 'invited', 'pending_approval', 'active', 'inactive', 'rejected' 5가지 상태다. |
 | **invitationToken** | UUID | N | - | 초대 시 생성, 수락 후 삭제한다. |
 | **invitationExpiresAt** | DateTime | N | - | 초대 후 48시간으로 설정한다. |
@@ -375,6 +377,7 @@ GET /admin/roles
 - **비밀번호 설정 (`POST /api/staff/set-password`)** — 토큰 유효성 검증 후 비밀번호를 설정하고 status를 pending_approval로 전환한다.
 - **비밀번호 초기화 (`POST /api/staff/{id}/reset-password`)** — 임시 비밀번호(8자 랜덤)를 생성하여 반환한다. 감사 로그에 초기화 이력을 기록한다.
 - **비밀번호 변경 (`POST /api/staff/{id}/change-password`)** — 현재 비밀번호 일치 여부를 검증한 후 새 비밀번호로 갱신한다. 복잡도 규칙(8자 이상, 대/소/숫/특수)을 서버에서 재검증한다.
+- **가맹점 직원 초대 API (StoreId 1:1 제약)** — storeId로 이미 활성화된 점주 계정이 존재하면 409 Conflict를 반환한다. 각 매장은 정확히 1명의 점주 계정과만 매칭되며, 기존 직원 교체 시 이전 직원을 먼저 제거해야 한다.
 - **팀 삭제 API** — teamId를 참조하는 직원이 1명 이상일 경우 삭제를 거부하고 409 Conflict를 반환한다.
 
 **[⚠️ 트래픽/성능 검토]**

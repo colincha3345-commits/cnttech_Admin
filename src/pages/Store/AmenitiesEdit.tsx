@@ -8,12 +8,10 @@ import type { AmenitiesFormData } from '@/types/store';
 
 const DEFAULT_FORM_DATA: AmenitiesFormData = {
     hasParking: false,
-    parkingCapacity: undefined,
     parkingNote: '',
     hasDineIn: false,
     seatCapacity: undefined,
     hasWifi: false,
-    wifiPassword: '',
 };
 
 export const AmenitiesEdit: React.FC = () => {
@@ -32,12 +30,10 @@ export const AmenitiesEdit: React.FC = () => {
             const currentData = store.amenities;
             const data: AmenitiesFormData = {
                 hasParking: currentData.hasParking,
-                parkingCapacity: currentData.parkingCapacity,
                 parkingNote: currentData.parkingNote || '',
                 hasDineIn: currentData.hasDineIn,
                 seatCapacity: currentData.seatCapacity,
                 hasWifi: currentData.hasWifi,
-                wifiPassword: currentData.wifiPassword || '',
             };
             setFormData(data);
             initialDataRef.current = JSON.stringify(data);
@@ -113,41 +109,20 @@ export const AmenitiesEdit: React.FC = () => {
                             <span className="font-medium">주차 가능</span>
                         </label>
                         {formData.hasParking && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6">
-                                <div>
-                                    <label className="block text-sm text-txt-muted mb-1">
-                                        주차 가능 대수
-                                    </label>
-                                    <Input
-                                        type="number"
-                                        min={0}
-                                        value={formData.parkingCapacity || ''}
-                                        onChange={(e) =>
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                parkingCapacity: e.target.value
-                                                    ? Number(e.target.value)
-                                                    : undefined,
-                                            }))
-                                        }
-                                        placeholder="10"
-                                    />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm text-txt-muted mb-1">
-                                        주차 안내
-                                    </label>
-                                    <Input
-                                        value={formData.parkingNote || ''}
-                                        onChange={(e) =>
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                parkingNote: e.target.value,
-                                            }))
-                                        }
-                                        placeholder="건물 지하주차장 2시간 무료"
-                                    />
-                                </div>
+                            <div className="pl-6">
+                                <label className="block text-sm text-txt-muted mb-1">
+                                    주차 안내
+                                </label>
+                                <Input
+                                    value={formData.parkingNote || ''}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            parkingNote: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="건물 지하주차장 2시간 무료"
+                                />
                             </div>
                         )}
                     </div>
@@ -206,23 +181,6 @@ export const AmenitiesEdit: React.FC = () => {
                             />
                             <span className="font-medium">와이파이 제공</span>
                         </label>
-                        {formData.hasWifi && (
-                            <div className="pl-6">
-                                <label className="block text-sm text-txt-muted mb-1">
-                                    와이파이 비밀번호 (고객용)
-                                </label>
-                                <Input
-                                    value={formData.wifiPassword || ''}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            wifiPassword: e.target.value,
-                                        }))
-                                    }
-                                    placeholder="wifi1234"
-                                />
-                            </div>
-                        )}
                     </div>
 
                     {/* 버튼 */}

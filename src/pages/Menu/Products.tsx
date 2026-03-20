@@ -39,7 +39,7 @@ import {
   ProductImage,
   ConfirmDialog,
 } from '@/components/ui';
-import { BulkEditModal } from '@/components/ui/BulkEditModal';
+import { BulkEditModal } from './components/BulkEditModal';
 import { ProductForm } from './ProductForm';
 
 import { useProducts, useStores, useOptionGroupList, useToast } from '@/hooks';

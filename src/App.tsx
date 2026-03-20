@@ -11,7 +11,7 @@ const GA4Statistics = lazy(() => import('@/pages/Dashboard').then(m => ({ defaul
 const GA4DeviceDetail = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.GA4DeviceDetail })));
 const GA4FunnelDetail = lazy(() => import('@/pages/Dashboard').then(m => ({ default: m.GA4FunnelDetail })));
 const Settings = lazy(() => import('@/pages/Settings').then(m => ({ default: m.Settings })));
-const PermissionManagement = lazy(() => import('@/pages/permissions').then(m => ({ default: m.PermissionManagement })));
+const PermissionManagement = lazy(() => import('@/pages/Permissions').then(m => ({ default: m.PermissionManagement })));
 const LoginPage = lazy(() => import('@/pages/Login').then(m => ({ default: m.LoginPage })));
 const Categories = lazy(() => import('@/pages/Menu').then(m => ({ default: m.Categories })));
 const Products = lazy(() => import('@/pages/Menu').then(m => ({ default: m.Products })));
@@ -24,7 +24,7 @@ const PointSettings = lazy(() => import('@/pages/Marketing').then(m => ({ defaul
 const PushList = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PushList })));
 const PushNotificationFormPage = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PushNotificationFormPage })));
 const PushDetail = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.PushDetail })));
-const EventManagement = lazy(() => import('@/pages/events').then(m => ({ default: m.EventManagement })));
+const EventManagement = lazy(() => import('@/pages/Events').then(m => ({ default: m.EventManagement })));
 const OrderList = lazy(() => import('@/pages/Orders').then(m => ({ default: m.OrderList })));
 const OrderDetail = lazy(() => import('@/pages/Orders').then(m => ({ default: m.OrderDetail })));
 const AppMemberList = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.AppMemberList })));
