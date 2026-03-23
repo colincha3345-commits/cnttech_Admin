@@ -11,6 +11,7 @@ import {
   useCreateStore,
   useUpdateStore,
   useCheckBusinessNumber,
+  useBranches,
   useToast,
 } from '@/hooks';
 import {
@@ -45,6 +46,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
   const createStore = useCreateStore();
   const updateStore = useUpdateStore();
   const checkBusinessNumber = useCheckBusinessNumber();
+  const { data: branches } = useBranches();
 
   const [isBusinessNumberValid, setIsBusinessNumberValid] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -198,6 +200,10 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
   };
 
   const validateForm = (): boolean => {
+    if (!formData.branchId) {
+      toast.error('소속 지사를 선택해주세요.');
+      return false;
+    }
     if (!formData.name.trim()) {
       toast.error('매장명을 입력해주세요.');
       return false;
@@ -311,6 +317,24 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">기본 정보</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 소속 지사 (필수) */}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-txt-main mb-1">
+                소속 지사 <span className="text-critical">*</span>
+              </label>
+              <select
+                value={formData.branchId}
+                onChange={(e) => handleChange('branchId', '', e.target.value)}
+                className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">지사를 선택하세요</option>
+                {branches?.map((branch) => (
+                  <option key={branch.id} value={branch.id}>
+                    {branch.name} ({branch.region})
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-txt-main mb-1">
                 매장명 <span className="text-critical">*</span>

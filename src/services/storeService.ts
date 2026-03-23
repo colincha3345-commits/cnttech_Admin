@@ -507,6 +507,7 @@ class StoreService {
       freeDeliveryMinAmount: data.freeDeliveryMinAmount,
       isTemporarilyClosed: data.isTemporarilyClosed,
       temporaryCloseReason: data.temporaryCloseReason,
+      temporaryCloseReasonDetail: data.temporaryCloseReasonDetail,
       temporaryCloseStartDate: data.temporaryCloseStartDate
         ? new Date(data.temporaryCloseStartDate)
         : undefined,

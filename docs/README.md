@@ -80,7 +80,6 @@ CNTTECH 관리자 대시보드의 기획 문서 인덱스입니다.
 
 ```
 docs/docx/
-  01_기획명세서/    ← spec 21건 + policy 1건 + 상위기획 2건
   02_디자인/        ← design-system, color-guide
   README.docx       ← 이 문서
   progress.docx     ← 작업 이력

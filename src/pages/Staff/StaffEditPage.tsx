@@ -2,7 +2,7 @@
  * 본사/지사/가맹점 직원 초대/수정 페이지
  * [2026-03-23] 지사(branch) 유형 추가
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { CheckCircleOutlined, CloseCircleOutlined, MailOutlined, ArrowLeftOutlined, LockOutlined } from '@ant-design/icons';
 
@@ -26,6 +26,7 @@ import {
 } from '@/hooks';
 import { useAuth } from '@/stores/authStore';
 import type { StaffType, StaffInviteFormData } from '@/types/staff';
+import { STAFF_TYPE_LABELS } from '@/types/staff';
 
 export const StaffEditPage: React.FC = () => {
     const { type, id } = useParams<{ type: string; id: string }>();
@@ -34,7 +35,9 @@ export const StaffEditPage: React.FC = () => {
     const toast = useToast();
     const { user } = useAuth();
 
-    const staffType = (type === 'franchise' ? 'franchise' : type === 'branch' ? 'branch' : 'headquarters') as StaffType;
+    const initialStaffType = (type === 'franchise' ? 'franchise' : type === 'branch' ? 'branch' : 'headquarters') as StaffType;
+    const [selectedStaffType, setSelectedStaffType] = useState<StaffType>(initialStaffType);
+    const staffType = selectedStaffType;
     const isHeadquarters = staffType === 'headquarters';
     const isBranch = staffType === 'branch';
     const isEditMode = id !== 'new';
@@ -80,6 +83,49 @@ export const StaffEditPage: React.FC = () => {
     const [loginIdChecked, setLoginIdChecked] = useState(false);
     const [loginIdAvailable, setLoginIdAvailable] = useState<boolean | null>(null);
     const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+    const [teamSearch, setTeamSearch] = useState('');
+    const [isTeamDropdownOpen, setIsTeamDropdownOpen] = useState(false);
+    const teamDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [branchSearch, setBranchSearch] = useState('');
+    const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+    const branchDropdownRef = useRef<HTMLDivElement>(null);
+
+    const [storeSearch, setStoreSearch] = useState('');
+    const [isStoreDropdownOpen, setIsStoreDropdownOpen] = useState(false);
+    const storeDropdownRef = useRef<HTMLDivElement>(null);
+
+    // 외부 클릭 시 드롭다운 닫기
+    useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (teamDropdownRef.current && !teamDropdownRef.current.contains(e.target as Node)) {
+          setIsTeamDropdownOpen(false);
+        }
+        if (branchDropdownRef.current && !branchDropdownRef.current.contains(e.target as Node)) {
+          setIsBranchDropdownOpen(false);
+        }
+        if (storeDropdownRef.current && !storeDropdownRef.current.contains(e.target as Node)) {
+          setIsStoreDropdownOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // 계정 유형 변경 시 소속 필드 + 검색 상태 초기화
+    const handleStaffTypeChange = (newType: StaffType) => {
+      setSelectedStaffType(newType);
+      setFormData((prev) => ({
+        ...prev,
+        staffType: newType,
+        teamId: '',
+        branchId: '',
+        storeId: '',
+      }));
+      setTeamSearch('');
+      setBranchSearch('');
+      setStoreSearch('');
+    };
 
     const resetPasswordMutation = useResetPassword();
     const changePasswordMutation = useChangePassword();
@@ -108,6 +154,19 @@ export const StaffEditPage: React.FC = () => {
                 branchId: staff.branchId || '',
                 storeId: staff.storeId || '',
             });
+            // 수정 모드: 검색 필드에 기존 소속명 표시
+            if (staff.teamId && teams) {
+              const team = teams.find((t) => t.id === staff.teamId);
+              if (team) setTeamSearch(team.name);
+            }
+            if (staff.branchId && branches) {
+              const branch = branches.find((b) => b.id === staff.branchId);
+              if (branch) setBranchSearch(branch.name);
+            }
+            if (staff.storeId && stores) {
+              const store = stores.find((s) => s.id === staff.storeId);
+              if (store) setStoreSearch(store.name);
+            }
             setLoginIdChecked(true);
             setLoginIdAvailable(true);
         } else if (!isEditMode) {
@@ -308,18 +367,45 @@ export const StaffEditPage: React.FC = () => {
         <div className="space-y-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-4">
                 <button
-                    onClick={() => navigate(isHeadquarters ? '/staff/headquarters' : '/staff/franchise')}
+                    onClick={() => navigate(
+                      isHeadquarters ? '/staff/headquarters' : isBranch ? '/staff/branch' : '/staff/franchise'
+                    )}
                     className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
                 >
                     <ArrowLeftOutlined />
                 </button>
                 <h1 className="text-2xl font-bold text-txt-main">
-                    {isHeadquarters ? '본사' : '가맹점'} 직원 {isEditMode ? '수정' : '초대'}
+                    {STAFF_TYPE_LABELS[staffType]} 직원 {isEditMode ? '수정' : '초대'}
                 </h1>
             </div>
 
             <Card className="p-6">
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* 계정 유형 선택 (신규 등록 시) */}
+                    {!isEditMode && (
+                      <div>
+                        <label className="block text-sm font-medium text-txt-main mb-3">
+                          계정 유형 <span className="text-critical">*</span>
+                        </label>
+                        <div className="flex gap-2">
+                          {(Object.entries(STAFF_TYPE_LABELS) as [StaffType, string][]).map(([value, label]) => (
+                            <button
+                              key={value}
+                              type="button"
+                              onClick={() => handleStaffTypeChange(value)}
+                              className={`px-5 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
+                                staffType === value
+                                  ? 'bg-primary text-white border-primary'
+                                  : 'bg-bg-card text-txt-secondary border-border hover:border-primary/50'
+                              }`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {/* 초대 안내 메시지 (신규 등록 시) */}
                     {!isEditMode && (
                         <div className="flex items-start gap-3 p-4 bg-primary/5 border border-primary/20 rounded-lg">
@@ -338,53 +424,153 @@ export const StaffEditPage: React.FC = () => {
                           {isHeadquarters ? '소속팀' : isBranch ? '소속지사' : '소속 가맹점'}
                         </Label>
                         {isHeadquarters ? (
-                            <select
-                                value={formData.teamId}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, teamId: e.target.value }))
-                                }
-                                className="w-full h-10 px-4 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            <div className="relative" ref={teamDropdownRef}>
+                              <Input
+                                value={teamSearch}
+                                onChange={(e) => {
+                                  setTeamSearch(e.target.value);
+                                  setIsTeamDropdownOpen(true);
+                                  if (!e.target.value) setFormData((prev) => ({ ...prev, teamId: '' }));
+                                }}
+                                onFocus={() => setIsTeamDropdownOpen(true)}
+                                placeholder="팀명으로 검색"
                                 disabled={isMutating}
-                            >
-                                <option value="">팀 선택</option>
-                                {teams?.map((team) => (
-                                    <option key={team.id} value={team.id}>
-                                        {team.name}
-                                    </option>
-                                ))}
-                            </select>
+                                className="h-10"
+                              />
+                              {formData.teamId && !isTeamDropdownOpen && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <span className="text-sm text-primary font-medium">
+                                    {teams?.find((t) => t.id === formData.teamId)?.name}
+                                  </span>
+                                  <button type="button" onClick={() => { setFormData((prev) => ({ ...prev, teamId: '' })); setTeamSearch(''); }} className="text-xs text-txt-muted hover:text-critical">선택 해제</button>
+                                </div>
+                              )}
+                              {isTeamDropdownOpen && (
+                                <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-bg-card border border-border rounded-lg shadow-lg">
+                                  {teams?.filter((t) => {
+                                    if (!teamSearch.trim()) return true;
+                                    return t.name.toLowerCase().includes(teamSearch.toLowerCase());
+                                  }).map((team) => (
+                                    <button key={team.id} type="button" onClick={() => { setFormData((prev) => ({ ...prev, teamId: team.id })); setTeamSearch(team.name); setIsTeamDropdownOpen(false); }}
+                                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-bg-hover transition-colors ${formData.teamId === team.id ? 'bg-primary/5 text-primary font-medium' : 'text-txt-main'}`}>
+                                      {team.name} <span className="text-txt-muted">({team.memberCount}명)</span>
+                                    </button>
+                                  ))}
+                                  {teams?.filter((t) => !teamSearch.trim() || t.name.toLowerCase().includes(teamSearch.toLowerCase())).length === 0 && (
+                                    <div className="px-4 py-3 text-sm text-txt-muted text-center">검색 결과가 없습니다</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                         ) : isBranch ? (
-                            <select
-                                value={formData.branchId}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, branchId: e.target.value }))
-                                }
-                                className="w-full h-10 px-4 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            <div className="relative" ref={branchDropdownRef}>
+                              <Input
+                                value={branchSearch}
+                                onChange={(e) => {
+                                  setBranchSearch(e.target.value);
+                                  setIsBranchDropdownOpen(true);
+                                  if (!e.target.value) setFormData((prev) => ({ ...prev, branchId: '' }));
+                                }}
+                                onFocus={() => setIsBranchDropdownOpen(true)}
+                                placeholder="지사명 또는 지역으로 검색"
                                 disabled={isMutating}
-                            >
-                                <option value="">지사 선택</option>
-                                {branches?.map((branch) => (
-                                    <option key={branch.id} value={branch.id}>
-                                        {branch.name} ({branch.region})
-                                    </option>
-                                ))}
-                            </select>
+                                className="h-10"
+                              />
+                              {formData.branchId && !isBranchDropdownOpen && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <span className="text-sm text-primary font-medium">
+                                    {branches?.find((b) => b.id === formData.branchId)?.name}
+                                  </span>
+                                  <button type="button" onClick={() => { setFormData((prev) => ({ ...prev, branchId: '' })); setBranchSearch(''); }} className="text-xs text-txt-muted hover:text-critical">선택 해제</button>
+                                </div>
+                              )}
+                              {isBranchDropdownOpen && (
+                                <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-bg-card border border-border rounded-lg shadow-lg">
+                                  {branches?.filter((b) => {
+                                    if (!branchSearch.trim()) return true;
+                                    const q = branchSearch.toLowerCase();
+                                    return b.name.toLowerCase().includes(q) || b.region.toLowerCase().includes(q);
+                                  }).map((branch) => (
+                                    <button key={branch.id} type="button" onClick={() => { setFormData((prev) => ({ ...prev, branchId: branch.id })); setBranchSearch(branch.name); setIsBranchDropdownOpen(false); }}
+                                      className={`w-full px-4 py-2.5 text-left text-sm hover:bg-bg-hover transition-colors ${formData.branchId === branch.id ? 'bg-primary/5 text-primary font-medium' : 'text-txt-main'}`}>
+                                      {branch.name} <span className="text-txt-muted">({branch.region})</span>
+                                    </button>
+                                  ))}
+                                  {branches?.filter((b) => !branchSearch.trim() || b.name.toLowerCase().includes(branchSearch.toLowerCase()) || b.region.toLowerCase().includes(branchSearch.toLowerCase())).length === 0 && (
+                                    <div className="px-4 py-3 text-sm text-txt-muted text-center">검색 결과가 없습니다</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                         ) : (
-                            <select
-                                value={formData.storeId}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, storeId: e.target.value }))
-                                }
-                                className="w-full h-10 px-4 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            <div className="relative" ref={storeDropdownRef}>
+                              <Input
+                                value={storeSearch}
+                                onChange={(e) => {
+                                  setStoreSearch(e.target.value);
+                                  setIsStoreDropdownOpen(true);
+                                  if (!e.target.value) {
+                                    setFormData((prev) => ({ ...prev, storeId: '' }));
+                                  }
+                                }}
+                                onFocus={() => setIsStoreDropdownOpen(true)}
+                                placeholder="가맹점명 또는 지역으로 검색"
                                 disabled={isMutating}
-                            >
-                                <option value="">가맹점 선택</option>
-                                {stores?.map((store) => (
-                                    <option key={store.id} value={store.id}>
-                                        {store.name} ({store.region})
-                                    </option>
-                                ))}
-                            </select>
+                                className="h-10"
+                              />
+                              {/* 선택된 매장 표시 */}
+                              {formData.storeId && !isStoreDropdownOpen && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <span className="text-sm text-primary font-medium">
+                                    {stores?.find((s) => s.id === formData.storeId)?.name}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setFormData((prev) => ({ ...prev, storeId: '' }));
+                                      setStoreSearch('');
+                                    }}
+                                    className="text-xs text-txt-muted hover:text-critical"
+                                  >
+                                    선택 해제
+                                  </button>
+                                </div>
+                              )}
+                              {/* 드롭다운 목록 */}
+                              {isStoreDropdownOpen && (
+                                <div className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-bg-card border border-border rounded-lg shadow-lg">
+                                  {stores
+                                    ?.filter((s) => {
+                                      if (!storeSearch.trim()) return true;
+                                      const q = storeSearch.toLowerCase();
+                                      return s.name.toLowerCase().includes(q) || s.region?.toLowerCase().includes(q);
+                                    })
+                                    .map((store) => (
+                                      <button
+                                        key={store.id}
+                                        type="button"
+                                        onClick={() => {
+                                          setFormData((prev) => ({ ...prev, storeId: store.id }));
+                                          setStoreSearch(store.name);
+                                          setIsStoreDropdownOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-bg-hover transition-colors ${
+                                          formData.storeId === store.id ? 'bg-primary/5 text-primary font-medium' : 'text-txt-main'
+                                        }`}
+                                      >
+                                        {store.name} <span className="text-txt-muted">({store.region})</span>
+                                      </button>
+                                    ))}
+                                  {stores?.filter((s) => {
+                                    if (!storeSearch.trim()) return true;
+                                    const q = storeSearch.toLowerCase();
+                                    return s.name.toLowerCase().includes(q) || s.region?.toLowerCase().includes(q);
+                                  }).length === 0 && (
+                                    <div className="px-4 py-3 text-sm text-txt-muted text-center">검색 결과가 없습니다</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                         )}
                     </div>
 

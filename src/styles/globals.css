@@ -750,6 +750,27 @@ body {
   appearance: textfield;
 }
 
+/* Time/Date Input — 전체 영역 클릭 시 picker 열림 */
+.form-input[type="time"],
+.form-input[type="date"],
+.form-input[type="datetime-local"] {
+  cursor: pointer;
+  position: relative;
+}
+.form-input[type="time"]::-webkit-calendar-picker-indicator,
+.form-input[type="date"]::-webkit-calendar-picker-indicator,
+.form-input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
 /* Error State */
 .form-input.error,
 .form-input[aria-invalid="true"] {

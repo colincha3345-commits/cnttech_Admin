@@ -194,6 +194,7 @@ export interface OperatingInfo {
   // 영업 상태
   isTemporarilyClosed: boolean; // 임시휴업
   temporaryCloseReason?: string;
+  temporaryCloseReasonDetail?: string; // "기타" 선택 시 직접 입력
   temporaryCloseStartDate?: Date;
   temporaryCloseEndDate?: Date;
 
@@ -478,6 +479,7 @@ export interface OperatingInfoFormData {
   freeDeliveryMinAmount?: number;
   isTemporarilyClosed: boolean;
   temporaryCloseReason?: string;
+  temporaryCloseReasonDetail?: string; // "기타" 선택 시 직접 입력
   temporaryCloseStartDate?: string;
   temporaryCloseEndDate?: string;
   isDeliveryAvailable: boolean;
