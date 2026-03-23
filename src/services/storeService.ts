@@ -230,6 +230,7 @@ class StoreService {
       id: `store-${Date.now()}`,
       name: data.name,
       code: data.code,
+      branchId: data.branchId,
       status: data.status || 'pending',
       address: data.address,
       owner: data.owner,

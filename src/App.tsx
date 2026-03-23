@@ -37,6 +37,9 @@ const HeadquartersStaff = lazy(() => import('@/pages/Staff').then(m => ({ defaul
 const FranchiseStaff = lazy(() => import('@/pages/Staff').then(m => ({ default: m.FranchiseStaff })));
 const Teams = lazy(() => import('@/pages/Staff').then(m => ({ default: m.Teams })));
 const TeamEditPage = lazy(() => import('@/pages/Staff').then(m => ({ default: m.TeamEditPage })));
+const Branches = lazy(() => import('@/pages/Staff').then(m => ({ default: m.Branches })));
+const BranchEditPage = lazy(() => import('@/pages/Staff').then(m => ({ default: m.BranchEditPage })));
+const BranchStaff = lazy(() => import('@/pages/Staff').then(m => ({ default: m.BranchStaff })));
 const StaffApprovals = lazy(() => import('@/pages/Staff').then(m => ({ default: m.StaffApprovals })));
 const StaffApprovalDetail = lazy(() => import('@/pages/Staff').then(m => ({ default: m.StaffApprovalDetail })));
 const StaffEditPage = lazy(() => import('@/pages/Staff').then(m => ({ default: m.StaffEditPage })));
@@ -129,6 +132,10 @@ export default function App() {
           <Route path="staff/teams" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><Teams /></ProtectedRoute>} />
           <Route path="staff/teams/:id/edit" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><TeamEditPage /></ProtectedRoute>} />
           <Route path="staff/teams/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><TeamEditPage /></ProtectedRoute>} />
+          <Route path="staff/branches" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><Branches /></ProtectedRoute>} />
+          <Route path="staff/branches/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><BranchEditPage /></ProtectedRoute>} />
+          <Route path="staff/branches/:id/edit" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><BranchEditPage /></ProtectedRoute>} />
+          <Route path="staff/branch" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><BranchStaff /></ProtectedRoute>} />
           <Route path="staff/stores" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><StoreList /></ProtectedRoute>} />
           <Route path="staff/stores/new" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'write' }]}><StoreForm mode="create" /></ProtectedRoute>} />
           <Route path="staff/stores/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'staff', action: 'read' }]}><StoreDetail /></ProtectedRoute>} />

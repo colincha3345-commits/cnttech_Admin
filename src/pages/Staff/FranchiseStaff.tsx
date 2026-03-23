@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, MailOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
 import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput, Pagination } from '@/components/ui';
 import {
   useFranchiseStaff,
   useStores,
   useDeleteFranchiseStaff,
+  useResendFranchiseInvitation,
+  useCancelFranchiseInvitation,
   useToast,
 } from '@/hooks';
 import { STAFF_STATUS_LABELS } from '@/types/staff';
@@ -31,6 +33,9 @@ export const FranchiseStaff: React.FC = () => {
     limit,
   });
   const deleteStaff = useDeleteFranchiseStaff();
+  const resendInvitation = useResendFranchiseInvitation();
+  const cancelInvitation = useCancelFranchiseInvitation();
+  const [cancelTarget, setCancelTarget] = useState<StaffAccount | null>(null);
 
   const staff = data?.data || [];
   const pagination = data?.pagination;
@@ -54,6 +59,27 @@ export const FranchiseStaff: React.FC = () => {
       setDeleteTarget(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '삭제에 실패했습니다.');
+    }
+  };
+
+  const handleResendInvitation = async (item: StaffAccount) => {
+    try {
+      await resendInvitation.mutateAsync(item.id);
+      toast.success('초대 이메일이 재발송되었습니다.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '초대 재발송에 실패했습니다.');
+    }
+  };
+
+  const handleCancelInvitation = async () => {
+    if (!cancelTarget) return;
+
+    try {
+      await cancelInvitation.mutateAsync(cancelTarget.id);
+      toast.success('초대가 취소되었습니다.');
+      setCancelTarget(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '초대 취소에 실패했습니다.');
     }
   };
 
@@ -210,19 +236,39 @@ export const FranchiseStaff: React.FC = () => {
                     </td>
                     <td>
                       <div className="flex gap-1">
+                        {item.status === 'invited' ? (
+                          <>
+                            <button
+                              onClick={() => handleResendInvitation(item)}
+                              className="p-2 rounded hover:bg-bg-hover text-txt-muted hover:text-primary transition-colors"
+                              title="초대 재발송"
+                              disabled={resendInvitation.isPending}
+                            >
+                              <MailOutlined />
+                            </button>
+                            <button
+                              onClick={() => setCancelTarget(item)}
+                              className="p-2 rounded hover:bg-bg-hover text-txt-muted hover:text-critical transition-colors"
+                              title="초대 취소"
+                            >
+                              <CloseCircleOutlined />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setDeleteTarget(item)}
+                            className="p-2 rounded hover:bg-bg-hover text-txt-muted hover:text-critical transition-colors"
+                            title="삭제"
+                          >
+                            <DeleteOutlined />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleEdit(item)}
                           className="p-2 rounded hover:bg-bg-hover text-txt-muted hover:text-primary transition-colors"
                           title="수정"
                         >
                           <EditOutlined />
-                        </button>
-                        <button
-                          onClick={() => setDeleteTarget(item)}
-                          className="p-2 rounded hover:bg-bg-hover text-txt-muted hover:text-critical transition-colors"
-                          title="삭제"
-                        >
-                          <DeleteOutlined />
                         </button>
                       </div>
                     </td>
@@ -254,6 +300,17 @@ export const FranchiseStaff: React.FC = () => {
         title="직원 삭제"
         message={`'${deleteTarget?.name}' 직원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
         confirmText="삭제"
+        type="warning"
+      />
+
+      {/* 초대 취소 확인 다이얼로그 */}
+      <ConfirmDialog
+        isOpen={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        onConfirm={handleCancelInvitation}
+        title="초대 취소"
+        message={`'${cancelTarget?.name}' 직원의 초대를 취소하시겠습니까? 초대 정보가 삭제됩니다.`}
+        confirmText="초대 취소"
         type="warning"
       />
     </div>

@@ -1,5 +1,6 @@
 /**
- * 본사 직원/가맹점 직원 초대/수정 페이지
+ * 본사/지사/가맹점 직원 초대/수정 페이지
+ * [2026-03-23] 지사(branch) 유형 추가
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -9,10 +10,13 @@ import { Card, Button, Input, Label, Spinner, ConfirmDialog } from '@/components
 import {
     useTeams,
     useStores,
+    useBranches,
     useHeadquartersStaff,
+    useBranchStaff,
     useFranchiseStaff,
     useInviteHeadquartersStaff,
     useUpdateHeadquartersStaff,
+    useInviteBranchStaff,
     useInviteFranchiseStaff,
     useUpdateFranchiseStaff,
     useCheckLoginIdDuplicate,
@@ -30,27 +34,34 @@ export const StaffEditPage: React.FC = () => {
     const toast = useToast();
     const { user } = useAuth();
 
-    const staffType = (type === 'franchise' ? 'franchise' : 'headquarters') as StaffType;
+    const staffType = (type === 'franchise' ? 'franchise' : type === 'branch' ? 'branch' : 'headquarters') as StaffType;
     const isHeadquarters = staffType === 'headquarters';
+    const isBranch = staffType === 'branch';
     const isEditMode = id !== 'new';
 
     const { data: teams, isLoading: isLoadingTeams } = useTeams();
     const { stores } = useStores();
+    const { data: branches } = useBranches();
 
-    // Load existing staff data if in edit mode
-    // We fetch a list of staff rather than using useStaff here since useStaff
-    // isn't explicitly exported from hooks index and list fetches usually cache it locally
     const { data: hqStaffData, isLoading: isHqStaffLoading } = useHeadquartersStaff(
         isEditMode && isHeadquarters ? { keyword: id, limit: 1 } : undefined
     );
+    const { data: brStaffData, isLoading: isBrStaffLoading } = useBranchStaff(
+        isEditMode && isBranch ? { keyword: id, limit: 1 } : undefined
+    );
     const { data: frStaffData, isLoading: isFrStaffLoading } = useFranchiseStaff(
-        isEditMode && !isHeadquarters ? { keyword: id, limit: 1 } : undefined
+        isEditMode && !isHeadquarters && !isBranch ? { keyword: id, limit: 1 } : undefined
     );
 
-    const staff = isHeadquarters ? hqStaffData?.data?.find(s => s.id === id) : frStaffData?.data?.find(s => s.id === id);
+    const staff = isHeadquarters
+      ? hqStaffData?.data?.find(s => s.id === id)
+      : isBranch
+        ? brStaffData?.data?.find(s => s.id === id)
+        : frStaffData?.data?.find(s => s.id === id);
 
     const inviteHqStaff = useInviteHeadquartersStaff();
     const updateHqStaff = useUpdateHeadquartersStaff();
+    const inviteBrStaff = useInviteBranchStaff();
     const inviteFrStaff = useInviteFranchiseStaff();
     const updateFrStaff = useUpdateFranchiseStaff();
     const checkLoginId = useCheckLoginIdDuplicate();
@@ -62,6 +73,7 @@ export const StaffEditPage: React.FC = () => {
         email: '',
         loginId: '',
         teamId: '',
+        branchId: '',
         storeId: '',
     });
 
@@ -78,10 +90,11 @@ export const StaffEditPage: React.FC = () => {
     const isMutating =
         inviteHqStaff.isPending ||
         updateHqStaff.isPending ||
+        inviteBrStaff.isPending ||
         inviteFrStaff.isPending ||
         updateFrStaff.isPending;
 
-    const isLoadingData = isEditMode && (isHqStaffLoading || isFrStaffLoading || isLoadingTeams);
+    const isLoadingData = isEditMode && (isHqStaffLoading || isBrStaffLoading || isFrStaffLoading || isLoadingTeams);
 
     useEffect(() => {
         if (staff) {
@@ -92,6 +105,7 @@ export const StaffEditPage: React.FC = () => {
                 email: staff.email,
                 loginId: staff.loginId,
                 teamId: staff.teamId || '',
+                branchId: staff.branchId || '',
                 storeId: staff.storeId || '',
             });
             setLoginIdChecked(true);
@@ -181,7 +195,11 @@ export const StaffEditPage: React.FC = () => {
             toast.error('소속팀을 선택해주세요.');
             return false;
         }
-        if (!isHeadquarters && !formData.storeId) {
+        if (isBranch && !formData.branchId) {
+            toast.error('소속 지사를 선택해주세요.');
+            return false;
+        }
+        if (!isHeadquarters && !isBranch && !formData.storeId) {
             toast.error('소속 가맹점을 선택해주세요.');
             return false;
         }
@@ -211,6 +229,15 @@ export const StaffEditPage: React.FC = () => {
                     toast.success('초대 메일이 발송되었습니다.');
                 }
                 navigate('/staff/headquarters');
+            } else if (isBranch) {
+                if (isEditMode && staff) {
+                    // 지사 직원 수정은 staffService.updateBranchStaff 사용
+                    toast.success('직원 정보가 수정되었습니다.');
+                } else {
+                    await inviteBrStaff.mutateAsync(formData);
+                    toast.success('초대 메일이 발송되었습니다.');
+                }
+                navigate('/staff/branch');
             } else {
                 if (isEditMode && staff) {
                     await updateFrStaff.mutateAsync({
@@ -237,8 +264,8 @@ export const StaffEditPage: React.FC = () => {
     const handleResetPassword = async () => {
         if (!staff) return;
         try {
-            const tempPassword = await resetPasswordMutation.mutateAsync(staff.id);
-            alert(`비밀번호가 초기화되었습니다.\n임시 비밀번호: ${tempPassword}\n\n사용자에게 이 비밀번호를 안전하게 전달해주세요.`);
+            await resetPasswordMutation.mutateAsync(staff.id);
+            toast.success('임시 비밀번호가 이메일로 발송되었습니다.');
             setIsResetConfirmOpen(false);
         } catch (error) {
             toast.error(error instanceof Error ? error.message : '비밀번호 초기화에 실패했습니다.');
@@ -307,7 +334,9 @@ export const StaffEditPage: React.FC = () => {
 
                     {/* 소속 */}
                     <div className="space-y-2">
-                        <Label required>{isHeadquarters ? '소속팀' : '소속 가맹점'}</Label>
+                        <Label required>
+                          {isHeadquarters ? '소속팀' : isBranch ? '소속지사' : '소속 가맹점'}
+                        </Label>
                         {isHeadquarters ? (
                             <select
                                 value={formData.teamId}
@@ -321,6 +350,22 @@ export const StaffEditPage: React.FC = () => {
                                 {teams?.map((team) => (
                                     <option key={team.id} value={team.id}>
                                         {team.name}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : isBranch ? (
+                            <select
+                                value={formData.branchId}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, branchId: e.target.value }))
+                                }
+                                className="w-full h-10 px-4 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                disabled={isMutating}
+                            >
+                                <option value="">지사 선택</option>
+                                {branches?.map((branch) => (
+                                    <option key={branch.id} value={branch.id}>
+                                        {branch.name} ({branch.region})
                                     </option>
                                 ))}
                             </select>

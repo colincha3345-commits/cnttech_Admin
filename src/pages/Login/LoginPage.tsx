@@ -34,11 +34,7 @@ export function LoginPage() {
   const [attemptInfo, setAttemptInfo] = useState<{
     remainingAttempts: number;
     isLocked: boolean;
-    lockedUntil: Date | null;
   } | null>(null);
-
-  // 잠금 해제까지 남은 시간
-  const [lockCountdown, setLockCountdown] = useState<number>(0);
 
   // 이미 인증된 경우 리다이렉트
   useEffect(() => {
@@ -47,28 +43,6 @@ export function LoginPage() {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, location]);
-
-  // 잠금 카운트다운
-  useEffect(() => {
-    if (!attemptInfo?.lockedUntil) {
-      setLockCountdown(0);
-      return;
-    }
-
-    const updateCountdown = () => {
-      const remaining = Math.max(0, attemptInfo.lockedUntil!.getTime() - Date.now());
-      setLockCountdown(Math.ceil(remaining / 1000));
-
-      if (remaining <= 0) {
-        setAttemptInfo((prev) => prev && { ...prev, isLocked: false, lockedUntil: null });
-      }
-    };
-
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-
-    return () => clearInterval(interval);
-  }, [attemptInfo?.lockedUntil]);
 
   // 재발송 쿨다운
   useEffect(() => {
@@ -127,12 +101,6 @@ export function LoginPage() {
     } finally {
       setIsResending(false);
     }
-  };
-
-  const formatCountdown = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // 이메일 인증 화면
@@ -232,14 +200,14 @@ export function LoginPage() {
         </div>
 
         {/* 계정 잠금 경고 */}
-        {attemptInfo?.isLocked && lockCountdown > 0 && (
+        {attemptInfo?.isLocked && (
           <div className="login-error" role="alert">
             <div className="flex items-center gap-2">
               <span className="text-lg">🔒</span>
               <div>
-                <p className="font-medium">계정이 일시적으로 잠겼습니다</p>
+                <p className="font-medium">계정이 잠겼습니다</p>
                 <p className="text-xs mt-1">
-                  {formatCountdown(lockCountdown)} 후에 다시 시도해주세요
+                  관리자에게 비밀번호 재발급을 요청하세요.
                 </p>
               </div>
             </div>

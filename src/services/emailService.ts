@@ -233,4 +233,28 @@ export const emailService = {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
   },
+
+  /**
+   * 임시 비밀번호 발송 (콘솔 시뮬레이션)
+   * [2026-03-23] 신규 추가: 관리자 비밀번호 재발급 시 이메일 발송
+   */
+  sendTempPasswordEmail(params: { to: string; name: string; tempPassword: string }): void {
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📧 [임시 비밀번호 발송]');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`   받는 사람: ${params.to}`);
+    console.log(`   이름: ${params.name}`);
+    console.log('');
+    console.log('   [메일 내용 미리보기]');
+    console.log('   ─────────────────────────────────────────────');
+    console.log(`   안녕하세요, ${params.name}님!`);
+    console.log('');
+    console.log('   비밀번호가 초기화되었습니다.');
+    console.log(`   임시 비밀번호: ${params.tempPassword}`);
+    console.log('');
+    console.log('   ※ 로그인 후 반드시 비밀번호를 변경해주세요.');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+  },
 };

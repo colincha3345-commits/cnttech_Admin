@@ -124,6 +124,9 @@ export interface Product {
   applyToAll: boolean;
   storeIds: string[];
 
+  // 메뉴 노출 범위 [2026-03-23 추가]
+  menuVisibility: MenuVisibility;
+
   // 상품코드 (서비스 내 고유 식별 코드)
   productCode?: string;
 
@@ -198,6 +201,9 @@ export interface ProductFormData {
   // 가맹점
   applyToAll: boolean;
   storeIds: string[];
+
+  // 메뉴 노출 범위
+  menuVisibility: MenuVisibility;
 
   // 상품코드
   productCode?: string;
@@ -404,3 +410,12 @@ export interface CalculatedItemPrice {
   priceType: OptionPriceType;
   displayText: string;       // 표시 텍스트 (예: "+3,000원", "무료")
 }
+
+// 메뉴 노출 범위 [2026-03-23 추가]
+export type MenuVisibility = 'all' | 'hq_branch' | 'branch_franchise';
+
+export const MENU_VISIBILITY_LABELS: Record<MenuVisibility, string> = {
+  all: '전체 (본사+지사+가맹점)',
+  hq_branch: '본사+지사',
+  branch_franchise: '지사+가맹점',
+};

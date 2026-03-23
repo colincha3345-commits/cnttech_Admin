@@ -68,11 +68,11 @@
 
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
 | :--- | :--- | :---: | :--- | :--- |
-| **배달 가능 (delivery.isAvailable)** | Switch | Y | Boolean | 배달 설정 섹션 토글이다. |
+| **배달 가능 (delivery.isAvailable)** | Switch | Y | Boolean | 배달 설정 섹션 토글이다. **배달/포장 중 최소 1개는 반드시 ON 상태여야 한다.** 둘 다 OFF 시도 시 차단. |
 | **배달 가능시간** | TimePicker | C(배달시) | HH:mm | 시작/종료 시간이다. |
 | **배달 최소주문금액** | Number Input | C(배달시) | 0 이상 | 원 단위이다. |
 | **배달비 설정** | Dynamic List | Y | 숫자(원) | 거리별/금액별 배달비 추가/삭제 가능한 UI이다. |
-| **포장 가능 (pickup.isAvailable)** | Switch | Y | Boolean | 포장 설정 섹션 토글이다. |
+| **포장 가능 (pickup.isAvailable)** | Switch | Y | Boolean | 포장 설정 섹션 토글이다. **배달/포장 중 최소 1개는 반드시 ON 상태여야 한다.** 둘 다 OFF 시도 시 차단. |
 | **예약 기능 (reservationAvailable)** | Switch + Number | N | 분 단위 | ON 시 '현재 시간 + N분부터' 입력이다. |
 
 #### 편의시설 / 노출 / 결제수단
@@ -132,6 +132,7 @@
 - **StaffLink 1:1 제약** — 각 가맹점은 정확히 1명의 점주 계정과만 매칭된다. 한 점주 계정은 1개 가맹점에만 소속 가능하다. 중복 연결 시도 시 API 에러(409 CONFLICT) 반환.
 - **StaffLink 트랜잭션** — 매장 생성 후 점주(Owner) 계정 매핑 및 권한 인서트를 트랜잭션 단위로 완료한다.
 - **operatingInfo PATCH** — JSON 전체 교체 방식(PUT semantics)을 권장한다. 부분 병합 시 JSON 깊이 문제 발생 가능하다.
+- **배달/포장 최소 1개 필수** — `isDeliveryAvailable`과 `isPickupAvailable`이 동시에 false인 요청은 서버에서 400 Bad Request 반환한다. 프론트엔드에서도 토글 시점 + submit 시점 이중 검증한다.
 
 **[⚠️ 트래픽/성능 검토]**
 - **앱 운영 상태 조회** — 고객앱 매장 목록 조회 시 appOperatingStatus 실시간 반영 필요. Redis에 매장별 운영 상태 캐싱, 변경 시 즉시 갱신(Write-through)한다.

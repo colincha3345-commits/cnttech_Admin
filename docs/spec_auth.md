@@ -40,7 +40,7 @@
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
 | :--- | :--- | :---: | :--- | :--- |
 | **이메일 (email)** | Input | Y | 이메일 형식 | 로그인 이메일이다. |
-| **비밀번호 (password)** | Input (password) | Y | 6자 이상 | 비밀번호 입력이다. |
+| **비밀번호 (password)** | Input (password) | Y | 8자 이상 | 비밀번호 입력이다. |
 | **OTP 코드** | OTPInput (6자리) | C(MFA) | 숫자 6자리 | 이메일로 발송된 인증 코드다. |
 | **잔여 시도 횟수** | Text | - | - | 로그인 실패 시 표시다. |
 | **잠금 카운트다운** | Text | - | 초 단위 | 계정 잠금 시 해제 남은 시간이다. |
@@ -64,7 +64,7 @@
 | 데이터베이스 필드 | 데이터 타입 | 필수 여부 | 글자수 / 제약조건 | 비고 (API 설계) |
 | :--- | :--- | :---: | :--- | :--- |
 | **email** | String | Y | 이메일 형식 | 로그인 이메일이다. |
-| **password** | String | Y | 6자 이상 | 해시 비교이다. |
+| **password** | String | Y | 8자 이상 | 해시 비교이다. |
 | **loginAttempts** | Integer | Y | 0 이상 | 연속 실패 횟수다. |
 | **lockedUntil** | Timestamp | N | - | 잠금 해제 시각이다. |
 | **mfaRequired** | Boolean | Y | - | 2차 인증 필요 여부다. |
@@ -79,12 +79,11 @@
 | **isUsed** | Boolean | Y | - | 사용 완료 여부다. |
 
 **[API 및 비즈니스 로직 제약사항]**
-- 로그인 실패 5회 초과 시 계정을 15분간 잠금한다. 잠금 해제는 시간 경과 또는 관리자 수동 해제다.
+- 로그인 실패 5회 초과 시 계정을 영구 잠금한다. 잠금 해제는 관리자 비밀번호 재발급(이메일 임시비번 발송)으로만 가능하다.
 - MFA OTP는 이메일로 발송하며 유효시간 5분이다. 재발송 쿨다운은 60초다.
-- 초대 토큰은 발급 후 72시간 유효하며, 1회 사용 후 무효화된다.
-- 비밀번호 정책: 최소 6자 이상. 대소문자+숫자+특수문자 조합 기반 강도 판정(weak/medium/strong)이다.
+- 초대 토큰은 발급 후 48시간 유효하며, 1회 사용 후 무효화된다.
+- 비밀번호 정책: 최소 8자 이상. 대소문자+숫자+특수문자 조합 기반 강도 판정(weak/medium/strong)이다.
 - 인증 성공 시 JWT 토큰을 발급하며, 세션 타임아웃은 30분이다.
-- `rememberMe` 옵션 시 장기 세션 유지를 허용한다.
 - AuthUser에는 `staffType`(headquarters/franchise) 필드가 포함된다.
 - AuthErrorCode 확장: `ACCOUNT_INVITED`(초대됨, 비밀번호 미설정), `ACCOUNT_REJECTED`(승인 거절), `INVITATION_EXPIRED`(초대 만료), `INVITATION_NOT_FOUND`(유효하지 않은 초대) 추가.
 - AccountPolicy: `maxInactiveDays`(30일), `sessionConcurrencyLimit`(1), `maxLoginAttempts`(5), `lockoutDurationMinutes`(15) 기본값 적용.
@@ -115,7 +114,7 @@
 | 1 | 초대 이메일 링크 클릭 → `/invitation/accept?token=xxx` | `GET /api/auth/invitation?token=xxx` 호출 | 토큰 유효성 검증 |
 | 2 | 유효 시 비밀번호 설정 폼 표시 | 비밀번호 + 확인 필드 렌더링 | 강도 표시기 초기 상태 |
 | 3 | 비밀번호 입력 (8자 이상, 대/소/숫/특수) | 실시간 강도 판정 → "강함" 표시 | 확인 필드 일치 검증 |
-| 4 | 설정 완료 클릭 | `POST /api/auth/set-password` 호출. status→pending_approval | "계정이 활성화되었습니다" + 로그인 페이지 이동 |
+| 4 | 설정 완료 클릭 | `POST /api/auth/set-password` 호출. status→pending_approval | "비밀번호가 설정되었습니다. 관리자 승인 후 로그인 가능합니다." + 로그인 페이지 이동 |
 
 ---
 
@@ -125,15 +124,15 @@
 
 ```
 조건: loginAttempts >= maxLoginAttempts(5)
-처리: lockedUntil = now() + lockoutDurationMinutes(15분)
-해제: (1) 시간 경과 자동 해제 (2) 관리자 수동 해제 API
-저장소: Redis key="login_attempts:{email}", TTL=30분
-초기화: 로그인 성공 시 loginAttempts=0, lockedUntil=null
+처리: 영구 잠금 (자동 해제 없음)
+해제: 관리자가 비밀번호 재발급 시 잠금 해제 (POST /api/staff/{id}/reset-password)
+저장소: Redis key="login_attempts:{email}"
+초기화: 관리자 비밀번호 재발급 시 loginAttempts=0
 ```
 
 **프론트엔드 분기:**
 - `loginAttempts < 5`: 잔여 횟수 텍스트 `"N회 남음"`
-- `lockedUntil > now()`: 카운트다운 타이머 표시, 로그인 버튼 비활성화
+- `loginAttempts >= 5`: "계정이 잠겼습니다. 관리자에게 비밀번호 재발급을 요청하세요." 고정 메시지, 로그인 버튼 비활성화
 
 ### 4.2. 세션 동시접속 제한 정책
 
@@ -147,8 +146,8 @@ sessionConcurrencyLimit = 1
 
 ```
 Access Token: TTL=15분, 슬라이딩 윈도우
-Refresh Token: TTL=7일 (rememberMe=true 시 30일)
-초대 토큰: TTL=72시간, 1회 사용 후 isUsed=true로 무효화
+Refresh Token: TTL=7일
+초대 토큰: TTL=48시간, 1회 사용 후 isUsed=true로 무효화
 MFA OTP: TTL=5분, 재발송 쿨다운=60초
 ```
 
@@ -198,54 +197,137 @@ POST /admin/auth/logout
 ```
 **Response** `200 OK`
 
-### 5-4. 관리자 계정 목록 조회
+### 5-4. 직원 목록 조회
 ```
-GET /admin/users
+GET /api/staff
 ```
 **Query Parameters**
-- `roleId` (string, N)
-- `status` (string, N) - `active` | `inactive`
+- `staffType` (string, N) - `headquarters` | `franchise`
+- `status` (string, N) - `invited` | `pending_approval` | `active` | `inactive` | `rejected`
+- `teamId` (string, N) — 본사 직원 필터
+- `storeId` (string, N) — 가맹점 직원 필터
+- `keyword` (string, N) — 이름/이메일/로그인ID 검색
 - `page`, `limit`
 
 **Response** `200 OK`
 ```json
 {
-  "data": [AdminUser],
+  "data": [StaffAccount],
   "pagination": { "page": 1, "limit": 20, "total": 10, "totalPages": 1 }
 }
 ```
 
-### 5-5. 관리자 계정 등록
+### 5-5. 직원 초대 (계정 등록)
 ```
-POST /admin/users
+POST /api/staff/invite
 ```
 **Request Body**
 ```json
 {
-  "email": "newadmin@cntt.co.kr",
+  "staffType": "headquarters",
   "name": "홍길동",
-  "department": "운영팀",
-  "roleIds": ["role-1"]
+  "phone": "01012345678",
+  "email": "hong@cntt.co.kr",
+  "loginId": "honggd",
+  "teamId": "team-1"
 }
 ```
-**Response** `201 Created`
+**Response** `201 Created` — 초대 이메일 발송, status=invited
 
-### 5-6. 역할(Role) 목록 조회
+### 5-6. 로그인ID 중복 확인
 ```
-GET /admin/roles
+GET /api/staff/check-loginid?id={loginId}
 ```
 **Response** `200 OK`
 ```json
 {
-  "data": [
-    {
-      "id": "role-1",
-      "name": "최고 관리자",
-      "permissions": ["all"]
-    }
-  ]
+  "data": { "isDuplicate": false }
 }
 ```
+
+### 5-7. 직원 상세 조회
+```
+GET /api/staff/:id
+```
+**Response** `200 OK`
+```json
+{
+  "data": StaffAccount
+}
+```
+
+### 5-8. 직원 정보 수정
+```
+PATCH /api/staff/:id
+```
+**Request Body** — StaffAccountUpdateData (name, phone, email, teamId, storeId)
+**Response** `200 OK`
+
+### 5-9. 직원 승인/반려
+```
+PATCH /api/staff/:id/approve
+PATCH /api/staff/:id/reject
+```
+**Request Body** (반려 시)
+```json
+{
+  "reason": "반려 사유"
+}
+```
+**Response** `200 OK`
+
+### 5-10. 초대 재발송
+```
+POST /api/staff/:id/resend-invitation
+```
+**조건** — status=invited인 직원만 가능
+**Response** `200 OK` — 새 토큰 생성(48시간), 초대 이메일 재발송
+
+### 5-11. 초대 취소
+```
+DELETE /api/staff/:id/cancel-invitation
+```
+**조건** — status=invited인 직원만 가능
+**Response** `200 OK` — 직원 레코드 삭제, 감사 로그 기록
+
+### 5-12. 비밀번호 초기화
+```
+POST /api/staff/:id/reset-password
+```
+**Response** `200 OK` — 임시 비밀번호 이메일 발송, 로그인 잠금 해제, 감사 로그 기록
+
+### 5-13. 비밀번호 변경 (마이페이지)
+```
+POST /api/staff/:id/change-password
+```
+**Request Body**
+```json
+{
+  "currentPassword": "...",
+  "newPassword": "...",
+  "confirmPassword": "..."
+}
+```
+**Response** `200 OK`
+
+### 5-14. 팀 목록 조회
+```
+GET /api/staff/teams
+```
+**Response** `200 OK`
+```json
+{
+  "data": [Team]
+}
+```
+
+### 5-15. 팀 등록/수정/삭제
+```
+POST /api/staff/teams
+PATCH /api/staff/teams/:id
+DELETE /api/staff/teams/:id
+```
+**삭제 제약** — 소속 직원이 1명 이상이면 409 Conflict 반환
 
 ---
 
@@ -279,7 +361,8 @@ GET /admin/roles
 
 1. **직원 목록 조회** — 팀별, 상태별 필터를 적용하여 본사 직원 목록을 조회한다. 상태 Badge(초대됨=info, 승인대기=warning, 활성=success, 비활성=secondary, 거절=critical)를 표출한다.
 2. **직원 초대** — [초대] 버튼 클릭 시 등록 페이지(`/staff/edit/headquarters/new`)로 이동한다. 이름, 연락처, 이메일, 로그인ID, 소속팀을 입력하고, 로그인ID 중복 확인 후 초대한다.
-3. **직원 상세/수정** — 목록 행 클릭 시 상세 페이지(`/staff/edit/headquarters/:id`)로 이동한다. 기본정보를 수정하거나 비밀번호를 초기화한다.
+3. **초대 재발송/취소** — invited 상태 행에서 [재초대] 클릭 시 새 토큰 생성 후 이메일 재발송한다. [초대 취소] 클릭 시 확인 다이얼로그 후 레코드를 삭제하고 목록으로 복귀한다.
+4. **직원 상세/수정** — 목록 행 클릭 시 상세 페이지(`/staff/edit/headquarters/:id`)로 이동한다. 기본정보를 수정하거나 비밀번호를 초기화(이메일 임시비번 발송)한다.
 4. **마이페이지** — 로그인한 사용자가 자신의 상세 페이지에 진입 시 비밀번호 변경 섹션이 추가로 노출된다.
 
 ### 1.2 가맹점 직원 관리 (`/staff/franchise`)
@@ -375,7 +458,7 @@ GET /admin/roles
 **[API 및 비즈니스 로직 제약사항]**
 - **초대 API (`POST /api/staff/invite`)** — 초대 토큰(UUID)을 생성하고 초대 이메일을 발송한다. 토큰 만료 시간은 48시간이다.
 - **비밀번호 설정 (`POST /api/staff/set-password`)** — 토큰 유효성 검증 후 비밀번호를 설정하고 status를 pending_approval로 전환한다.
-- **비밀번호 초기화 (`POST /api/staff/{id}/reset-password`)** — 임시 비밀번호(8자 랜덤)를 생성하여 반환한다. 감사 로그에 초기화 이력을 기록한다.
+- **비밀번호 초기화 (`POST /api/staff/{id}/reset-password`)** — 임시 비밀번호(8자 랜덤)를 생성하여 이메일로 발송한다. 로그인 잠금이 있는 경우 해제한다. 감사 로그에 초기화 이력을 기록한다.
 - **비밀번호 변경 (`POST /api/staff/{id}/change-password`)** — 현재 비밀번호 일치 여부를 검증한 후 새 비밀번호로 갱신한다. 복잡도 규칙(8자 이상, 대/소/숫/특수)을 서버에서 재검증한다.
 - **가맹점 직원 초대 API (StoreId 1:1 제약)** — storeId로 이미 활성화된 점주 계정이 존재하면 409 Conflict를 반환한다. 각 매장은 정확히 1명의 점주 계정과만 매칭되며, 기존 직원 교체 시 이전 직원을 먼저 제거해야 한다.
 - **팀 삭제 API** — teamId를 참조하는 직원이 1명 이상일 경우 삭제를 거부하고 409 Conflict를 반환한다.

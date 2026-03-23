@@ -1,7 +1,10 @@
 export { HeadquartersStaff } from './HeadquartersStaff';
 export { FranchiseStaff } from './FranchiseStaff';
+export { BranchStaff } from './BranchStaff';
 export { StaffEditPage } from './StaffEditPage';
 export { Teams } from './Teams';
 export { TeamEditPage } from './TeamEditPage';
+export { Branches } from './Branches';
+export { BranchEditPage } from './BranchEditPage';
 export { StaffApprovals } from './StaffApprovals';
 export { StaffApprovalDetail } from './StaffApprovalDetail';

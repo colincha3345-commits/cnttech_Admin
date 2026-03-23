@@ -1,9 +1,10 @@
 /**
- * 본사 및 가맹점 직원 계정 관련 타입 정의
+ * 본사, 지사 및 가맹점 직원 계정 관련 타입 정의
+ * [2026-03-23] 'branch'(지사) 유형 추가
  */
 
 // 직원 유형
-export type StaffType = 'headquarters' | 'franchise';
+export type StaffType = 'headquarters' | 'branch' | 'franchise';
 
 // 직원 상태 (초대 기반 워크플로우)
 export type StaffStatus =
@@ -26,6 +27,7 @@ export interface StaffAccount {
 
   // 소속 정보
   teamId?: string;       // 본사 직원인 경우
+  branchId?: string;     // 지사 직원인 경우 (소속 지사)
   storeId?: string;      // 가맹점 직원인 경우 (1:1 매칭 - 1개 가맹점에만 소속 가능)
 
   // 상태 정보
@@ -72,6 +74,7 @@ export interface StaffInviteFormData {
   email: string;
   loginId: string;
   teamId?: string;
+  branchId?: string;
   storeId?: string;
 }
 
@@ -81,6 +84,7 @@ export interface StaffAccountUpdateData {
   phone?: string;
   email?: string;
   teamId?: string;
+  branchId?: string;
   storeId?: string;
   status?: StaffStatus;
 }
@@ -122,6 +126,7 @@ export interface TeamFormData {
 // 직원 유형 라벨
 export const STAFF_TYPE_LABELS: Record<StaffType, string> = {
   headquarters: '본사',
+  branch: '지사',
   franchise: '가맹점',
 };
 

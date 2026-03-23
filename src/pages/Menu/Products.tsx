@@ -112,6 +112,7 @@ const getDefaultFormData = (displayOrder: number = 1): ProductFormData => ({
   status: 'active',
   applyToAll: true,
   storeIds: [],
+  menuVisibility: 'all',
   productCode: '',
   posDisplayName: '',
   posColor: '',
@@ -242,6 +243,7 @@ export function Products() {
       salesEndDate: product.salesEndDate,
       applyToAll: product.applyToAll,
       storeIds: product.storeIds,
+      menuVisibility: product.menuVisibility || 'all',
       productCode: product.productCode || '',
       posCode: product.posCode,
       posDisplayName: product.posDisplayName || '',
@@ -412,6 +414,7 @@ export function Products() {
       status: 'soldout', // 복사본은 기본적으로 품절
       applyToAll: product.applyToAll,
       storeIds: product.storeIds,
+      menuVisibility: product.menuVisibility || 'all',
       productCode: undefined, // 상품코드는 중복 방지를 위해 제거
       posCode: undefined, // 포스 코드는 중복 방지를 위해 제거
       allowCoupon: product.allowCoupon,

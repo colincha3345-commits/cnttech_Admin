@@ -135,3 +135,18 @@ export function useResendInvitation() {
     },
   });
 }
+
+/**
+ * 초대 취소
+ */
+export function useCancelInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (staffId: string) => staffService.cancelInvitation(staffId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['headquarters-staff'] });
+      queryClient.invalidateQueries({ queryKey: ['franchise-staff'] });
+    },
+  });
+}

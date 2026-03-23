@@ -8,6 +8,7 @@ import {
   mockFranchiseStaff,
 } from '@/lib/api/mockStaffData';
 import { emailService } from './emailService';
+import { authService } from './authService';
 import { auditService } from './auditService';
 import { useAuthStore } from '@/stores/authStore';
 import type {
@@ -51,6 +52,7 @@ const INVITATION_EXPIRY_HOURS = 48;
 class StaffService {
   private teams: Team[] = [...mockTeams];
   private headquarters: StaffAccount[] = [...mockHeadquartersStaff];
+  private branch: StaffAccount[] = []; // 지사 직원 [2026-03-23 추가]
   private franchise: StaffAccount[] = [...mockFranchiseStaff];
   private staffPasswords: Map<string, StaffAuthRecord> = new Map();
 
@@ -239,6 +241,7 @@ class StaffService {
     await this.delay();
     return (
       this.headquarters.find((s) => s.id === id) ||
+      this.branch.find((s) => s.id === id) ||
       this.franchise.find((s) => s.id === id) ||
       null
     );
@@ -386,6 +389,146 @@ class StaffService {
     auditService.log({
       action: 'USER_DELETED',
       resource: 'staff:hq',
+      userId: useAuthStore.getState().user?.id || 'system',
+      details: { targetStaffId: id },
+    });
+  }
+
+  // ============================================
+  // 지사 직원 관리 [2026-03-23 추가]
+  // ============================================
+
+  /**
+   * 지사 직원 목록 조회
+   */
+  async getBranchStaff(params?: {
+    branchId?: string;
+    status?: StaffStatus;
+    keyword?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<{ data: StaffAccount[]; pagination: Pagination }> {
+    await this.delay();
+
+    const { branchId, status, keyword = '', page = 1, limit = 10 } = params || {};
+    let result = [...this.branch];
+
+    if (branchId) result = result.filter((s) => s.branchId === branchId);
+    if (status) result = result.filter((s) => s.status === status);
+    if (keyword) {
+      const lk = keyword.toLowerCase();
+      result = result.filter((s) => s.name.toLowerCase().includes(lk) || s.loginId.toLowerCase().includes(lk));
+    }
+
+    result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const total = result.length;
+    const startIndex = (page - 1) * limit;
+
+    return {
+      data: result.slice(startIndex, startIndex + limit),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  /**
+   * 지사 직원 초대
+   */
+  async inviteBranchStaff(data: StaffInviteFormData): Promise<StaffAccount> {
+    await this.delay();
+
+    const isDuplicate = await this.checkLoginIdDuplicate(data.loginId);
+    if (isDuplicate) throw new Error('이미 사용 중인 아이디입니다.');
+
+    const emailExists = [...this.headquarters, ...this.branch, ...this.franchise].some(
+      (s) => s.email.toLowerCase() === data.email.toLowerCase()
+    );
+    if (emailExists) throw new Error('이미 사용 중인 이메일입니다.');
+
+    if (!data.branchId) throw new Error('소속 지사를 선택해주세요.');
+
+    const invitationToken = generateUUID();
+    const invitationExpiresAt = new Date(Date.now() + INVITATION_EXPIRY_HOURS * 60 * 60 * 1000);
+
+    const newStaff: StaffAccount = {
+      id: `br-staff-${Date.now()}`,
+      staffType: 'branch',
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      loginId: data.loginId,
+      branchId: data.branchId,
+      status: 'invited',
+      lastLoginAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: 'admin',
+      invitationToken,
+      invitationExpiresAt,
+      invitedAt: new Date(),
+      mfaEnabled: true,
+    };
+
+    this.branch.unshift(newStaff);
+
+    auditService.log({
+      action: 'USER_CREATED',
+      resource: 'staff:branch',
+      userId: useAuthStore.getState().user?.id || 'system',
+      details: { targetLoginId: data.loginId, email: data.email, branchId: data.branchId },
+    });
+
+    emailService.sendInvitationEmail({
+      to: data.email,
+      name: data.name,
+      invitationLink: this.generateInvitationLink(invitationToken),
+      expiresAt: invitationExpiresAt,
+    });
+
+    return newStaff;
+  }
+
+  /**
+   * 지사 직원 수정
+   */
+  async updateBranchStaff(id: string, data: StaffAccountUpdateData): Promise<StaffAccount> {
+    await this.delay();
+
+    const staff = this.branch.find((s) => s.id === id);
+    if (!staff) throw new Error('직원을 찾을 수 없습니다.');
+
+    if (data.name) staff.name = data.name;
+    if (data.phone) staff.phone = data.phone;
+    if (data.email) staff.email = data.email;
+    if (data.branchId !== undefined) staff.branchId = data.branchId;
+
+    if (data.status && staff.status !== data.status) {
+      auditService.log({
+        action: 'USER_STATUS_CHANGE',
+        resource: 'staff:branch',
+        userId: useAuthStore.getState().user?.id || 'system',
+        details: { targetStaffId: id, oldStatus: staff.status, newStatus: data.status },
+      });
+      staff.status = data.status;
+    }
+
+    staff.updatedAt = new Date();
+    return staff;
+  }
+
+  /**
+   * 지사 직원 삭제
+   */
+  async deleteBranchStaff(id: string): Promise<void> {
+    await this.delay();
+
+    const index = this.branch.findIndex((s) => s.id === id);
+    if (index === -1) throw new Error('직원을 찾을 수 없습니다.');
+
+    this.branch.splice(index, 1);
+
+    auditService.log({
+      action: 'USER_DELETED',
+      resource: 'staff:branch',
       userId: useAuthStore.getState().user?.id || 'system',
       details: { targetStaffId: id },
     });
@@ -601,9 +744,10 @@ class StaffService {
   }
 
   /**
-   * 비밀번호 초기화 (실제로는 서버에서 처리)
+   * 비밀번호 초기화 — 임시 비밀번호 생성 후 이메일 발송 + 잠금 해제
+   * [2026-03-23] 변경: 반환값(string)→void, 이메일 발송 추가, unlockAccount 연동
    */
-  async resetPassword(id: string): Promise<string> {
+  async resetPassword(id: string): Promise<void> {
     await this.delay();
 
     const staff =
@@ -614,17 +758,25 @@ class StaffService {
       throw new Error('직원을 찾을 수 없습니다.');
     }
 
-    // 임시 비밀번호 생성 (실제로는 서버에서 처리)
+    // 임시 비밀번호 생성
     const tempPassword = Math.random().toString(36).slice(-8);
+
+    // 이메일로 임시 비밀번호 발송
+    emailService.sendTempPasswordEmail({
+      to: staff.email,
+      name: staff.name,
+      tempPassword,
+    });
+
+    // 로그인 시도 횟수 초기화 (잠금 해제)
+    authService.unlockAccount(staff.email);
 
     auditService.log({
       action: 'PASSWORD_CHANGED',
       resource: `staff:${staff.staffType}`,
       userId: useAuthStore.getState().user?.id || 'system',
-      details: { targetStaffId: id, method: 'reset_password' },
+      details: { targetStaffId: id, method: 'reset_password', emailSent: true },
     });
-
-    return tempPassword;
   }
 
   /**
@@ -781,6 +933,43 @@ class StaffService {
       name: staff.name,
       invitationLink: this.generateInvitationLink(newToken),
       expiresAt: newExpiresAt,
+    });
+  }
+
+  /**
+   * 초대 취소 — invited 상태의 직원 레코드 삭제
+   * [2026-03-23] 신규 추가: 초대 미수신 시 취소 후 재초대 가능하도록
+   */
+  async cancelInvitation(staffId: string): Promise<void> {
+    await this.delay();
+
+    const hqIdx = this.headquarters.findIndex((s) => s.id === staffId);
+    const fcIdx = this.franchise.findIndex((s) => s.id === staffId);
+
+    const staff =
+      hqIdx !== -1 ? this.headquarters[hqIdx] :
+      fcIdx !== -1 ? this.franchise[fcIdx] : null;
+
+    if (!staff) {
+      throw new Error('직원을 찾을 수 없습니다.');
+    }
+
+    if (staff.status !== 'invited') {
+      throw new Error('초대 상태의 직원만 취소할 수 있습니다.');
+    }
+
+    // 레코드 삭제
+    if (hqIdx !== -1) {
+      this.headquarters.splice(hqIdx, 1);
+    } else {
+      this.franchise.splice(fcIdx, 1);
+    }
+
+    auditService.log({
+      action: 'USER_DELETED',
+      resource: `staff:${staff.staffType}`,
+      userId: useAuthStore.getState().user?.id || 'system',
+      details: { targetStaffId: staffId, loginId: staff.loginId, reason: 'invitation_cancelled' },
     });
   }
 

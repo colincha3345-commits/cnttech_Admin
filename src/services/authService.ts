@@ -19,8 +19,8 @@ import {
 import { delay } from '@/utils/async';
 
 // 로그인 시도 관리
+// [2026-03-23] 잠금 정책 변경: 15분 자동해제 → 영구잠금 (관리자 비밀번호 재발급으로만 해제)
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15분
 
 function getLoginAttempt(email: string): LoginAttempt {
   const existing = mockLoginAttempts.get(email);
@@ -45,30 +45,23 @@ function recordLoginAttempt(email: string, success: boolean): LoginAttempt {
   attempt.attempts += 1;
   attempt.lastAttemptAt = new Date();
 
+  // 5회 초과 시 영구 잠금 (관리자 비밀번호 재발급으로만 해제)
   if (attempt.attempts >= MAX_ATTEMPTS) {
-    attempt.lockedUntil = new Date(Date.now() + LOCKOUT_DURATION_MS);
+    attempt.lockedUntil = new Date(Date.now());
   }
 
   mockLoginAttempts.set(email, attempt);
   return attempt;
 }
 
-function isAccountLocked(email: string): { locked: boolean; remainingMs: number } {
+function isAccountLocked(email: string): { locked: boolean } {
   const attempt = mockLoginAttempts.get(email);
 
-  if (!attempt?.lockedUntil) {
-    return { locked: false, remainingMs: 0 };
+  if (!attempt || attempt.attempts < MAX_ATTEMPTS) {
+    return { locked: false };
   }
 
-  const now = Date.now();
-  const lockEnd = attempt.lockedUntil.getTime();
-
-  if (now >= lockEnd) {
-    mockLoginAttempts.delete(email);
-    return { locked: false, remainingMs: 0 };
-  }
-
-  return { locked: true, remainingMs: lockEnd - now };
+  return { locked: true };
 }
 
 // 이메일 인증을 위한 임시 저장소
@@ -115,16 +108,14 @@ export const authService = {
 
     const { email, password } = credentials;
 
-    // 계정 잠금 확인
+    // 계정 잠금 확인 (영구 잠금 — 관리자 비밀번호 재발급으로만 해제)
     const lockStatus = isAccountLocked(email);
     if (lockStatus.locked) {
-      const minutes = Math.ceil(lockStatus.remainingMs / 60000);
       return {
         success: false,
         error: {
           code: 'TOO_MANY_ATTEMPTS' as AuthErrorCode,
-          message: `로그인 시도 횟수를 초과했습니다. ${minutes}분 후에 다시 시도해주세요.`,
-          details: { remainingMs: lockStatus.remainingMs },
+          message: '로그인 시도 횟수를 초과하여 계정이 잠겼습니다. 관리자에게 비밀번호 재발급을 요청하세요.',
         },
       };
     }
@@ -405,7 +396,6 @@ export const authService = {
     attempts: number;
     remainingAttempts: number;
     isLocked: boolean;
-    lockedUntil: Date | null;
   } {
     const attempt = getLoginAttempt(email);
     const lockStatus = isAccountLocked(email);
@@ -414,7 +404,13 @@ export const authService = {
       attempts: attempt.attempts,
       remainingAttempts: Math.max(0, MAX_ATTEMPTS - attempt.attempts),
       isLocked: lockStatus.locked,
-      lockedUntil: attempt.lockedUntil,
     };
+  },
+
+  /**
+   * 계정 잠금 해제 (관리자 비밀번호 재발급 시 호출)
+   */
+  unlockAccount(email: string): void {
+    mockLoginAttempts.delete(email);
   },
 };

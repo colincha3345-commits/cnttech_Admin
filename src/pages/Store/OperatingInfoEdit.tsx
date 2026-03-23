@@ -109,7 +109,15 @@ export const OperatingInfoEdit: React.FC = () => {
     }));
   };
 
+  // [2026-03-23] 배달/포장 최소 1개 필수 — 둘 다 끄려는 경우 차단
   const handleDeliveryChange = (field: keyof DeliverySettings, value: string | number | boolean) => {
+    if (field === 'isAvailable' && value === false) {
+      const pickupOn = formData.pickupSettings?.isAvailable ?? false;
+      if (!pickupOn) {
+        toast.error('배달 또는 포장 중 최소 1개는 활성화해야 합니다.');
+        return;
+      }
+    }
     setFormData((prev) => ({
       ...prev,
       deliverySettings: {
@@ -120,6 +128,13 @@ export const OperatingInfoEdit: React.FC = () => {
   };
 
   const handlePickupChange = (field: keyof PickupSettings, value: string | number | boolean) => {
+    if (field === 'isAvailable' && value === false) {
+      const deliveryOn = formData.deliverySettings?.isAvailable ?? false;
+      if (!deliveryOn) {
+        toast.error('배달 또는 포장 중 최소 1개는 활성화해야 합니다.');
+        return;
+      }
+    }
     setFormData((prev) => ({
       ...prev,
       pickupSettings: {
@@ -143,11 +158,20 @@ export const OperatingInfoEdit: React.FC = () => {
     e.preventDefault();
     if (!id) return;
 
+    const isDeliveryOn = formData.deliverySettings?.isAvailable ?? formData.isDeliveryAvailable;
+    const isPickupOn = formData.pickupSettings?.isAvailable ?? formData.isPickupAvailable;
+
+    // [2026-03-23] 배달/포장 최소 1개 필수 검증
+    if (!isDeliveryOn && !isPickupOn) {
+      toast.error('배달 또는 포장 중 최소 1개는 활성화해야 합니다.');
+      return;
+    }
+
     const submitData: OperatingInfoFormData = {
       ...formData,
       dailyHours: hoursMode === 'daily' ? formData.dailyHours : undefined,
-      isDeliveryAvailable: formData.deliverySettings?.isAvailable ?? formData.isDeliveryAvailable,
-      isPickupAvailable: formData.pickupSettings?.isAvailable ?? formData.isPickupAvailable,
+      isDeliveryAvailable: isDeliveryOn,
+      isPickupAvailable: isPickupOn,
     };
 
     if (JSON.stringify(formData) === initialDataRef.current) {

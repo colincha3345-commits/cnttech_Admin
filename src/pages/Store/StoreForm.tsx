@@ -53,6 +53,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
   const [formData, setFormData] = useState<StoreFormData>({
     name: '',
     code: '',
+    branchId: '',
     status: 'pending',
     address: {
       zipCode: '',
@@ -94,6 +95,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
       setFormData({
         name: existingStore.name,
         code: existingStore.code || '',
+        branchId: existingStore.branchId || '',
         status: existingStore.status,
         address: { ...existingStore.address },
         owner: {

@@ -78,3 +78,31 @@ export function useDeleteFranchiseStaff() {
     },
   });
 }
+
+/**
+ * 초대 재발송
+ */
+export function useResendFranchiseInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (staffId: string) => staffService.resendInvitation(staffId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['franchise-staff'] });
+    },
+  });
+}
+
+/**
+ * 초대 취소
+ */
+export function useCancelFranchiseInvitation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (staffId: string) => staffService.cancelInvitation(staffId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['franchise-staff'] });
+    },
+  });
+}

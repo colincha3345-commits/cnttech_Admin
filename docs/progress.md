@@ -63,3 +63,9 @@
 - 2026-03-13: 등급 생성 시 쿠폰 발급 기능 삭제 — GradeCouponBenefit 타입/폼필드/검증/mock 데이터에서 쿠폰 관련 4개 필드 제거. 등급 폼 쿠폰 섹션을 혜택 캠페인 연동 읽기 전용 표시로 교체(membership_upgrade 트리거 캠페인의 쿠폰명 Badge 노출). 빌드 에러 0건.
 - 2026-03-13: 등급 포인트 혜택도 혜택 캠페인으로 이관 — GradePointBenefit/GradeBenefits 타입 삭제, MembershipGrade에서 benefits 필드 제거, 폼/검증/서비스/mock 정리. 등급 폼 혜택 섹션을 쿠폰+포인트 통합 읽기 전용으로 변경(캠페인 연동 Badge 표시). 빌드 에러 0건.
 - 2026-03-13: 등급 관리 코드리뷰 반영 — (1) 혜택 캠페인 연동을 name→ID 기반 매칭으로 변경(targetGrades에 grade-vip 형태 사용), UPGRADE_GRADES/mock 데이터 일괄 수정, (2) getLinkedBenefits IIFE→useMemo 최적화, (3) 달성 조건 AND 설명 추가, (4) 취소 버튼 수정 모드 시 원본 롤백 동작으로 변경. 빌드 에러 0건.
+- 2026-03-23: spec_auth.md 문서-구현 싱크 — (1) 비밀번호 최소길이 6자→8자 통일, (2) 초대토큰 TTL 72h→48h 통일, (3) rememberMe 미구현 항목 제거, (4) API 섹션 AdminUser→Staff 기반 전면 교체, (5) 초대수락 메시지 "활성화"→"승인대기" 명확화
+- 2026-03-23: 권한 서비스 감사 로그 추가 — permissionService에 권한 변경/초기화 시 전/후 스냅샷 기록. 데드코드 삭제(StaffFormModal.tsx, HeadquartersStaffEdit.tsx)
+- 2026-03-23: 초대 취소/재초대 기능 구현 — (1) staffService.cancelInvitation 추가, (2) HQ/Franchise hook에 useCancelInvitation/useResendInvitation 추가, (3) 목록 UI invited 상태 행에 [재초대][초대취소] 버튼 추가
+- 2026-03-23: 로그인 잠금 정책 변경 — (1) 5회 실패 시 15분 자동해제→영구잠금으로 변경, (2) 관리자 비밀번호 재발급으로만 해제, (3) resetPassword에 이메일 임시비번 발송+unlockAccount 추가, (4) LoginPage 카운트다운 제거→고정 잠금 메시지
+- 2026-03-23: 지사(Branch) 계층 구조 추가 — (1) StaffType에 'branch' 추가(3종: 본사/지사/가맹점), (2) Branch 타입 및 mockBranchData 신규 생성, (3) Store.branchId 필수 필드 추가 및 mock 반영, (4) Product.menuVisibility(all/hq_branch/branch_franchise) 필드 추가, (5) branchService CRUD 서비스 신규, (6) staffService.inviteBranchStaff/getBranchStaff 등 지사직원 CRUD 추가, (7) useBranches/useBranchStaff hook 신규, (8) Branches(카드그리드)/BranchEditPage/BranchStaff(목록) 페이지 신규, (9) StaffEditPage 3종 staffType 분기+지사 드롭다운 추가, (10) App.tsx 라우트 4개 추가. 빌드 에러 0건.
+- 2026-03-23: 영업정보 배달/포장 최소 1개 필수 검증 — OperatingInfoEdit에서 (1) 토글 시 실시간 차단(상대 채널이 OFF면 현재 채널 OFF 불가), (2) submit 시 이중 검증. spec_store.md에 FE/BE 제약사항 반영.

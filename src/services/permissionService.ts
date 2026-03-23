@@ -1,11 +1,13 @@
 /**
  * 권한관리 서비스 레이어
  * UI Components → Hooks → Service → Mock Data
+ * [2026-03-23] 감사 로그 추가: 권한 변경/초기화 시 전/후 스냅샷 기록
  */
 
 import type { AccountPermission, UpdatePermissionRequest } from '@/types/permission';
 import { mockAccountPermissions } from '@/lib/api/mockPermissionData';
 import { delay } from '@/utils/async';
+import { auditService } from '@/services/auditService';
 
 // Mock 데이터 로컬 복사
 let accountPermissions: AccountPermission[] = [...mockAccountPermissions];
@@ -51,6 +53,8 @@ async function updateAccountPermission(
   const existing = accountPermissions[index]!;
   assertNotAdmin(existing);
 
+  const previousPermissions = existing.permissions;
+
   const updated: AccountPermission = {
     ...existing,
     permissions: request.permissions,
@@ -61,6 +65,19 @@ async function updateAccountPermission(
   accountPermissions = accountPermissions.map((a) =>
     a.accountId === request.accountId ? updated : a,
   );
+
+  // 감사 로그: 권한 변경 전/후 스냅샷 기록
+  auditService.log({
+    action: 'PERMISSION_CHANGED',
+    resource: 'permission',
+    userId: updatedBy,
+    details: {
+      targetAccountId: request.accountId,
+      accountName: existing.accountName,
+      before: previousPermissions,
+      after: request.permissions,
+    },
+  });
 
   return updated;
 }
@@ -86,6 +103,8 @@ async function resetAccountPermission(
   const defaultPermissions =
     mockAccountPermissions.find((a) => a.accountId === accountId)?.permissions ?? [];
 
+  const previousPermissions = existing.permissions;
+
   const reset: AccountPermission = {
     ...existing,
     permissions: defaultPermissions,
@@ -96,6 +115,19 @@ async function resetAccountPermission(
   accountPermissions = accountPermissions.map((a) =>
     a.accountId === accountId ? reset : a,
   );
+
+  // 감사 로그: 권한 초기화 전/후 스냅샷 기록
+  auditService.log({
+    action: 'PERMISSION_CHANGED',
+    resource: 'permission',
+    userId: updatedBy,
+    details: {
+      targetAccountId: accountId,
+      accountName: existing.accountName,
+      before: previousPermissions,
+      after: defaultPermissions,
+    },
+  });
 
   return reset;
 }

@@ -82,6 +82,7 @@ export const csvRowToProductFormData = (row: string[]): ProductFormData => {
     status: (row[6] === 'active' ? 'active' : 'soldout') as ProductStatus,
     applyToAll: true,
     storeIds: [],
+    menuVisibility: 'all',
     allowCoupon: row[7] === 'Y',
     allowVoucher: row[8] === 'Y',
     allowGiftCard: row[9] === 'Y',
