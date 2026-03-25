@@ -33,6 +33,12 @@ export interface DrawingState {
   color: string;
 }
 
+export interface FocusTarget {
+  center: Coordinate;
+  radiusKm?: number; // 반경 상권 시 해당 반경으로 줌 맞춤
+  _ts: number;       // 동일 좌표 재이동용 타임스탬프
+}
+
 interface MapViewProps {
   zones: DeliveryZone[];
   selectedZoneId?: string;
@@ -40,6 +46,7 @@ interface MapViewProps {
   drawing?: DrawingState;
   onDrawUpdate?: (state: Partial<DrawingState>) => void;
   onDrawComplete?: (state: DrawingState) => void;
+  focusTarget?: FocusTarget;
   readOnly?: boolean;
   className?: string;
 }
@@ -491,6 +498,30 @@ const FitBounds: React.FC<{ zones: DeliveryZone[] }> = ({ zones }) => {
 };
 
 // ============================================
+// 포커스 이동 (flyTo)
+// ============================================
+
+const FlyToTarget: React.FC<{ target?: FocusTarget }> = ({ target }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!target) return;
+    if (target.radiusKm) {
+      const center = L.latLng(target.center.lat, target.center.lng);
+      map.flyToBounds(center.toBounds(target.radiusKm * 2000), {
+        padding: [60, 60],
+        maxZoom: 15,
+        duration: 0.8,
+      });
+    } else {
+      map.flyTo([target.center.lat, target.center.lng], 14, { duration: 0.8 });
+    }
+  }, [target?._ts, map]);
+
+  return null;
+};
+
+// ============================================
 // 메인 컴포넌트
 // ============================================
 
@@ -501,6 +532,7 @@ export const MapView: React.FC<MapViewProps> = ({
   drawing,
   onDrawUpdate,
   onDrawComplete,
+  focusTarget,
   readOnly = false,
   className = '',
 }) => {
@@ -531,6 +563,7 @@ export const MapView: React.FC<MapViewProps> = ({
         />
 
         <FitBounds zones={zones} />
+        <FlyToTarget target={focusTarget} />
 
         {/* 존 오버레이 */}
         {zones.map((zone) => (

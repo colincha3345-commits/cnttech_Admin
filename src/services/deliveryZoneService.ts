@@ -5,7 +5,9 @@ import type {
   DeliveryZone,
   DeliveryZoneFormData,
   DeliveryZoneListParams,
+  SubZoneInterval,
 } from '@/types/delivery-zone';
+import { DEFAULT_ZONE_COLORS } from '@/types/delivery-zone';
 
 // ============================================
 // Mock 데이터
@@ -225,6 +227,60 @@ class DeliveryZoneService {
     if (index === -1) throw new Error('상권을 찾을 수 없습니다.');
 
     this.zones.splice(index, 1);
+  }
+
+  /**
+   * 반경 기반 소상권 일괄 생성
+   * 기존 소상권 삭제 후 동심원 구간별 소상권을 새로 생성한다.
+   */
+  async createSubZonesBatch(
+    mainZoneId: string,
+    intervals: SubZoneInterval[]
+  ): Promise<DeliveryZone[]> {
+    await this.delay();
+
+    const mainZone = this.zones.find((z) => z.id === mainZoneId);
+    if (!mainZone) throw new Error('메인상권을 찾을 수 없습니다.');
+    if (mainZone.zoneLevel !== 'main') throw new Error('메인상권만 소상권을 생성할 수 있습니다.');
+
+    // 기존 소상권 삭제
+    this.zones = this.zones.filter(
+      (z) => !(z.parentZoneId === mainZoneId && z.zoneLevel === 'sub')
+    );
+
+    // 동심원 소상권 생성
+    const created: DeliveryZone[] = intervals.map((interval, idx) => ({
+      id: `zone-sub-${mainZoneId}-${idx + 1}`,
+      storeId: mainZone.storeId,
+      storeName: mainZone.storeName,
+      name: interval.name,
+      zoneLevel: 'sub' as const,
+      parentZoneId: mainZoneId,
+      type: 'radius' as const,
+      center: mainZone.center,
+      radius: interval.outerRadius,
+      innerRadius: interval.innerRadius,
+      outerRadius: interval.outerRadius,
+      deliveryFee: interval.deliveryFee,
+      minOrderAmount: undefined,
+      isActive: true,
+      color: DEFAULT_ZONE_COLORS[idx % DEFAULT_ZONE_COLORS.length] ?? '#3B82F6',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+
+    this.zones.push(...created);
+    return created;
+  }
+
+  /**
+   * 메인상권의 소상권 목록 조회
+   */
+  async getSubZones(mainZoneId: string): Promise<DeliveryZone[]> {
+    await this.delay(100);
+    return this.zones
+      .filter((z) => z.parentZoneId === mainZoneId && z.zoneLevel === 'sub')
+      .sort((a, b) => (a.innerRadius ?? 0) - (b.innerRadius ?? 0));
   }
 }
 

@@ -35,8 +35,10 @@ export interface DeliveryZone {
   center: Coordinate;
   radius?: number; // km (반경 모드)
   polygon?: Coordinate[]; // 폴리곤 좌표
-  deliveryFee: number; // 메인: 배달비, 소: 추가배달비
+  deliveryFee: number; // 메인상권: 기본 배달비 / 추가상권: 추가 배달비 (고객 청구 = 메인 배달비 + 추가 배달비)
   minOrderAmount?: number; // 메인상권 전용
+  innerRadius?: number; // 동심원 소상권: 내측 반경 (km)
+  outerRadius?: number; // 동심원 소상권: 외측 반경 (km)
   isActive: boolean;
   color: string;
   createdAt: Date;
@@ -71,10 +73,21 @@ export interface DeliveryZoneFormData {
   radius?: number;
   polygon?: Coordinate[];
   center?: Coordinate;
-  deliveryFee: number; // 메인: 배달비, 소: 추가배달비
+  deliveryFee: number; // 메인상권: 기본 배달비 / 추가상권: 추가 배달비 (고객 청구 = 메인 배달비 + 추가 배달비)
   minOrderAmount?: number; // 메인상권 전용
   isActive: boolean;
   color: string;
+  // 반경 기반 소상권 자동 생성
+  useSubZones?: boolean;          // 소상권 사용 여부 (반경 모드 메인상권 전용)
+  subZoneIntervalMeters?: number; // 소상권 거리 간격 (미터, 100m 단위)
+}
+
+// 소상권 일괄 생성 시 구간별 입력 데이터
+export interface SubZoneInterval {
+  innerRadius: number;  // 내측 반경 (km)
+  outerRadius: number;  // 외측 반경 (km)
+  deliveryFee: number;  // 추가 배달비 (원)
+  name: string;         // 표시명 (예: "0m ~ 500m")
 }
 
 // ============================================

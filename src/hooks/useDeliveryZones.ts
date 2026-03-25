@@ -6,6 +6,7 @@ import { deliveryZoneService } from '@/services/deliveryZoneService';
 import type {
   DeliveryZoneFormData,
   DeliveryZoneListParams,
+  SubZoneInterval,
 } from '@/types/delivery-zone';
 
 /**
@@ -15,6 +16,7 @@ export function useDeliveryZones(params?: DeliveryZoneListParams) {
   const query = useQuery({
     queryKey: ['deliveryZones', params],
     queryFn: () => deliveryZoneService.getDeliveryZones(params),
+    enabled: params !== undefined, // params 없이 전체 조회 방지
   });
 
   return {
@@ -77,5 +79,31 @@ export function useDeleteDeliveryZone() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['deliveryZones'] });
     },
+  });
+}
+
+/**
+ * 반경 기반 소상권 일괄 생성
+ */
+export function useCreateSubZonesBatch() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ mainZoneId, intervals }: { mainZoneId: string; intervals: SubZoneInterval[] }) =>
+      deliveryZoneService.createSubZonesBatch(mainZoneId, intervals),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['deliveryZones'] });
+    },
+  });
+}
+
+/**
+ * 메인상권의 소상권 목록 조회
+ */
+export function useSubZones(mainZoneId: string | undefined) {
+  return useQuery({
+    queryKey: ['subZones', mainZoneId],
+    queryFn: () => deliveryZoneService.getSubZones(mainZoneId!),
+    enabled: !!mainZoneId,
   });
 }
