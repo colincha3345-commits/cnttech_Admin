@@ -503,8 +503,6 @@ class StoreService {
       dailyHours: data.dailyHours,
       regularClosedDays: data.regularClosedDays,
       irregularClosedDays: data.irregularClosedDays,
-      deliveryFee: data.deliveryFee,
-      freeDeliveryMinAmount: data.freeDeliveryMinAmount,
       isTemporarilyClosed: data.isTemporarilyClosed,
       temporaryCloseReason: data.temporaryCloseReason,
       temporaryCloseReasonDetail: data.temporaryCloseReasonDetail,

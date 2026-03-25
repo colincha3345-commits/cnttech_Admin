@@ -66,14 +66,21 @@ export interface BusinessInfo {
   businessCategory?: string;
 }
 
-// 계약 정보
+// 계약 정보 — 브랜드 본사가 해당 매장(가맹점)을 관리하기 위한 계약 데이터
 export interface ContractInfo {
-  contractDate: Date;
-  expirationDate: Date;
+  contractDate: Date;        // 가맹 계약 시작일
+  expirationDate: Date;      // 가맹 계약 만료일
   contractStatus: ContractStatus;
+  contractType?: ContractType;  // 계약 유형
+  royaltyRate?: number;      // 로열티 비율 (%, 본사→가맹점 수수료)
+  depositAmount?: number;    // 보증금 (원)
   contractDocumentUrl?: string;
   notes?: string;
 }
+
+// 계약 유형
+export type ContractType = 'franchise' | 'direct' | 'license';
+
 
 // 계좌 정보
 export interface BankAccountInfo {
@@ -146,22 +153,18 @@ export interface IrregularClosedDay {
 // 배달 상세 설정
 export interface DeliverySettings {
   isAvailable: boolean;
-  availableStartTime?: string; // HH:mm
-  availableEndTime?: string; // HH:mm
   /** 배달 최소주문금액 (읽기전용 — 상권관리 메인상권에서 설정) */
   minOrderAmount?: number;
-  isReservationAvailable?: boolean; // 예약기능 온/오프
-  reservationLeadTimeMinutes?: number; // 예약 가능 (현재 시간 + n분부터)
+  /** 예상 배달시간 (분) — 고객 앱 안내용 */
+  estimatedMinutes?: number;
 }
 
 // 포장 상세 설정
 export interface PickupSettings {
   isAvailable: boolean;
-  availableStartTime?: string; // HH:mm
-  availableEndTime?: string; // HH:mm
   minOrderAmount?: number; // 포장 최소주문금액
-  isReservationAvailable?: boolean; // 예약기능 온/오프
-  reservationLeadTimeMinutes?: number; // 예약 가능 (현재 시간 + n분부터)
+  /** 예상 포장 준비시간 (분) — 고객 앱 안내용 */
+  estimatedMinutes?: number;
 }
 
 // 영업 정보
@@ -183,13 +186,9 @@ export interface OperatingInfo {
   // 비정기 휴무
   irregularClosedDays?: IrregularClosedDay[];
 
-  // 배달비 정책
-  deliveryFee: number; // 기본 배달비
-  freeDeliveryMinAmount?: number; // 무료배달 최소금액
-  deliveryFeeByDistance?: Array<{
-    maxDistance: number; // km
-    fee: number;
-  }>;
+  // 배달비: 상권관리(DeliveryZone)에서 설정. OperatingInfo에는 포함하지 않음.
+  // → DeliveryZone.deliveryFee (메인상권 기본 배달비)
+  // → 추가상권: 메인상권 배달비 + 추가상권 deliveryFee
 
   // 영업 상태
   isTemporarilyClosed: boolean; // 임시휴업
@@ -205,6 +204,10 @@ export interface OperatingInfo {
   // 배달/포장 상세 설정
   deliverySettings?: DeliverySettings;
   pickupSettings?: PickupSettings;
+
+  // 예약 설정 (배달/포장 통합)
+  isReservationAvailable?: boolean;
+  reservationLeadTimeMinutes?: number;
 
   // 매장 노출 여부
   isVisible?: boolean;
@@ -428,6 +431,9 @@ export interface ContractFormData {
   contractDate: string;
   expirationDate: string;
   contractStatus: ContractStatus;
+  contractType?: ContractType;
+  royaltyRate?: number;
+  depositAmount?: number;
   contractDocumentUrl?: string;
   notes?: string;
 }
@@ -475,8 +481,6 @@ export interface OperatingInfoFormData {
   dailyHours?: Record<WeekDay, DayOperatingHours>;
   regularClosedDays?: RegularClosedDay[];
   irregularClosedDays?: IrregularClosedDay[];
-  deliveryFee: number;
-  freeDeliveryMinAmount?: number;
   isTemporarilyClosed: boolean;
   temporaryCloseReason?: string;
   temporaryCloseReasonDetail?: string; // "기타" 선택 시 직접 입력
@@ -486,6 +490,9 @@ export interface OperatingInfoFormData {
   isPickupAvailable: boolean;
   deliverySettings?: DeliverySettings;
   pickupSettings?: PickupSettings;
+  // 예약 설정 (배달/포장 통합)
+  isReservationAvailable?: boolean;
+  reservationLeadTimeMinutes?: number; // 현재 시간 + n분부터 예약 가능
   isVisible?: boolean;
 }
 
@@ -571,6 +578,12 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   active: '정상',
   expired: '만료',
   pending_renewal: '갱신대기',
+};
+
+export const CONTRACT_TYPE_LABELS: Record<ContractType, string> = {
+  franchise: '가맹',
+  direct: '직영',
+  license: '라이선스',
 };
 
 export const STORE_STAFF_ROLE_LABELS: Record<StoreStaffRole, string> = {

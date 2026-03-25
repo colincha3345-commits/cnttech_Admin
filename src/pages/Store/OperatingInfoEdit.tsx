@@ -43,7 +43,6 @@ export const OperatingInfoEdit: React.FC = () => {
   const [formData, setFormData] = useState<OperatingInfoFormData>({
     weekdayHours: DEFAULT_HOURS,
     weekendHours: DEFAULT_HOURS,
-    deliveryFee: 3000,
     isTemporarilyClosed: false,
     isDeliveryAvailable: true,
     isPickupAvailable: true,
@@ -65,8 +64,6 @@ export const OperatingInfoEdit: React.FC = () => {
         dailyHours: currentData.dailyHours,
         regularClosedDays: currentData.regularClosedDays,
         irregularClosedDays: currentData.irregularClosedDays,
-        deliveryFee: currentData.deliveryFee || 3000,
-        freeDeliveryMinAmount: currentData.freeDeliveryMinAmount,
         isTemporarilyClosed: currentData.isTemporarilyClosed || false,
         temporaryCloseReason: currentData.temporaryCloseReason,
         temporaryCloseReasonDetail: currentData.temporaryCloseReasonDetail,
@@ -393,23 +390,11 @@ export const OperatingInfoEdit: React.FC = () => {
 
       {formData.deliverySettings?.isAvailable && (
         <div className="space-y-4 pl-1">
-          <div>
-            <label className="block text-sm font-medium text-txt-secondary mb-2">배달 가능 시간</label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                value={formData.deliverySettings.availableStartTime || ''}
-                onChange={(e) => handleDeliveryChange('availableStartTime', e.target.value)}
-                className="w-36 text-base h-12"
-              />
-              <span className="text-txt-muted font-medium">~</span>
-              <Input
-                type="time"
-                value={formData.deliverySettings.availableEndTime || ''}
-                onChange={(e) => handleDeliveryChange('availableEndTime', e.target.value)}
-                className="w-36 text-base h-12"
-              />
-            </div>
+          {/* 주문 가능 시간 안내 — 영업시간 + 라스트오더로 자동 계산 */}
+          <div className="p-3 bg-bg-secondary rounded-lg">
+            <p className="text-sm text-txt-secondary">
+              배달 주문 가능 시간은 <span className="font-medium text-txt-main">영업 시작 ~ 마감 전 라스트오더 시간</span>까지 자동 적용됩니다.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -432,60 +417,45 @@ export const OperatingInfoEdit: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-txt-secondary mb-2">기본 배달비</label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {formData.deliveryFee ? `${formData.deliveryFee.toLocaleString()}원` : '미설정'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => navigate('/delivery-zones')}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
-                >
-                  상권관리에서 설정
-                </button>
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-txt-secondary mb-2">무료배달 최소금액</label>
-              <Input
-                type="number"
-                value={formData.freeDeliveryMinAmount ?? ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    freeDeliveryMinAmount: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-                placeholder="20000"
-              />
+          <div className="p-3 bg-bg-hover rounded-lg">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-txt-secondary">배달비는 상권관리에서 설정합니다.</span>
+              <button
+                type="button"
+                onClick={() => navigate('/delivery-zones')}
+                className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+              >
+                상권관리로 이동 →
+              </button>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-border">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">예약 가능 (배달)</span>
-              <Switch
-                checked={formData.deliverySettings?.isReservationAvailable ?? false}
-                onCheckedChange={(v) => handleDeliveryChange('isReservationAvailable', v)}
+          {/* 예상 배달시간 */}
+          <div>
+            <label className="block text-sm font-medium text-txt-secondary mb-2">예상 배달시간 (고객 앱 안내용)</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={formData.deliverySettings?.estimatedMinutes ?? ''}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    deliverySettings: {
+                      ...prev.deliverySettings,
+                      isAvailable: prev.deliverySettings?.isAvailable ?? true,
+                      estimatedMinutes: e.target.value ? Number(e.target.value) : undefined,
+                    },
+                  }))
+                }
+                placeholder="30"
+                min={1}
+                className="w-24"
               />
+              <span className="text-sm text-txt-muted">분</span>
             </div>
-            {formData.deliverySettings?.isReservationAvailable && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-txt-muted">현재 시간 기준</span>
-                <Input
-                  type="number"
-                  value={formData.deliverySettings.reservationLeadTimeMinutes ?? ''}
-                  onChange={(e) => handleDeliveryChange('reservationLeadTimeMinutes', e.target.value ? Number(e.target.value) : 0)}
-                  placeholder="30"
-                  className="w-24 text-center"
-                />
-                <span className="text-sm text-txt-muted">분 후부터 예약 가능</span>
-              </div>
-            )}
+            <p className="text-xs text-txt-muted mt-1">고객 앱에서 "약 N분 소요"로 표시됩니다.</p>
           </div>
+
         </div>
       )}
     </div>
@@ -503,23 +473,11 @@ export const OperatingInfoEdit: React.FC = () => {
 
       {formData.pickupSettings?.isAvailable && (
         <div className="space-y-4 pl-1">
-          <div>
-            <label className="block text-sm font-medium text-txt-secondary mb-2">포장 가능 시간</label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                value={formData.pickupSettings.availableStartTime || ''}
-                onChange={(e) => handlePickupChange('availableStartTime', e.target.value)}
-                className="w-36 text-base h-12"
-              />
-              <span className="text-txt-muted font-medium">~</span>
-              <Input
-                type="time"
-                value={formData.pickupSettings.availableEndTime || ''}
-                onChange={(e) => handlePickupChange('availableEndTime', e.target.value)}
-                className="w-36 text-base h-12"
-              />
-            </div>
+          {/* 주문 가능 시간 안내 — 영업시간 + 라스트오더로 자동 계산 */}
+          <div className="p-3 bg-bg-secondary rounded-lg">
+            <p className="text-sm text-txt-secondary">
+              포장 주문 가능 시간은 <span className="font-medium text-txt-main">영업 시작 ~ 마감 전 라스트오더 시간</span>까지 자동 적용됩니다.
+            </p>
           </div>
 
           <div>
@@ -535,28 +493,62 @@ export const OperatingInfoEdit: React.FC = () => {
             />
           </div>
 
-          <div className="pt-4 border-t border-border">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-sm font-medium">예약 가능 (포장)</span>
-              <Switch
-                checked={formData.pickupSettings?.isReservationAvailable ?? false}
-                onCheckedChange={(v) => handlePickupChange('isReservationAvailable', v)}
+          {/* 예상 포장 준비시간 */}
+          <div>
+            <label className="block text-sm font-medium text-txt-secondary mb-2">예상 준비시간 (고객 앱 안내용)</label>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={formData.pickupSettings.estimatedMinutes ?? ''}
+                onChange={(e) =>
+                  handlePickupChange('estimatedMinutes', e.target.value ? Number(e.target.value) : 0)
+                }
+                placeholder="15"
+                min={1}
+                className="w-24"
               />
+              <span className="text-sm text-txt-muted">분</span>
             </div>
-            {formData.pickupSettings?.isReservationAvailable && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-txt-muted">현재 시간 기준</span>
-                <Input
-                  type="number"
-                  value={formData.pickupSettings.reservationLeadTimeMinutes ?? ''}
-                  onChange={(e) => handlePickupChange('reservationLeadTimeMinutes', e.target.value ? Number(e.target.value) : 0)}
-                  placeholder="30"
-                  className="w-24 text-center"
-                />
-                <span className="text-sm text-txt-muted">분 후부터 예약 가능</span>
-              </div>
-            )}
+            <p className="text-xs text-txt-muted mt-1">고객 앱에서 "약 N분 소요"로 표시됩니다.</p>
           </div>
+
+        </div>
+      )}
+    </div>
+  );
+
+  // 예약 설정 (배달/포장 통합)
+  const reservationContent = (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium">예약 주문</span>
+          <p className="text-xs text-txt-muted mt-0.5">배달/포장 모두에 적용됩니다.</p>
+        </div>
+        <Switch
+          checked={formData.isReservationAvailable ?? false}
+          onCheckedChange={(v) =>
+            setFormData((prev) => ({ ...prev, isReservationAvailable: v }))
+          }
+        />
+      </div>
+
+      {formData.isReservationAvailable && (
+        <div className="flex items-center gap-2 pl-1">
+          <span className="text-sm text-txt-muted">현재 시간 기준</span>
+          <Input
+            type="number"
+            value={formData.reservationLeadTimeMinutes ?? ''}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                reservationLeadTimeMinutes: e.target.value ? Number(e.target.value) : 0,
+              }))
+            }
+            placeholder="30"
+            className="w-24 text-center h-12"
+          />
+          <span className="text-sm text-txt-muted">분 후부터 예약 가능</span>
         </div>
       )}
     </div>
@@ -669,6 +661,7 @@ export const OperatingInfoEdit: React.FC = () => {
     { id: 'hours', title: '영업시간', content: hoursContent },
     { id: 'delivery', title: '배달 설정', content: deliveryContent },
     { id: 'pickup', title: '포장 설정', content: pickupContent },
+    { id: 'reservation', title: '예약 설정', content: reservationContent },
     { id: 'closure', title: '임시 휴업', content: closureContent },
   ];
 

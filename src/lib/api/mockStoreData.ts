@@ -39,6 +39,9 @@ export const mockStores: Store[] = [
       contractDate: new Date('2023-01-01'),
       expirationDate: new Date('2026-12-31'),
       contractStatus: 'active',
+      contractType: 'franchise',
+      royaltyRate: 5,
+      depositAmount: 10000000,
     },
     bankAccount: {
       bankCode: '004',
@@ -71,27 +74,20 @@ export const mockStores: Store[] = [
         { date: '2026-02-18', reason: '설 연휴 (임시 휴무)' },
         { date: '2026-02-19', reason: '설 연휴 (임시 휴무)' },
       ],
-      deliveryFee: 3000,
-      freeDeliveryMinAmount: 20000,
+      // 배달비는 상권관리(DeliveryZone)에서 설정
       isTemporarilyClosed: false,
       isDeliveryAvailable: true,
       isPickupAvailable: true,
       deliverySettings: {
         isAvailable: true,
-        availableStartTime: '11:30',
-        availableEndTime: '22:30',
         minOrderAmount: 15000,
-        isReservationAvailable: true,
-        reservationLeadTimeMinutes: 30,
       },
       pickupSettings: {
         isAvailable: true,
-        availableStartTime: '11:00',
-        availableEndTime: '22:00',
         minOrderAmount: 10000,
-        isReservationAvailable: true,
-        reservationLeadTimeMinutes: 15,
       },
+      isReservationAvailable: true,
+      reservationLeadTimeMinutes: 30,
       isVisible: true,
     },
 
@@ -202,6 +198,9 @@ export const mockStores: Store[] = [
       contractDate: new Date('2023-03-01'),
       expirationDate: new Date('2025-06-30'),
       contractStatus: 'pending_renewal',
+      contractType: 'franchise',
+      royaltyRate: 4.5,
+      depositAmount: 8000000,
     },
     bankAccount: {
       bankCode: '088',
@@ -217,8 +216,7 @@ export const mockStores: Store[] = [
       weekdayHours: { isOpen: true, openTime: '12:00', closeTime: '24:00' },
       weekendHours: { isOpen: true, openTime: '12:00', closeTime: '02:00' },
       regularClosedDays: [], // 연중무휴
-      deliveryFee: 2500,
-      freeDeliveryMinAmount: 18000,
+      // 배달비는 상권관리(DeliveryZone)에서 설정
       isTemporarilyClosed: false,
       isDeliveryAvailable: true,
       isPickupAvailable: true,
@@ -301,6 +299,9 @@ export const mockStores: Store[] = [
       contractDate: new Date('2022-06-01'),
       expirationDate: new Date('2027-05-31'),
       contractStatus: 'active',
+      contractType: 'direct',
+      royaltyRate: 0,
+      depositAmount: 0,
     },
     bankAccount: {
       bankCode: '011',
@@ -319,8 +320,7 @@ export const mockStores: Store[] = [
         { type: 'monthly_nth', dayOfWeek: 'tuesday', nthWeek: 2, description: '매월 둘째주 화요일' },
         { type: 'monthly_nth', dayOfWeek: 'tuesday', nthWeek: 4, description: '매월 넷째주 화요일' },
       ],
-      deliveryFee: 2000,
-      freeDeliveryMinAmount: 15000,
+      // 배달비는 상권관리(DeliveryZone)에서 설정
       isTemporarilyClosed: false,
       isDeliveryAvailable: true,
       isPickupAvailable: true,
@@ -406,6 +406,9 @@ export const mockStores: Store[] = [
       contractDate: new Date('2024-01-01'),
       expirationDate: new Date('2027-12-31'),
       contractStatus: 'active',
+      contractType: 'franchise',
+      royaltyRate: 5,
+      depositAmount: 10000000,
     },
     bankAccount: {
       bankCode: '020',
@@ -423,8 +426,7 @@ export const mockStores: Store[] = [
       regularClosedDays: [
         { type: 'weekly', dayOfWeek: 'sunday', description: '매주 일요일 정기휴무' },
       ],
-      deliveryFee: 2500,
-      freeDeliveryMinAmount: 18000,
+      // 배달비는 상권관리(DeliveryZone)에서 설정
       isTemporarilyClosed: false,
       isDeliveryAvailable: true,
       isPickupAvailable: true,
@@ -507,6 +509,9 @@ export const mockStores: Store[] = [
       contractDate: new Date('2026-01-15'),
       expirationDate: new Date('2029-01-14'),
       contractStatus: 'active',
+      contractType: 'license',
+      royaltyRate: 3,
+      depositAmount: 5000000,
     },
     bankAccount: {
       bankCode: '081',
@@ -524,8 +529,7 @@ export const mockStores: Store[] = [
       regularClosedDays: [
         { type: 'weekly', dayOfWeek: 'tuesday', description: '매주 화요일 정기휴무' },
       ],
-      deliveryFee: 3000,
-      freeDeliveryMinAmount: 20000,
+      // 배달비는 상권관리(DeliveryZone)에서 설정
       isTemporarilyClosed: false,
       isDeliveryAvailable: true,
       isPickupAvailable: true,

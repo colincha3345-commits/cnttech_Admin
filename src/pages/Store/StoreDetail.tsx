@@ -27,6 +27,7 @@ import {
 import {
   STORE_STATUS_LABELS,
   CONTRACT_STATUS_LABELS,
+  CONTRACT_TYPE_LABELS,
   STORE_STAFF_ROLE_LABELS,
   POS_VENDORS,
   PG_VENDORS,
@@ -318,10 +319,16 @@ export const StoreDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* 계약 정보 */}
+            {/* 계약 정보 — 본사↔매장 가맹 계약 */}
             <div className="space-y-4">
               <h2 className="text-lg font-semibold border-b border-border pb-2">계약 정보</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {store.contract.contractType && (
+                  <div>
+                    <label className="text-sm text-txt-muted">계약 유형</label>
+                    <p className="mt-1">{CONTRACT_TYPE_LABELS[store.contract.contractType]}</p>
+                  </div>
+                )}
                 <div>
                   <label className="text-sm text-txt-muted">계약 상태</label>
                   <div className="mt-1">
@@ -338,6 +345,18 @@ export const StoreDetail: React.FC = () => {
                   <label className="text-sm text-txt-muted">만료일</label>
                   <p className="mt-1">{formatDate(store.contract.expirationDate)}</p>
                 </div>
+                {store.contract.royaltyRate != null && store.contract.royaltyRate > 0 && (
+                  <div>
+                    <label className="text-sm text-txt-muted">로열티 비율</label>
+                    <p className="mt-1">{store.contract.royaltyRate}%</p>
+                  </div>
+                )}
+                {store.contract.depositAmount != null && store.contract.depositAmount > 0 && (
+                  <div>
+                    <label className="text-sm text-txt-muted">보증금</label>
+                    <p className="mt-1">{store.contract.depositAmount.toLocaleString()}원</p>
+                  </div>
+                )}
                 {store.contract.notes && (
                   <div className="md:col-span-2">
                     <label className="text-sm text-txt-muted">비고</label>
@@ -471,25 +490,14 @@ export const StoreDetail: React.FC = () => {
                 {/* 배달비 정책 */}
                 <div className="space-y-4">
                   <h3 className="text-md font-medium border-b border-border pb-2">배달비 정책</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="text-sm text-txt-muted">기본 배달비</label>
-                      <div className="mt-1 flex items-center gap-2">
-                        <span className="font-medium">{store.operatingInfo.deliveryFee.toLocaleString()}원</span>
-                        <button
-                          onClick={() => navigate('/delivery-zones')}
-                          className="text-xs text-blue-600 hover:text-blue-800 underline"
-                        >
-                          상권관리에서 설정
-                        </button>
-                      </div>
-                    </div>
-                    {store.operatingInfo.freeDeliveryMinAmount && (
-                      <div>
-                        <label className="text-sm text-txt-muted">무료배달 최소금액</label>
-                        <p className="mt-1 font-medium">{store.operatingInfo.freeDeliveryMinAmount.toLocaleString()}원 이상</p>
-                      </div>
-                    )}
+                  <div className="p-3 bg-bg-hover rounded-lg flex items-center justify-between">
+                    <span className="text-sm text-txt-secondary">배달비는 상권관리에서 설정합니다.</span>
+                    <button
+                      onClick={() => navigate('/delivery-zones')}
+                      className="text-sm text-blue-600 hover:text-blue-800 underline font-medium"
+                    >
+                      상권관리로 이동 →
+                    </button>
                   </div>
                 </div>
 
@@ -575,14 +583,10 @@ export const StoreDetail: React.FC = () => {
                       </div>
                       {store.operatingInfo.deliverySettings.isAvailable && (
                         <>
-                          {store.operatingInfo.deliverySettings.availableStartTime && (
-                            <div>
-                              <label className="text-sm text-txt-muted">배달 가능 시간</label>
-                              <p className="mt-1 font-medium">
-                                {store.operatingInfo.deliverySettings.availableStartTime} ~ {store.operatingInfo.deliverySettings.availableEndTime}
-                              </p>
-                            </div>
-                          )}
+                          <div>
+                            <label className="text-sm text-txt-muted">배달 주문 가능 시간</label>
+                            <p className="mt-1 text-sm text-txt-secondary">영업 시작 ~ 마감 전 라스트오더 시간까지 자동 적용</p>
+                          </div>
                           {store.operatingInfo.deliverySettings.minOrderAmount != null && (
                             <div>
                               <label className="text-sm text-txt-muted">최소 주문금액</label>
@@ -598,20 +602,6 @@ export const StoreDetail: React.FC = () => {
                             </div>
                           )}
                         </>
-                      )}
-                      <div>
-                        <label className="text-sm text-txt-muted">예약 가능</label>
-                        <div className="mt-1">
-                          <Badge variant={store.operatingInfo.deliverySettings.isReservationAvailable ? 'success' : 'secondary'}>
-                            {store.operatingInfo.deliverySettings.isReservationAvailable ? '가능' : '불가'}
-                          </Badge>
-                        </div>
-                      </div>
-                      {store.operatingInfo.deliverySettings.isReservationAvailable && store.operatingInfo.deliverySettings.reservationLeadTimeMinutes != null && (
-                        <div>
-                          <label className="text-sm text-txt-muted">예약 가능 시간</label>
-                          <p className="mt-1 font-medium">현재 시간 +{store.operatingInfo.deliverySettings.reservationLeadTimeMinutes}분부터</p>
-                        </div>
                       )}
                     </div>
                   </div>
@@ -632,14 +622,10 @@ export const StoreDetail: React.FC = () => {
                       </div>
                       {store.operatingInfo.pickupSettings.isAvailable && (
                         <>
-                          {store.operatingInfo.pickupSettings.availableStartTime && (
-                            <div>
-                              <label className="text-sm text-txt-muted">포장 가능 시간</label>
-                              <p className="mt-1 font-medium">
-                                {store.operatingInfo.pickupSettings.availableStartTime} ~ {store.operatingInfo.pickupSettings.availableEndTime}
-                              </p>
-                            </div>
-                          )}
+                          <div>
+                            <label className="text-sm text-txt-muted">포장 주문 가능 시간</label>
+                            <p className="mt-1 text-sm text-txt-secondary">영업 시작 ~ 마감 전 라스트오더 시간까지 자동 적용</p>
+                          </div>
                           {store.operatingInfo.pickupSettings.minOrderAmount != null && (
                             <div>
                               <label className="text-sm text-txt-muted">최소 주문금액</label>
@@ -651,17 +637,9 @@ export const StoreDetail: React.FC = () => {
                       <div>
                         <label className="text-sm text-txt-muted">예약 가능</label>
                         <div className="mt-1">
-                          <Badge variant={store.operatingInfo.pickupSettings.isReservationAvailable ? 'success' : 'secondary'}>
-                            {store.operatingInfo.pickupSettings.isReservationAvailable ? '가능' : '불가'}
-                          </Badge>
+                          <Badge variant="secondary">-</Badge>
                         </div>
                       </div>
-                      {store.operatingInfo.pickupSettings.isReservationAvailable && store.operatingInfo.pickupSettings.reservationLeadTimeMinutes != null && (
-                        <div>
-                          <label className="text-sm text-txt-muted">예약 가능 시간</label>
-                          <p className="mt-1 font-medium">현재 시간 +{store.operatingInfo.pickupSettings.reservationLeadTimeMinutes}분부터</p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}

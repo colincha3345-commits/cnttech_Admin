@@ -17,11 +17,13 @@ import {
 import {
   STORE_STATUS_LABELS,
   CONTRACT_STATUS_LABELS,
+  CONTRACT_TYPE_LABELS,
   REGIONS,
   BANKS,
   type StoreFormData,
   type StoreStatus,
   type ContractStatus,
+  type ContractType,
   type Region,
 } from '@/types/store';
 
@@ -79,6 +81,9 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
       contractDate: '',
       expirationDate: '',
       contractStatus: 'active',
+      contractType: 'franchise',
+      royaltyRate: 0,
+      depositAmount: 0,
       notes: '',
     },
     bankAccount: {
@@ -116,6 +121,9 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
           contractDate: formatDateForInput(existingStore.contract.contractDate),
           expirationDate: formatDateForInput(existingStore.contract.expirationDate),
           contractStatus: existingStore.contract.contractStatus,
+          contractType: existingStore.contract.contractType || 'franchise',
+          royaltyRate: existingStore.contract.royaltyRate ?? 0,
+          depositAmount: existingStore.contract.depositAmount ?? 0,
           notes: existingStore.contract.notes || '',
         },
         bankAccount: {
@@ -136,7 +144,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
   const handleChange = (
     section: keyof StoreFormData,
     field: string,
-    value: string
+    value: string | number
   ) => {
     if (section === 'name' || section === 'code' || section === 'status' || section === 'openingDate' || section === 'operatingHours') {
       setFormData((prev) => ({ ...prev, [section]: value }));
@@ -580,10 +588,51 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
           </div>
         </Card>
 
-        {/* 계약 정보 */}
+        {/* 계약 정보 — 브랜드 본사가 해당 매장(가맹점)을 관리하기 위한 계약 */}
         <Card className="p-6">
           <h2 className="text-lg font-semibold mb-4">계약 정보</h2>
+          <p className="text-xs text-txt-muted mb-4">본사에서 해당 매장의 가맹 계약을 관리합니다.</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-txt-main mb-1">
+                계약 유형
+              </label>
+              <select
+                value={formData.contract.contractType ?? 'franchise'}
+                onChange={(e) =>
+                  handleChange('contract', 'contractType', e.target.value as ContractType)
+                }
+                className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {Object.entries(CONTRACT_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-txt-main mb-1">
+                계약 상태
+              </label>
+              <select
+                value={formData.contract.contractStatus}
+                onChange={(e) =>
+                  handleChange(
+                    'contract',
+                    'contractStatus',
+                    e.target.value as ContractStatus
+                  )
+                }
+                className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {Object.entries(CONTRACT_STATUS_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-txt-main mb-1">
                 계약일 <span className="text-critical">*</span>
@@ -610,25 +659,35 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
             </div>
             <div>
               <label className="block text-sm font-medium text-txt-main mb-1">
-                계약 상태
+                로열티 비율 (%)
               </label>
-              <select
-                value={formData.contract.contractStatus}
+              <Input
+                type="number"
+                value={formData.contract.royaltyRate ?? 0}
                 onChange={(e) =>
-                  handleChange(
-                    'contract',
-                    'contractStatus',
-                    e.target.value as ContractStatus
-                  )
+                  handleChange('contract', 'royaltyRate', Number(e.target.value) || 0)
                 }
-                className="w-full h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                {Object.entries(CONTRACT_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                min={0}
+                max={100}
+                step={0.1}
+                placeholder="0"
+              />
+              <p className="text-xs text-txt-muted mt-0.5">본사가 매장에 부과하는 수수료 비율</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-txt-main mb-1">
+                보증금 (원)
+              </label>
+              <Input
+                type="number"
+                value={formData.contract.depositAmount ?? 0}
+                onChange={(e) =>
+                  handleChange('contract', 'depositAmount', Number(e.target.value) || 0)
+                }
+                min={0}
+                step={100000}
+                placeholder="0"
+              />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-txt-main mb-1">
@@ -637,7 +696,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
               <textarea
                 value={formData.contract.notes}
                 onChange={(e) => handleChange('contract', 'notes', e.target.value)}
-                placeholder="계약 관련 메모"
+                placeholder="계약 관련 메모 (특이사항, 별도 약정 등)"
                 rows={3}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
               />

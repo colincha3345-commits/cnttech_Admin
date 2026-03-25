@@ -155,8 +155,6 @@ export const ClosedDayEdit: React.FC = () => {
                 weekendHours: currentOperatingInfo?.weekendHours || { isOpen: true, openTime: '09:00', closeTime: '22:00' },
                 holidayHours: currentOperatingInfo?.holidayHours,
                 dailyHours: currentOperatingInfo?.dailyHours,
-                deliveryFee: currentOperatingInfo?.deliveryFee ?? 0,
-                freeDeliveryMinAmount: currentOperatingInfo?.freeDeliveryMinAmount,
                 isTemporarilyClosed: currentOperatingInfo?.isTemporarilyClosed ?? false,
                 temporaryCloseReason: currentOperatingInfo?.temporaryCloseReason,
                 temporaryCloseStartDate: currentOperatingInfo?.temporaryCloseStartDate
