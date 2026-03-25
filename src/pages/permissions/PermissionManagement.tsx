@@ -27,6 +27,8 @@ import {
   DownOutlined,
   RightOutlined,
   FilterOutlined,
+  NotificationOutlined,
+  EnvironmentOutlined,
 } from '@ant-design/icons';
 import { clsx } from 'clsx';
 
@@ -75,6 +77,7 @@ const MENU_ICONS: Record<AdminMenu, ComponentType<{ style?: CSSProperties; class
   dashboard: DashboardOutlined,
   menu: AppstoreOutlined,
   marketing: GiftOutlined,
+  push: NotificationOutlined,
   events: CalendarOutlined,
   orders: ShoppingCartOutlined,
   'app-members': TeamOutlined,
@@ -82,6 +85,7 @@ const MENU_ICONS: Record<AdminMenu, ComponentType<{ style?: CSSProperties; class
   design: HighlightOutlined,
   settlement: DollarOutlined,
   support: CustomerServiceOutlined,
+  'delivery-zones': EnvironmentOutlined,
   'audit-logs': FileTextOutlined,
   permissions: SafetyOutlined,
   settings: SettingOutlined,

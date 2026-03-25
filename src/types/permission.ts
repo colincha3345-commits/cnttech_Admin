@@ -10,6 +10,7 @@ export type AdminMenu =
   | 'dashboard'
   | 'menu'
   | 'marketing'
+  | 'push'
   | 'events'
   | 'orders'
   | 'app-members'
@@ -17,6 +18,7 @@ export type AdminMenu =
   | 'design'
   | 'settlement'
   | 'support'
+  | 'delivery-zones'
   | 'audit-logs'
   | 'permissions'
   | 'settings';
@@ -71,6 +73,7 @@ export const ADMIN_MENU_LABELS: Record<AdminMenu, string> = {
   dashboard: '대시보드',
   menu: '메뉴관리',
   marketing: '마케팅관리',
+  push: '앱푸시관리',
   events: '이벤트관리',
   orders: '주문관리',
   'app-members': '앱회원관리',
@@ -78,6 +81,7 @@ export const ADMIN_MENU_LABELS: Record<AdminMenu, string> = {
   design: '디자인관리',
   settlement: '정산관리',
   support: '고객센터',
+  'delivery-zones': '상권관리',
   'audit-logs': '감사 로그',
   permissions: '권한 관리',
   settings: '설정',
@@ -88,6 +92,7 @@ export const ADMIN_MENU_ORDER: AdminMenu[] = [
   'dashboard',
   'menu',
   'marketing',
+  'push',
   'events',
   'orders',
   'app-members',
@@ -95,6 +100,7 @@ export const ADMIN_MENU_ORDER: AdminMenu[] = [
   'design',
   'settlement',
   'support',
+  'delivery-zones',
   'audit-logs',
   'permissions',
   'settings',
@@ -131,6 +137,14 @@ export const MENU_PERMISSION_CONFIG: MenuPermissionConfig[] = [
     subPermissions: [
       { level: 'view', label: '마케팅 조회' },
       { level: 'write', label: '마케팅 등록' },
+    ],
+  },
+  {
+    menu: 'push',
+    label: '앱푸시관리',
+    subPermissions: [
+      { level: 'view', label: '푸시 조회' },
+      { level: 'write', label: '푸시 발송' },
     ],
   },
   {
@@ -193,6 +207,14 @@ export const MENU_PERMISSION_CONFIG: MenuPermissionConfig[] = [
     subPermissions: [
       { level: 'view', label: '문의 조회' },
       { level: 'write', label: '답변 작성' },
+    ],
+  },
+  {
+    menu: 'delivery-zones',
+    label: '상권관리',
+    subPermissions: [
+      { level: 'view', label: '상권 조회' },
+      { level: 'write', label: '상권 편집' },
     ],
   },
   {

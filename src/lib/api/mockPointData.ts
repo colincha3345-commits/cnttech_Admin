@@ -18,6 +18,8 @@ export const mockPointSettings: PointSettingsData = {
     maxUseRate: 50,
     useUnit: 100,
     allowNegativeBalance: true,
+    headquartersRatio: 70,
+    franchiseRatio: 30,
   },
   expiryPolicy: {
     defaultValidityDays: 365,

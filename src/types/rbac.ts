@@ -17,6 +17,7 @@ export const ROLE_PERMISSIONS: RolePermissionMatrix = {
     dashboard: ['read', 'write'],
     menu: ['read', 'write'],
     marketing: ['read', 'write'],
+    push: ['read', 'write'],
     events: ['read', 'write', 'unmask'],
     orders: ['read', 'write', 'unmask'],
     'app-members': ['read', 'write', 'unmask'],
@@ -24,6 +25,7 @@ export const ROLE_PERMISSIONS: RolePermissionMatrix = {
     design: ['read', 'write'],
     settlement: ['read', 'write'],
     support: ['read', 'write'],
+    'delivery-zones': ['read', 'write'],
     'audit-logs': ['read'],
     permissions: ['read', 'write'],
     settings: ['read', 'write'],
@@ -32,6 +34,7 @@ export const ROLE_PERMISSIONS: RolePermissionMatrix = {
     dashboard: ['read'],
     menu: ['read', 'write'],
     marketing: ['read', 'write'],
+    push: ['read', 'write'],
     events: ['read', 'write'],
     orders: ['read', 'write'],
     'app-members': ['read', 'write'],
@@ -39,6 +42,7 @@ export const ROLE_PERMISSIONS: RolePermissionMatrix = {
     design: ['read', 'write'],
     settlement: ['read'],
     support: ['read', 'write'],
+    'delivery-zones': ['read', 'write'],
     'audit-logs': ['read'],
     permissions: ['read'],
     settings: ['read'],
@@ -47,11 +51,13 @@ export const ROLE_PERMISSIONS: RolePermissionMatrix = {
     dashboard: ['read'],
     menu: ['read'],
     marketing: ['read'],
+    push: ['read'],
     events: ['read'],
     orders: ['read'],
     'app-members': ['read'],
     design: ['read'],
     support: ['read'],
+    'delivery-zones': ['read'],
     permissions: ['read'],
   },
 };
@@ -73,7 +79,7 @@ export const ROUTE_PERMISSIONS: Record<string, { resource: Resource; action: Per
   '/marketing/coupons': { resource: 'marketing', action: 'read' },
   '/marketing/campaigns': { resource: 'marketing', action: 'read' },
   '/marketing/points': { resource: 'marketing', action: 'read' },
-  '/marketing/push': { resource: 'marketing', action: 'read' },
+  '/marketing/push': { resource: 'push', action: 'read' },
   // 이벤트관리
   '/events': { resource: 'events', action: 'read' },
   // 주문관리
@@ -103,6 +109,8 @@ export const ROUTE_PERMISSIONS: Record<string, { resource: Resource; action: Per
   // 정산관리
   '/settlement': { resource: 'settlement', action: 'read' },
   '/settlement/stats': { resource: 'settlement', action: 'read' },
+  // 상권관리
+  '/delivery-zones': { resource: 'delivery-zones', action: 'read' },
   // 감사로그
   '/audit-logs': { resource: 'audit-logs', action: 'read' },
   // 권한관리

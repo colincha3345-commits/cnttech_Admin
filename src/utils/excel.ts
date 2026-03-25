@@ -339,7 +339,20 @@ export function downloadDashboardExcel(
   summarySheet['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 14 }];
   XLSX.utils.book_append_sheet(workbook, summarySheet, '운영요약');
 
-  // 시트 3: 마케팅 성과
+  // 시트 3: 주문 상세 (유형별/채널별/결제수단별/회원별)
+  if (exportData.orderDetails) {
+    const orderDetailRows = [
+      ...exportData.orderDetails.byType.map((d) => ({ '구분': '주문 유형별', '항목': d.label, '비율(%)': d.value, '건수': d.count })),
+      ...exportData.orderDetails.byChannel.map((d) => ({ '구분': '채널별', '항목': d.label, '비율(%)': d.value, '건수': d.count })),
+      ...exportData.orderDetails.byPayment.map((d) => ({ '구분': '결제수단별', '항목': d.label, '비율(%)': d.value, '건수': d.count })),
+      ...exportData.orderDetails.byMember.map((d) => ({ '구분': '회원별', '항목': d.label, '비율(%)': d.value, '건수': d.count })),
+    ];
+    const orderDetailSheet = XLSX.utils.json_to_sheet(orderDetailRows);
+    orderDetailSheet['!cols'] = [{ wch: 14 }, { wch: 12 }, { wch: 10 }, { wch: 10 }];
+    XLSX.utils.book_append_sheet(workbook, orderDetailSheet, '주문상세');
+  }
+
+  // 시트 4: 마케팅 성과
   const marketingData = exportData.marketing.map((m) => ({
     '항목명': m.name,
     '유형': m.type === 'banner' ? '배너' : m.type === 'event' ? '이벤트' : '상세페이지',

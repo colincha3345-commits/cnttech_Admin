@@ -51,7 +51,9 @@ export interface UsePolicy {
   minUsePoints: number;       // 최소 사용 포인트
   maxUseRate: number;         // 최대 사용 비율 (결제금액의 N%)
   useUnit: UseUnit;           // 사용 단위
-  allowNegativeBalance: boolean; // 주문취소 시 마이너스 잔고 허용 (방안 A)
+  allowNegativeBalance: true;    // 마이너스 잔고 항상 허용 (고정 정책, 미사용 옵션 없음)
+  headquartersRatio: number;  // 포인트 사용 시 본사 부담 비율 (%)
+  franchiseRatio: number;     // 포인트 사용 시 가맹점 부담 비율 (%)
 }
 
 // ============================================
@@ -140,7 +142,8 @@ export interface PointSettingsFormData {
   minUsePoints: number;
   maxUseRate: number;
   useUnit: UseUnit;
-  allowNegativeBalance: boolean;
+  headquartersRatio: number;  // 본사 부담 비율 (%)
+  franchiseRatio: number;     // 가맹점 부담 비율 (%)
 
   // 유효기간
   defaultValidityDays: number;
@@ -162,7 +165,8 @@ export const DEFAULT_POINT_SETTINGS_FORM: PointSettingsFormData = {
   minUsePoints: 100,
   maxUseRate: 50,
   useUnit: 100,
-  allowNegativeBalance: true,
+  headquartersRatio: 70,
+  franchiseRatio: 30,
 
   defaultValidityDays: 365,
   expiryNotificationDays: 30,
@@ -204,6 +208,12 @@ export function validatePointSettings(data: PointSettingsFormData): string[] {
   }
   if (data.maxUseRate <= 0 || data.maxUseRate > 100) {
     errors.push('최대 사용 비율은 0% 초과 100% 이하여야 합니다.');
+  }
+  if (data.headquartersRatio + data.franchiseRatio !== 100) {
+    errors.push('본사 부담 비율과 가맹점 부담 비율의 합계는 100%여야 합니다.');
+  }
+  if (data.headquartersRatio < 0 || data.franchiseRatio < 0) {
+    errors.push('부담 비율은 0% 이상이어야 합니다.');
   }
 
   // 유효기간

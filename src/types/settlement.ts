@@ -1,6 +1,7 @@
 import type { OrderMenuItem, OrderDiscount, PaymentMethod } from './order';
 
-export type SettlementStatus = 'pending' | 'calculated' | 'completed' | 'on_hold';
+// 정산 상태: 정산일 기준으로 정산전 / 정산완료로 구분
+export type SettlementStatus = 'pending' | 'completed';
 
 export interface Settlement {
     id: string;
@@ -15,6 +16,7 @@ export interface Settlement {
     couponsUsed: number; // 쿠폰 사용액
     vouchersUsed: number; // 교환권/상품권 사용액
     platformFee: number; // 플랫폼 수수료
+    pgFee: number; // PG사 결제 수수료 (super-admin FeePolicy.pgFeeRate 기준)
     netAmount: number; // 최종 실 정산액
     status: SettlementStatus;
     paymentDate?: string;

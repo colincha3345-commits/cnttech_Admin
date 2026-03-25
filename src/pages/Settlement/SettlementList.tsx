@@ -20,10 +20,8 @@ import { useSettlements, useRunSettlement } from '@/hooks/useSettlement';
 import type { Settlement, SettlementStatus } from '@/types/settlement';
 
 const SETTLEMENT_STATUS_LABELS: Record<SettlementStatus, string> = {
-    pending: '정산 예정',
-    calculated: '정산 확정',
-    completed: '정산 완료',
-    on_hold: '정산 보류',
+    pending: '정산전',
+    completed: '정산완료',
 };
 
 export function SettlementList() {
@@ -238,6 +236,14 @@ export function SettlementList() {
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.platformFee.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'pgFee',
+                            header: 'PG 수수료',
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.pgFee.toLocaleString()}</span>
                             ),
                         },
                         {

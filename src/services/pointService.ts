@@ -38,7 +38,9 @@ class PointService {
         minUsePoints: formData.minUsePoints,
         maxUseRate: formData.maxUseRate,
         useUnit: formData.useUnit,
-        allowNegativeBalance: formData.allowNegativeBalance,
+        allowNegativeBalance: true,
+        headquartersRatio: formData.headquartersRatio,
+        franchiseRatio: formData.franchiseRatio,
       },
       expiryPolicy: {
         defaultValidityDays: formData.defaultValidityDays,

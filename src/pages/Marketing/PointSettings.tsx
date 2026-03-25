@@ -92,7 +92,8 @@ export function PointSettings() {
         minUsePoints: s.usePolicy.minUsePoints,
         maxUseRate: s.usePolicy.maxUseRate,
         useUnit: s.usePolicy.useUnit,
-        allowNegativeBalance: s.usePolicy.allowNegativeBalance,
+        headquartersRatio: s.usePolicy.headquartersRatio,
+        franchiseRatio: s.usePolicy.franchiseRatio,
         defaultValidityDays: s.expiryPolicy.defaultValidityDays,
         expiryNotificationDays: s.expiryPolicy.expiryNotificationDays,
       };
@@ -422,34 +423,69 @@ export function PointSettings() {
                 </span> 사용 가능
               </div>
 
-              {/* 마이너스 잔고 정책 */}
+              {/* 마이너스 잔고 정책 (고정) */}
               <div className="space-y-2 pt-4 border-t border-border">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>주문취소 시 마이너스 잔고 허용</Label>
-                    <p className="text-xs text-txt-muted mt-1">
-                      주문 취소 시 적립 포인트를 강제 회수하여 잔액이 마이너스가 될 수 있습니다.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleFormChange({ allowNegativeBalance: !formData.allowNegativeBalance })}
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                      formData.allowNegativeBalance ? 'bg-primary' : 'bg-gray-300'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transform transition-transform ${
-                        formData.allowNegativeBalance ? 'translate-x-5' : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
+                <div>
+                  <Label>주문취소 시 마이너스 잔고 정책</Label>
+                  <p className="text-xs text-txt-muted mt-1">
+                    주문 취소 시 적립 포인트를 강제 회수하여 잔액이 마이너스가 될 수 있습니다.
+                  </p>
                 </div>
-                {formData.allowNegativeBalance && (
-                  <div className="p-3 bg-warning/10 rounded-lg text-xs text-warning">
-                    마이너스 잔고 상태의 고객은 포인트 사용이 차단되며, 이후 적립 시 자동으로 복구됩니다.
+                <div className="p-3 bg-warning/10 rounded-lg text-xs text-warning">
+                  마이너스 잔고 상태의 고객은 포인트 사용이 차단되며, 이후 적립 시 자동으로 복구됩니다.
+                </div>
+              </div>
+
+              {/* 포인트 사용 부담 비율 */}
+              <div className="space-y-3 pt-4 border-t border-border">
+                <div>
+                  <Label>포인트 사용 시 정산 부담 비율</Label>
+                  <p className="text-xs text-txt-muted mt-1">
+                    고객이 포인트로 결제 시, 해당 금액을 본사와 가맹점이 나눠 부담하는 비율입니다.
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs text-txt-secondary">본사 부담</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={formData.headquartersRatio || ''}
+                        onChange={(e) => {
+                          const hq = Number(e.target.value);
+                          handleFormChange({ headquartersRatio: hq, franchiseRatio: 100 - hq });
+                        }}
+                        min={0}
+                        max={100}
+                        className="pr-12"
+                        placeholder="70"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-txt-muted text-sm">%</span>
+                    </div>
                   </div>
-                )}
+                  <div className="flex-1 space-y-1">
+                    <Label className="text-xs text-txt-secondary">가맹점 부담</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={formData.franchiseRatio || ''}
+                        onChange={(e) => {
+                          const fr = Number(e.target.value);
+                          handleFormChange({ franchiseRatio: fr, headquartersRatio: 100 - fr });
+                        }}
+                        min={0}
+                        max={100}
+                        className="pr-12"
+                        placeholder="30"
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-txt-muted text-sm">%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 bg-bg-hover rounded-lg text-sm text-txt-secondary">
+                  예시: 고객이 1,000P 사용 시 → 본사 <span className="font-semibold text-primary">{formData.headquartersRatio}%({Math.floor(1000 * formData.headquartersRatio / 100)}원)</span> 부담,
+                  가맹점 <span className="font-semibold">{formData.franchiseRatio}%({Math.floor(1000 * formData.franchiseRatio / 100)}원)</span> 부담
+                </div>
               </div>
             </div>
           </CardContent>

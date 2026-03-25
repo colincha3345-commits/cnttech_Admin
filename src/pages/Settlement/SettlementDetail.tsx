@@ -108,7 +108,7 @@ export function SettlementDetail() {
                                 <span>₩{data.deliveryFee.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between items-center text-red-500 font-bold border-b border-border pb-1">
-                                <span>- 총 할인액 (C)</span>
+                                <span>- 할인 차감액 (C)</span>
                                 <span>-₩{data.promotionDiscount.toLocaleString()}</span>
                             </div>
                             <div className="pl-4 space-y-1 text-[11px] text-txt-muted">
@@ -120,10 +120,6 @@ export function SettlementDetail() {
                                     <span>ㄴ 쿠폰 사용</span>
                                     <span>₩{data.couponsUsed.toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span>ㄴ 교환권/상품권 사용</span>
-                                    <span>₩{data.vouchersUsed.toLocaleString()}</span>
-                                </div>
                             </div>
                             <div className="flex justify-between items-center text-blue-500">
                                 <span>+ 본사 지원 할인금 (정산 합산) (D)</span>
@@ -133,11 +129,28 @@ export function SettlementDetail() {
                                 <span>- 플랫폼 수수료 (E)</span>
                                 <span>-₩{data.platformFee.toLocaleString()}</span>
                             </div>
+                            <div className="flex justify-between items-center text-red-500">
+                                <span>- PG사 결제 수수료 (F)</span>
+                                <span>-₩{data.pgFee.toLocaleString()}</span>
+                            </div>
                             <div className="pt-4 mt-2 border-t-2 border-txt-main flex justify-between items-center text-xl font-bold">
                                 <span className="text-txt-main">최종 지급액</span>
                                 <span className="text-blue-600">₩{data.netAmount.toLocaleString()}</span>
                             </div>
-                            <p className="text-xs text-txt-muted text-right">수식: A + B - C + D - E</p>
+                            <p className="text-xs text-txt-muted text-right">수식: A + B - C + D - E - F</p>
+
+                            {/* E쿠폰 (교환권/상품권) — 외부 쿠폰사 정산 */}
+                            {data.vouchersUsed > 0 && (
+                                <div className="mt-4 pt-4 border-t border-dashed border-border">
+                                    <div className="flex justify-between items-center text-sm font-medium text-txt-secondary">
+                                        <span>E쿠폰 사용액 (교환권/상품권)</span>
+                                        <span>₩{data.vouchersUsed.toLocaleString()}</span>
+                                    </div>
+                                    <p className="text-[11px] text-txt-muted mt-1">
+                                        정산주체: 외부 쿠폰사 · 가맹점 정산에 미포함 · 쿠폰사↔플랫폼 별도 정산
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

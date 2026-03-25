@@ -58,6 +58,8 @@ export interface DashboardStats {
   totalProducts: number;
   todayOrders: number;
   todayRevenue: number;
+  todayCompletedRevenue: number;   // 주문 완료 금액
+  todayCancelledRevenue: number;   // 주문 취소 금액
   totalStores: number;
 
   // 전일 통계 (비교용)
@@ -67,6 +69,16 @@ export interface DashboardStats {
   // 변화율
   ordersChange: number;
   revenueChange: number;
+
+  // 회원 현황
+  totalMembers: number;
+  newSignupNormal: number;         // 신규 일반 회원가입
+  newSignupSimple: number;         // 신규 간편 회원가입
+  withdrawalCount: number;         // 탈퇴 회원
+
+  // 문의 현황 (InquiryStatus: pending | resolved)
+  pendingInquiries: number;        // 대기
+  resolvedInquiries: number;       // 완료
 }
 
 /** 마케팅 성과 항목 */
@@ -92,10 +104,45 @@ export interface MarketingStats {
   items: MarketingPerformanceItem[];
 }
 
+// 일별 매출 데이터
+export interface DailySalesItem {
+  date: string;
+  revenue: number;
+  orders: number;
+  avgOrderAmount: number;
+}
+
+// 회원 분석 데이터
+export interface MemberAnalyticsData {
+  summary: { total: number; active: number; dormant: number; newSignup: number; withdrawal: number };
+  gender: { label: string; value: number; count: number }[];
+  age: { range: string; percentage: number; count: number }[];
+  membership: { grade: string; count: number; percentage: number }[];
+  growth: { newCustomerRate: number; newCustomerChange: number; existingCustomerRate: number; existingRetentionChange: number; monthlyNewAvg: number; monthlyChurnAvg: number };
+  topCustomers: { rank: number; name: string; totalOrders: number; totalAmount: number; lastOrder: string; grade: string }[];
+  orderFrequency: { label: string; percentage: number; count: number }[];
+}
+
 /** 대시보드 엑셀 내보내기 데이터 */
+// 주문 상세 분석 항목
+export interface OrderDetailItem {
+  label: string;
+  value: number;  // 비율(%)
+  count: number;  // 건수
+}
+
+// 주문 상세 분석 (유형별/채널별/결제수단별/회원별)
+export interface OrderDetailsData {
+  byType: OrderDetailItem[];
+  byChannel: OrderDetailItem[];
+  byPayment: OrderDetailItem[];
+  byMember: OrderDetailItem[];
+}
+
 export interface DashboardExportData {
   stats: DashboardStats;
   dailySales: { date: string; revenue: number; orders: number; avgOrderAmount: number }[];
+  orderDetails: OrderDetailsData;
   marketing: MarketingPerformanceItem[];
 }
 

@@ -33,6 +33,7 @@ import { useToast } from '@/hooks/useToast';
 
 // 상태별 뱃지 variant
 const STATUS_BADGE_VARIANT: Record<OrderStatus, 'default' | 'secondary' | 'success' | 'warning' | 'critical' | 'info'> = {
+  payment_pending: 'secondary',
   pending: 'warning',
   confirmed: 'info',
   preparing: 'info',
@@ -40,6 +41,7 @@ const STATUS_BADGE_VARIANT: Record<OrderStatus, 'default' | 'secondary' | 'succe
   delivered: 'success',
   completed: 'success',
   cancelled: 'critical',
+  expired: 'default',
 };
 
 export function OrderDetail() {

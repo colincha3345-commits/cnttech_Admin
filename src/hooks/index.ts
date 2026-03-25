@@ -192,5 +192,7 @@ export {
   useCreateDeliveryZone,
   useUpdateDeliveryZone,
   useDeleteDeliveryZone,
+  useCreateSubZonesBatch,
+  useSubZones,
 } from './useDeliveryZones';
 export { useBrandConfig } from './useSettings';

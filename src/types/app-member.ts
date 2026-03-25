@@ -72,22 +72,26 @@ export interface AppUsageLog {
  * 주문 상태
  */
 export type OrderStatus =
+  | 'payment_pending'
   | 'pending'
   | 'confirmed'
   | 'preparing'
   | 'ready'
   | 'delivered'
   | 'completed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'expired';
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: '결제 대기',
+  payment_pending: '결제 진행중',
+  pending: '접수 대기',
   confirmed: '주문 확인',
   preparing: '준비 중',
   ready: '준비 완료',
   delivered: '배달 완료',
   completed: '완료',
   cancelled: '취소됨',
+  expired: '결제 만료',
 };
 
 /**
