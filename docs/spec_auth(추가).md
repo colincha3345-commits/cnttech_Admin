@@ -511,6 +511,22 @@ inactive → active : 관리자가 재활성화
 만료 시: "초대가 만료되었습니다. 관리자에게 재초대를 요청하세요" 표시
 사용 후: 즉시 삭제 (재사용 불가)
 발송 실패: 비동기 큐 재시도 3회, 실패 시 관리자 알림
+
+■ 재초대 정책
+
+  재초대(resend): 토큰+만료일만 갱신. 기존 입력 정보(이름/이메일/전화번호/부서) 유지.
+  - 용도: 동일인에게 초대 메일 재발송 (만료/미수신 시)
+  - 변경 사항 없음, 새 토큰으로 링크만 갱신
+
+  초대 취소 후 재초대(cancel → new invite): 기존 초대 삭제 후 처음부터 새로 작성.
+  - 용도: 이메일/부서/이름 등 정보가 변경된 경우
+  - cancelInvitation → inviteStaff 순서로 처리
+
+  정리:
+  | 상황                     | 동작                     | 정보 재입력 |
+  |--------------------------|--------------------------|------------|
+  | 같은 사람, 메일 재발송     | [재초대] 버튼            | 불필요      |
+  | 정보 변경 필요             | [초대취소] → [신규초대]    | 필요        |
 ```
 
 ### 4.3. 비밀번호 정책
@@ -573,7 +589,7 @@ teamId를 참조하는 직원이 1명 이상 → 삭제 거부 (409 Conflict)
 
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
 | :--- | :--- | :---: | :--- | :--- |
-| **메뉴 (menu)** | Text (ReadOnly) | Y | 13개 메뉴 | dashboard/menu/marketing/events/orders/app-members/staff/design/settlement/support/audit-logs/permissions/settings 이다. |
+| **메뉴 (menu)** | Text (ReadOnly) | Y | 15개 메뉴 | dashboard/menu/marketing/push/events/orders/app-members/staff/design/settlement/support/delivery-zones/audit-logs/permissions/settings 이다. |
 | **조회 (view)** | Checkbox | Y | Boolean | 해당 메뉴 접근 가능 여부다. |
 | **쓰기 (write)** | Checkbox | Y | Boolean | 생성/수정/삭제 가능 여부다. view 비활성 시 자동 비활성이다. |
 | **마스킹 해제 (masking)** | Checkbox | Y | Boolean | 개인정보 원문 조회 가능 여부다. |
@@ -602,7 +618,7 @@ teamId를 참조하는 직원이 1명 이상 → 삭제 거부 (409 Conflict)
 
 | 데이터베이스 필드 | 데이터 타입 | 필수 여부 | 글자수 / 제약조건 | 비고 (API 설계) |
 | :--- | :--- | :---: | :--- | :--- |
-| **menu** | Enum | Y | 13개 메뉴 | 관리 메뉴 식별자다. |
+| **menu** | Enum | Y | 15개 메뉴 | 관리 메뉴 식별자다. (dashboard/menu/marketing/push/events/orders/app-members/staff/design/settlement/support/delivery-zones/audit-logs/permissions/settings) |
 | **view** | Boolean | Y | - | 조회 권한이다. |
 | **write** | Boolean | Y | - | 쓰기 권한이다. |
 | **masking** | Boolean | Y | - | 마스킹 해제 권한이다. |

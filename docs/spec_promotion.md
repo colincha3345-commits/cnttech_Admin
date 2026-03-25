@@ -755,6 +755,9 @@ GET /marketing/events
 | **최소 사용 (minUsePoints)** | Number Input | Y | 1 이상 | N포인트 이상 사용 가능이다. |
 | **최대 사용 비율 (maxUseRate)** | Number Input | Y | 1 ~ 100 | 결제금액의 최대 N%이다. |
 | **사용 단위 (useUnit)** | Select | Y | 1/10/100/500/1000 | N포인트 단위 사용이다. |
+| **본사 부담 비율 (headquartersRatio)** | Number Input | Y | 0 ~ 100 | 포인트 사용 시 본사가 부담하는 비율(%)이다. 입력 시 가맹점 비율 자동 계산. |
+| **가맹점 부담 비율 (franchiseRatio)** | Number Input | Y | 0 ~ 100 | 포인트 사용 시 가맹점이 부담하는 비율(%)이다. 두 비율 합계 = 100%. 정산 시 가맹점 부담분은 차감, 본사 부담분은 hqSupport로 보전. |
+| **마이너스 잔고 정책** | 안내 문구 (ReadOnly) | - | 항상 허용 | 주문 취소 시 포인트 강제 회수로 잔액 마이너스 가능. 고정 정책이며 OFF 옵션 없음. |
 
 #### 유효기간 / 이력
 
@@ -781,7 +784,7 @@ GET /marketing/events
 #### DB 스키마 (PointSettings - 단일 레코드)
 
 earnPolicy: {type, fixedUnit, fixedPoints, percentageRate, maxEarnPoints, minOrderAmount}
-usePolicy: {minUsePoints, maxUseRate, useUnit}
+usePolicy: {minUsePoints, maxUseRate, useUnit, headquartersRatio, franchiseRatio, allowNegativeBalance(항상 true, 고정)}
 expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 
 #### DB 스키마 (PointHistory)

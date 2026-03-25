@@ -85,12 +85,18 @@
 | POST | `/api/orders/:id/payments/:paymentItemId/cancel` | 복합결제 개별 결제수단 취소다. |
 | POST | `/api/orders/:id/memos` | 관리자 메모 추가다. |
 | POST | `/api/orders/export` | 엑셀 내보내기 (비동기, 선택 컬럼 OrderExportColumn 기반)다. |
+| POST | `/api/orders/prepare` | 주문 예약. status=payment_pending 생성. `X-Idempotency-Key` 필수. (4.6절 참고) |
+| POST | `/api/orders/:id/confirm` | 주문 확정. PG 승인번호 검증 후 status→pending 전환. `X-Idempotency-Key` 필수. (4.6절 참고) |
+| GET | `/api/orders/pending` | 미완료 주문 조회. idempotencyKey 파라미터로 재시도 시 주문 존재 여부 확인. (4.5절 참고) |
+| POST | `/api/orders/webhook/pg` | PG사 웹훅 수신. 결제 승인 정보로 payment_pending 주문 자동 확정. (4.6절 참고) |
 
 **[API 및 비즈니스 로직 제약사항]**
 - **상태 전이 검증** — 서버에서 유효한 상태 전이만 허용한다. pending→confirmed→preparing→ready→completed 순서와, 어느 단계에서든 cancelled 전이가 가능하다.
 - **취소 시 원복 처리** — 쿠폰/포인트/E쿠폰 사용분을 원래 계정으로 자동 환원하는 트랜잭션 로직이 필수다.
 - **복합결제 개별취소 API (`POST /api/orders/{id}/payments/{paymentItemId}/cancel`)** — 개별 결제수단별 PG 취소 호출을 분리하며, 부분취소 불가 PG사의 경우 전액취소 후 재결제 처리 플로우를 구현한다.
 - **주문번호 채번** — 동시 다발 주문 시 중복 방지를 위해 DB 시퀀스 또는 분산 ID 생성기(Snowflake 등)를 사용한다.
+- **멱등키 처리** — 주문 생성(prepare)/확정(confirm) API는 `X-Idempotency-Key` 헤더를 필수로 받으며, 동일 키의 중복 요청은 기존 응답을 반환한다. 키는 24시간 TTL로 Redis에 캐싱한다. (상세: 4.5절)
+- **2단계 주문 생성** — 결제 전 주문 예약(payment_pending) → PG 결제 → 주문 확정(pending) 순서를 강제한다. PG 웹훅 + 미확정 주문 정리 배치로 데이터 유실을 방어한다. (상세: 4.6절)
 - **엑셀 내보내기** — 대량 데이터(1만 건 이상) 시 비동기 처리 후 다운로드 링크를 제공하는 방식을 권장한다.
 
 **[⚠️ 트래픽/성능 검토]**
@@ -141,13 +147,33 @@
 ### 4.1. 주문 상태 전이 규칙 (FSM)
 
 ```
+전체 상태:
+  payment_pending : 결제 대기 (주문 예약 완료, PG 결제 진행 중)
+  pending         : 접수 대기 (결제 확정, 매장 접수 전)
+  confirmed       : 접수 완료
+  preparing       : 준비 중
+  ready           : 준비 완료
+  completed       : 완료
+  cancelled       : 취소
+  expired         : 결제 만료 (10분 내 결제 미완료 시 자동 전환)
+
 허용 전이:
+  payment_pending → pending    : PG 결제 확정 시 (confirm API 또는 PG 웹훅)
+  payment_pending → expired    : 결제 타임아웃 (10분, 배치 자동 전환)
+  payment_pending → cancelled  : 고객 결제 취소
   pending → confirmed → preparing → ready → completed
-  (모든 상태) → cancelled
+  (pending ~ ready) → cancelled
+
+자동 전이 (시스템 배치):
+  (pending/confirmed/preparing/ready) → completed
+    : 영업일 기준 자정(00:00)이 지나면 미완료 주문을 자동으로 주문완료 처리
+    : 정산 배치(02:00) 전에 실행하여 정산 대상에 포함시킴
+    : cancelled/payment_pending/expired 주문은 자동 완료 대상이 아님
 
 금지 전이:
   completed → (어떤 상태든) : 완료 후 역행 불가
   cancelled → (어떤 상태든) : 취소 후 복원 불가
+  expired → (어떤 상태든)   : 만료 후 복원 불가
 
 서버 검증: 요청 status가 현재 status의 허용 전이 목록에 없으면 → 400 INVALID_STATUS_TRANSITION
 ```
@@ -160,6 +186,29 @@
 3. E쿠폰 환원: eCoupon.status → active, pinNumber 재활성화
 4. PG 결제 취소: 각 결제수단별 PG사 취소 API 호출
 5. 위 4단계를 단일 트랜잭션으로 처리. PG 외부호출 실패 시 Saga 보상 트랜잭션 실행
+6. 정산 완료 후 취소 시: 원본 주문번호로 마이너스 주문내역 생성 (아래 4.2.1 참고)
+```
+
+### 4.2.1. 정산 후 취소 정책
+
+```
+■ 취소 가능 기한
+  주문은 정산 여부와 관계없이 언제든 고객 요청 시 취소 가능하다.
+  시스템에서 기한을 두고 차단하지 않는다.
+
+■ 마이너스 주문내역 생성
+  정산 완료 후 취소가 발생하면:
+  1) 원본 정산은 소급 수정하지 않음
+  2) 원본과 동일한 주문번호로 마이너스 주문내역을 신규 생성
+     · 주문번호: 원본과 동일 (예: 20260310-000042)
+     · 금액: 원본 금액의 음수 (예: totalAmount: -15000)
+     · 유형: orderType = 'refund'
+     · 원본 참조: originalOrderId 필드로 원본 주문 연결
+  3) 마이너스 내역은 다음 정산 배치에서 자동 집계되어 차감
+
+■ 주문 상세 화면 표시
+  마이너스 주문내역은 주문 목록에서 음수 금액 + 빨간색으로 표시.
+  원본 주문과 연결 표시 (클릭 시 원본 주문으로 이동 가능).
 ```
 
 ### 4.3. 주문번호 채번 규칙
@@ -178,7 +227,85 @@
 각 메모에 createdBy(작성자 ID) + createdAt(작성 시각) 필수 기록
 ```
 
+### 4.5. 주문 생성 시 네트워크 오류 방어
 
+```
+■ 문제 상황
+  고객이 주문 버튼을 누른 후 Wi-Fi→LTE 전환, 터널 진입 등으로
+  네트워크가 끊기면:
+  (a) 요청이 서버에 도달하지 못함 → 주문 미생성
+  (b) 서버 처리 완료했으나 응답이 클라이언트에 도달하지 못함 → 중복 요청 발생
+
+■ 방어 전략
+
+  1) 멱등키(Idempotency Key)
+     - 클라이언트가 주문 요청 시 UUID v4 기반 idempotencyKey를 헤더에 포함
+       (헤더명: X-Idempotency-Key)
+     - 서버는 해당 키로 중복 요청을 감지하여 동일 응답 반환 (24시간 TTL, Redis 캐싱)
+     - 재시도 시에도 주문이 2건 생성되지 않음
+
+  2) 클라이언트 재시도 정책
+     - 네트워크 오류(timeout, connection reset) 시 동일 idempotencyKey로 최대 3회 재시도
+     - 재시도 간격: 1초 → 2초 → 4초 (지수 백오프, exponential backoff)
+     - 재시도 중 UI: "주문 처리 중입니다. 잠시만 기다려 주세요." 로딩 표시
+     - 앱 종료 후 재진입 시 미완료 주문 확인 API 호출
+
+  3) 주문 상태 조회 폴백
+     - 재시도 3회 실패 시 GET /api/orders/pending?idempotencyKey={key}로
+       서버 측 처리 여부 확인
+     - 서버에 주문이 존재하면 해당 주문 상세로 이동
+     - 서버에 없으면 "주문 실패" 안내 + 재주문 유도
+```
+
+### 4.6. PG 결제 후 데이터 유실 방어
+
+```
+■ 문제 상황
+  PG사에서 결제 승인이 완료됐으나:
+  (a) 승인 응답이 서버에 도달하지 못함 (네트워크 장애)
+  (b) 서버가 응답을 받았으나 DB 저장 실패 (서버 장애/재시작)
+  → "돈은 빠졌는데 주문이 없는" 고객 피해 발생
+
+■ 방어 전략: 2단계 주문 생성 패턴
+
+  [1단계] 주문 예약 (결제 전)
+    POST /api/orders/prepare
+    → 주문 레코드를 status='payment_pending' 상태로 먼저 생성
+    → 주문번호 채번 + 결제 대기 타임아웃(10분) 설정
+    → 쿠폰/포인트를 "예약" 상태로 선점 (다른 주문에서 사용 방지)
+    → 응답: { orderId, orderNumber, paymentSessionId }
+
+  [2단계] PG 결제 요청
+    클라이언트가 PG SDK에 paymentSessionId + 금액을 전달하여 결제 진행
+    → PG 승인 완료 시 서버 콜백(webhook) 또는 클라이언트가 승인 결과 전달
+
+  [3단계] 주문 확정
+    POST /api/orders/{orderId}/confirm
+    → PG 승인 번호(pgApprovalNo) 검증 후 status='pending'(접수대기)으로 전환
+    → 쿠폰/포인트 예약 → 확정 차감 전환
+
+■ 유실 방어 메커니즘
+
+  1) PG 웹훅(Webhook) 수신
+     - PG사가 결제 승인 시 서버로 직접 웹훅 전송 (클라이언트 경유 불필요)
+     - 서버는 웹훅으로 받은 승인 정보와 payment_pending 주문을 매칭하여 자동 확정
+     - 클라이언트 응답 유실과 무관하게 주문 확정 보장
+
+  2) 미확정 주문 정리 배치 (Reconciliation)
+     - 10분 이상 payment_pending 상태인 주문을 주기적으로 스캔 (매 5분)
+     - PG사 승인 조회 API로 실제 결제 여부 확인:
+       · 결제 완료 → 자동 확정 (status → pending)
+       · 미결제 → 자동 만료 (status → expired), 쿠폰/포인트 예약 해제
+     - 결제는 됐으나 서버 장애로 웹훅도 못받은 최악의 케이스 방어
+
+  3) PG 승인번호 기반 중복 방지
+     - pgApprovalNo에 UNIQUE 제약 → 동일 결제가 2건 이상 확정되지 않음
+     - confirm API 호출 시 이미 확정된 주문이면 기존 주문 정보 반환 (멱등)
+
+■ 정산 연동
+  - payment_pending / expired 상태 주문은 정산 배치에서 제외
+  - 정산 대상: status가 completed인 주문만 집계
+```
 
 ### 공통 규칙 (Common Rules)
 - Base URL: `{VITE_API_URL}`

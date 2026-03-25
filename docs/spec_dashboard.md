@@ -17,14 +17,13 @@
 ## 1. 페이지 프로세스 (Page Process)
 
 1. **기간 필터** — 오늘/어제/최근7일/최근30일/직접입력 프리셋으로 조회 기간을 설정한다.
-2. **핵심 통계 카드** — 전체 주문 금액, 전체 주문 수, 최소 주문 건수, 신규 가입 회원 수, 엑셀 다운로드 기능을 상단에 표시한다.
-3. **정보 카드** — 매출 현황, 회원 현황, 문의 현황 등 섹션별 요약 정보와 바로가기 버튼을 제공한다.
-4. **차트** — 일별 매출 추이(`DailySalesChart`), 주문 상세(`OrderDetailsChart`), 회원 분석(`MemberAnalytics`), 마케팅 성과(`MarketingPerformance`)를 시각화한다.
-5. **최근 접속 이력** — 관리자 최근 로그인 이력(`RecentLogins`)을 테이블로 표시한다.
-6. **GA4 통계** — 디바이스별 상세(`GA4DeviceDetail`), 퍼널 분석(`GA4FunnelDetail`) 컴포넌트를 제공한다.
-7. **기능 사용 방법 (UI Interaction)**
-   - 기간 필터 조작 시 브라우저 내 상태(State)가 변경되며 즉시 `useDashboard` 훅을 통해 데이터 재조회 요청이 발생합니다.
-   - 우측 상단의 엑셀 다운로드 버튼 클릭 시 현재 선택된 기간 필터값을 기반으로 대시보드상 노출된 주요 통계 및 시계열 매출/마케팅 성과 데이터가 단일 Excel 파일로 클라이언트에서 생성 후 자동 다운로드됩니다.
+2. **핵심 통계 카드** — 전체 주문 금액(`todayRevenue`), 전체 주문 수(`todayOrders`), 등록 가맹점 수(`totalStores`), 신규 가입 회원 수(`newSignupNormal + newSignupSimple`)를 상단에 표시한다. `useDashboard` → `DashboardStats` 기반.
+3. **정보 카드** — 매출 현황(전체/완료/취소 금액), 회원 현황(전체/신규일반/신규간편/탈퇴), 문의 현황(대기`pending`/완료`resolved`) 등 섹션별 요약 정보와 바로가기 버튼을 제공한다. `DashboardStats` 기반.
+4. **주문 상세 차트** — 주문 유형별/채널별/결제수단별/회원별 비율을 탭으로 전환하여 표시한다. `useOrderDetails` hook 연동.
+5. **일별 매출 차트** — 선택 기간의 일별 매출 추이를 막대 차트로 표시한다. `useDailySales(dateRange)` hook 연동. 기간 변경 시 자동 재조회.
+6. **회원 분석** — 회원 상태 요약, 성별/연령대 분포, 등급별 구성, 성장 지표, Top5 고객, 주문 빈도를 표시한다. `useMemberAnalytics` hook 연동.
+7. **마케팅 성과** — 배너/이벤트별 노출·클릭·전환율을 테이블로 표시한다. `useMarketingStats` hook 연동.
+8. **GA4 통계** — 디바이스별 상세(`GA4DeviceDetail`), 퍼널 분석(`GA4FunnelDetail`) 컴포넌트를 제공한다.
 
 ---
 
@@ -32,40 +31,63 @@
 
 ### 2.1. 프론트엔드 (Frontend) 개발 요건
 
-| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
+| 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 데이터 소스 | 비고 (UI/UX) |
 | :--- | :--- | :---: | :--- | :--- |
-| **기간 필터 (dateRange)** | DateRangeFilter | Y | preset + from/to | 오늘/어제/7일/30일/직접입력이다. |
-| **전체 주문 금액 (totalRevenue)** | StatCard | - | 통화 포맷 | 전체 주문 금액을 표시한다. |
-| **전체 주문 수 (totalOrders)** | StatCard | - | 숫자 | 전체 주문 건수를 표시한다. |
-| **최소 주문 건수 (minOrders)** | StatCard | - | 숫자 | 최소 주문 건수를 표시한다. |
-| **신규 가입 회원 수 (newMembers)**| StatCard | - | 숫자 | 신규 가입한 회원의 수를 표시한다. |
-| **엑셀 다운로드** | Button | - | - | 대시보드 데이터를 Excel 파일로 내보내기한다. |
-| **정보 카드 (InfoCard)** | Card | - | - | 섹션별 통계 요약과 바로가기 버튼이다. |
+| **기간 필터 (dateRange)** | DateRangeFilter | Y | 로컬 state | 오늘/어제/7일/30일/직접입력. 변경 시 전체 데이터 재조회. |
+| **전체 주문 금액** | StatCard | - | `stats.todayRevenue` | 통화 포맷 표시. |
+| **전체 주문 수** | StatCard | - | `stats.todayOrders` | 숫자 표시. |
+| **등록 가맹점 수** | StatCard | - | `stats.totalStores` | 숫자 표시. |
+| **신규 가입 회원 수** | StatCard | - | `stats.newSignupNormal + newSignupSimple` | 일반+간편 합산 표시. |
+| **매출 현황 InfoCard** | Card | - | `stats.todayRevenue / todayCompletedRevenue / todayCancelledRevenue` | 전체/완료/취소 금액. |
+| **회원 현황 InfoCard** | Card | - | `stats.totalMembers / newSignupNormal / newSignupSimple / withdrawalCount` | 전체/일반가입/간편가입/탈퇴. |
+| **문의 현황 InfoCard** | Card | - | `stats.pendingInquiries / resolvedInquiries` | 대기/완료. (InquiryStatus: pending/resolved) |
+| **주문 상세 차트** | OrderDetailsChart | - | `useOrderDetails` → `OrderDetailsData` | 유형/채널/결제/회원별 탭 전환. |
+| **일별 매출 차트** | DailySalesChart | - | `useDailySales(dateRange)` → `DailySalesItem[]` | 기간 연동 막대 차트. |
+| **회원 분석** | MemberAnalytics | - | `useMemberAnalytics` → `MemberAnalyticsData` | 요약/성별/연령/등급/성장/Top5/빈도. |
+| **마케팅 성과** | MarketingPerformance | - | `useMarketingStats` → `MarketingStats` | 배너/이벤트 성과 테이블. |
 
 ---
 
 ### 2.2. 백엔드 (Backend) 개발 요건
 
-| 데이터베이스 필드 | 데이터 타입 | 필수 여부 | 글자수 / 제약조건 | 비고 (API 설계) |
-| :--- | :--- | :---: | :--- | :--- |
-| **dateRange** | JSON | Y | { from, to } | 조회 기간 파라미터다. |
-| **todayRevenue** | Decimal | Y | - | 기간 내 총 매출이다. |
-| **todayOrders** | Integer | Y | - | 기간 내 총 주문 수다. |
-| **newMembers** | Integer | Y | - | 기간 내 신규 회원 수다. |
-| **dailySales** | JSON[] | Y | - | 일별 매출 차트 데이터다. |
-| **orderDetails** | JSON | Y | - | 주문 유형별 상세 통계다. |
-| **memberAnalytics** | JSON | Y | - | 회원 등급/가입/이탈 분석 데이터다. |
-| **marketingPerformance** | JSON | Y | - | 쿠폰/할인/캠페인 성과 데이터다. |
+#### DashboardStats (통계 요약)
+
+| 필드 | 타입 | 필수 | 비고 |
+| :--- | :--- | :---: | :--- |
+| **todayRevenue** | Decimal | Y | 기간 내 총 매출 |
+| **todayCompletedRevenue** | Decimal | Y | 주문 완료 금액 |
+| **todayCancelledRevenue** | Decimal | Y | 주문 취소 금액 |
+| **todayOrders** | Integer | Y | 기간 내 총 주문 수 |
+| **totalProducts** | Integer | Y | 등록 상품 수 |
+| **totalStores** | Integer | Y | 등록 가맹점 수 |
+| **yesterdayOrders** | Integer | Y | 전일 주문 수 |
+| **yesterdayRevenue** | Decimal | Y | 전일 매출 |
+| **ordersChange** | Float | Y | 주문 수 변화율(%) |
+| **revenueChange** | Float | Y | 매출 변화율(%) |
+| **totalMembers** | Integer | Y | 전체 회원 수 |
+| **newSignupNormal** | Integer | Y | 신규 일반 회원가입 수 |
+| **newSignupSimple** | Integer | Y | 신규 간편 회원가입 수 |
+| **withdrawalCount** | Integer | Y | 탈퇴 회원 수 |
+| **pendingInquiries** | Integer | Y | 대기 중 문의 (InquiryStatus: pending) |
+| **resolvedInquiries** | Integer | Y | 처리 완료 (InquiryStatus: resolved) |
+
+#### 개별 API 응답 데이터
+
+| 필드 | 타입 | API | 비고 |
+| :--- | :--- | :--- | :--- |
+| **dailySales** | DailySalesItem[] | `GET /dashboard/daily-sales` | 일별 매출/주문수/평균주문금액 |
+| **orderDetails** | OrderDetailsData | `GET /dashboard/order-details` | 유형별/채널별/결제수단별/회원별 비율+건수 |
+| **memberAnalytics** | MemberAnalyticsData | `GET /dashboard/member-analytics` | 요약/성별/연령/등급/성장/Top5/주문빈도 |
+| **marketingPerformance** | MarketingStats | `GET /dashboard/marketing` | 배너/이벤트 성과 |
 
 **[API 및 비즈니스 로직 제약사항]**
 - 대시보드 API는 집계 쿼리 성능을 위해 Redis 캐싱을 권장한다. 캐시 TTL은 기간 프리셋에 따라 차등 설정한다.
-- 엑셀 다운로드는 서버사이드에서 집계 데이터를 생성하여 클라이언트에서 `downloadDashboardExcel` 유틸로 변환한다.
 - 페이지 진입 시 `usePageViewLog`로 접속 이력을 자동 기록한다.
+- 모든 통계 컴포넌트는 서비스 레이어를 통해 데이터를 조회하며, 컴포넌트 내 하드코딩 데이터를 사용하지 않는다.
 
 **[⚠️ 트래픽/성능 검토]**
 - **집계 쿼리** — 대시보드 API는 다수의 집계(SUM/COUNT)를 동시에 실행한다. Redis 캐싱(프리셋별 TTL 차등: 오늘=1분, 최근7일=5분, 최근30일=30분)을 권장한다.
 - **GA4 통계** — 외부 GA4 API 호출이므로 서버사이드 프록시 + 캐시(1시간 TTL)를 적용한다. GA4 API 할당량에 주의한다.
-- **엑셀 다운로드** — 서버사이드 집계 데이터 생성 후 클라이언트에서 Excel 변환한다. 대량 데이터 시 서버에서 직접 Excel 생성 후 S3 업로드를 권장한다.
 
 ---
 
@@ -85,10 +107,12 @@
 
 | 단계 | 사용자 행동 | 시스템 응답 | 검증 포인트 |
 | :---: | :--- | :--- | :--- |
-| 1 | 로그인 후 `/dashboard` 이동 | 통계 카드(오늘 매출/주문/신규회원/미답변문의) 로드 | 실시간 데이터 |
-| 2 | 차트 영역 확인 | 최근 7일/30일 매출 추이 차트 렌더링 | 기간 토글 |
-| 3 | 최근 주문 목록 확인 | 최근 10건 주문 간략 목록 | 행 클릭 → 주문 상세 이동 |
-| 4 | 미처리 항목 알림 확인 | 승인대기/미답변문의 카운트 Badge | 클릭 → 해당 페이지 이동 |
+| 1 | 로그인 후 `/dashboard` 이동 | `useDashboard` → StatCard 4개 + InfoCard 3개 로드 | 모든 값 서비스 연동 확인 |
+| 2 | 기간 필터 변경 (최근 7일) | 통계/일별매출 자동 재조회 | DailySalesChart 기간 반영 |
+| 3 | 주문 상세 탭 전환 | `useOrderDetails` → 유형/채널/결제/회원 데이터 표시 | 탭별 데이터 변경 |
+| 4 | 회원 분석 확인 | `useMemberAnalytics` → 요약/성별/연령/등급/Top5 표시 | 하드코딩 없음 확인 |
+| 5 | 매출현황 "주문내역 확인하러 가기" 클릭 | `/orders`로 이동 | 라우트 정상 이동 |
+| 6 | 문의현황 "1:1 문의 확인하러 가기" 클릭 | `/support`로 이동 | 라우트 정상 이동 |
 
 
 
@@ -112,19 +136,76 @@ GET /dashboard/summary
 ```json
 {
   "data": {
-    "totalProducts": 1024,
-    "todayOrders": 1250,
-    "todayRevenue": 24500000,
-    "totalStores": 18,
-    "yesterdayOrders": 1100,
-    "yesterdayRevenue": 22000000,
-    "ordersChange": 13.6,
-    "revenueChange": 11.3
+    "totalProducts": 1284,
+    "todayOrders": 156,
+    "todayRevenue": 4850000,
+    "todayCompletedRevenue": 2910000,
+    "todayCancelledRevenue": 485000,
+    "totalStores": 89,
+    "yesterdayOrders": 142,
+    "yesterdayRevenue": 4320000,
+    "ordersChange": 9.86,
+    "revenueChange": 12.27,
+    "totalMembers": 88000,
+    "newSignupNormal": 80,
+    "newSignupSimple": 60,
+    "withdrawalCount": 8,
+    "pendingInquiries": 80,
+    "resolvedInquiries": 8
   }
 }
 ```
 
-### 10-2. 마케팅 성과 조회
+### 10-2. 주문 상세 분석
+```http
+GET /dashboard/order-details
+```
+**Response** `200 OK`
+```json
+{
+  "data": {
+    "byType": [{ "label": "배달", "value": 55, "count": 1560 }, { "label": "포장", "value": 35, "count": 992 }, { "label": "매장식사", "value": 10, "count": 283 }],
+    "byChannel": [{ "label": "앱", "value": 52, "count": 1474 }, { "label": "키오스크", "value": 22, "count": 623 }, { "label": "POS", "value": 15, "count": 425 }, { "label": "웹", "value": 11, "count": 312 }],
+    "byPayment": [{ "label": "카드", "value": 48, "count": 1360 }, { "label": "카카오페이", "value": 20, "count": 567 }],
+    "byMember": [{ "label": "회원", "value": 85, "count": 2409 }]
+  }
+}
+```
+
+### 10-3. 일별 매출 조회
+```http
+GET /dashboard/daily-sales
+```
+**Query Parameters**: `preset`, `from`, `to`
+**Response** `200 OK`
+```json
+{
+  "data": [
+    { "date": "2026-03-10", "revenue": 1050000, "orders": 85, "avgOrderAmount": 12350 }
+  ]
+}
+```
+
+### 10-4. 회원 분석 조회
+```http
+GET /dashboard/member-analytics
+```
+**Response** `200 OK`
+```json
+{
+  "data": {
+    "summary": { "total": 88000, "active": 62500, "dormant": 18200, "newSignup": 140, "withdrawal": 8 },
+    "gender": [{ "label": "여성", "value": 52.3, "count": 46024 }],
+    "age": [{ "range": "20대", "percentage": 28.5, "count": 25080 }],
+    "membership": [{ "grade": "VIP", "count": 2640, "percentage": 3.0 }],
+    "growth": { "newCustomerRate": 18.5, "monthlyNewAvg": 4200, "monthlyChurnAvg": 380 },
+    "topCustomers": [{ "rank": 1, "name": "김**", "totalOrders": 142, "totalAmount": 4250000, "grade": "VIP" }],
+    "orderFrequency": [{ "label": "주문 1회", "percentage": 35.2, "count": 30976 }]
+  }
+}
+```
+
+### 10-5. 마케팅 성과 조회
 ```http
 GET /dashboard/marketing
 ```
@@ -155,30 +236,7 @@ GET /dashboard/marketing
 }
 ```
 
-### 10-3. 대시보드 데이터 엑셀 내보내기
-```http
-GET /dashboard/export
-```
-**Query Parameters**: `preset`, `from`, `to`
-**Response** `200 OK`
-```json
-{
-  "data": {
-    "stats": { ... },
-    "dailySales": [
-      {
-        "date": "2026-03-10",
-        "revenue": 1050000,
-        "orders": 85,
-        "avgOrderAmount": 12350
-      }
-    ],
-    "marketing": [ ... ]
-  }
-}
-```
-
-### 10-4. 상태 변경 감사(Audit) 로그
+### 10-6. 상태 변경 감사(Audit) 로그
 ```http
 GET /audit-logs
 ```
