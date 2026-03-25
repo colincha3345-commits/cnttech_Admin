@@ -3,7 +3,6 @@ import {
   DollarOutlined,
   ShoppingCartOutlined,
   UserAddOutlined,
-  DownloadOutlined,
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -11,11 +10,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { PageLoader } from '@/components/ui/PageLoader';
 import { StatCard } from '@/components/ui/StatCard';
-import { Button } from '@/components/ui/Button';
 import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
 import { DevGuide, DASHBOARD_DEV_GUIDE } from '@/components/dev';
-import { useDashboard, useDashboardExport } from '@/hooks/useDashboard';
-import { downloadDashboardExcel } from '@/utils/excel';
+import { useDashboard } from '@/hooks/useDashboard';
 import { usePageViewLog } from '@/hooks/useActivityLog';
 import type { DashboardDateRange } from '@/types';
 
@@ -24,7 +21,6 @@ import { OrderDetailsChart } from './OrderDetailsChart';
 import { DailySalesChart } from './DailySalesChart';
 import { MemberAnalytics } from './MemberAnalytics';
 import { MarketingPerformance } from './MarketingPerformance';
-import { RecentLogins } from './RecentLogins';
 
 export function Dashboard() {
   usePageViewLog('dashboard');
@@ -37,22 +33,14 @@ export function Dashboard() {
   });
 
   const { stats, isLoading } = useDashboard(dateRange);
-  const { fetchExportData, isExporting } = useDashboardExport(dateRange);
 
-  const handleExcelDownload = async () => {
-    const result = await fetchExportData();
-    if (result.data?.data) {
-      downloadDashboardExcel(result.data.data);
-    }
-  };
-
-  const mockInfoCards = [
+  const infoCards = [
     {
       title: '매출 현황',
       stats: [
-        { label: '전체 주문 금액', value: stats ? stats.todayRevenue.toLocaleString() : '-' },
-        { label: '주문 완료 금액', value: stats ? Math.round(stats.todayRevenue * 0.6).toLocaleString() : '-' },
-        { label: '주문 취소 금액', value: stats ? Math.round(stats.todayRevenue * 0.1).toLocaleString() : '-' },
+        { label: '전체 주문 금액', value: stats?.todayRevenue?.toLocaleString() ?? '-' },
+        { label: '주문 완료 금액', value: stats?.todayCompletedRevenue?.toLocaleString() ?? '-' },
+        { label: '주문 취소 금액', value: stats?.todayCancelledRevenue?.toLocaleString() ?? '-' },
       ],
       buttonText: '주문내역 확인하러 가기',
       onButtonClick: () => navigate('/orders'),
@@ -60,10 +48,10 @@ export function Dashboard() {
     {
       title: '회원 현황',
       stats: [
-        { label: '전체 회원 수', value: '88,000' },
-        { label: '신규 일반 회원가입 수', value: '80' },
-        { label: '신규 간편 회원가입 수', value: '60' },
-        { label: '탈퇴 회원 수', value: '8' },
+        { label: '전체 회원 수', value: stats?.totalMembers?.toLocaleString() ?? '-' },
+        { label: '신규 일반 회원가입 수', value: stats?.newSignupNormal?.toLocaleString() ?? '-' },
+        { label: '신규 간편 회원가입 수', value: stats?.newSignupSimple?.toLocaleString() ?? '-' },
+        { label: '탈퇴 회원 수', value: stats?.withdrawalCount?.toLocaleString() ?? '-' },
       ],
       buttonText: '회원 정보 확인하러 가기',
       onButtonClick: () => navigate('/app-members'),
@@ -71,13 +59,11 @@ export function Dashboard() {
     {
       title: '문의 현황',
       stats: [
-        { label: '신규 문의', value: '88' },
-        { label: '미확인 문의', value: '80' },
-        { label: '확인 문의', value: '8' },
-        { label: '진행 중 문의', value: '8' },
+        { label: '대기 중 문의', value: stats?.pendingInquiries?.toLocaleString() ?? '-' },
+        { label: '처리 완료', value: stats?.resolvedInquiries?.toLocaleString() ?? '-' },
       ],
       buttonText: '1:1 문의 확인하러 가기',
-      onButtonClick: () => alert('준비 중인 기능입니다.'),
+      onButtonClick: () => navigate('/support'),
     },
   ];
 
@@ -97,18 +83,7 @@ export function Dashboard() {
               {format(now, 'yyyy년 M월 d일 HH:mm')})
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExcelDownload}
-              disabled={isExporting}
-            >
-              <DownloadOutlined style={{ fontSize: 14 }} />
-              {isExporting ? '다운로드 중...' : '엑셀 다운로드'}
-            </Button>
-            <DevGuide {...DASHBOARD_DEV_GUIDE} />
-          </div>
+          <DevGuide {...DASHBOARD_DEV_GUIDE} />
         </div>
         <DateRangeFilter value={dateRange} onChange={setDateRange} />
       </div>
@@ -129,14 +104,14 @@ export function Dashboard() {
           color="neutral"
         />
         <StatCard
-          title="최소 주문 건수"
-          value={10}
+          title="등록 가맹점 수"
+          value={stats?.totalStores ?? 0}
           icon={<ShoppingCartOutlined />}
           color="neutral"
         />
         <StatCard
           title="신규 가입 회원 수"
-          value={180}
+          value={(stats?.newSignupNormal ?? 0) + (stats?.newSignupSimple ?? 0)}
           icon={<UserAddOutlined />}
           color="neutral"
         />
@@ -144,7 +119,7 @@ export function Dashboard() {
 
       {/* 중간 3개 카드 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {mockInfoCards.map((card) => (
+        {infoCards.map((card) => (
           <InfoCard
             key={card.title}
             title={card.title}
@@ -158,14 +133,11 @@ export function Dashboard() {
       {/* 하단 2개 섹션 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <OrderDetailsChart />
-        <DailySalesChart />
+        <DailySalesChart dateRange={dateRange} />
       </div>
 
       {/* 마케팅 성과 분석 */}
       <MarketingPerformance dateRange={dateRange} />
-
-      {/* 최근 로그인 이력 */}
-      <RecentLogins />
 
       {/* 회원 분석 */}
       <MemberAnalytics />

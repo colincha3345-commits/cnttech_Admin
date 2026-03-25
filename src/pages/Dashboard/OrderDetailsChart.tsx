@@ -2,34 +2,24 @@ import { useState } from 'react';
 import { ArrowRightOutlined } from '@ant-design/icons';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Spinner } from '@/components/ui/Spinner';
+import { useOrderDetails } from '@/hooks/useDashboard';
 
 type OrderTab = '주문 유형 별' | '채널 별' | '결제수단 별' | '회원 별';
 
-// This would come from props or a hook in a real app
-const mockData = {
-  '주문 유형 별': [
-    { label: '배달', value: 65 },
-    { label: '포장', value: 35 },
-  ],
-  '채널 별': [
-    { label: '앱', value: 50 },
-    { label: '웹', value: 30 },
-    { label: '전화', value: 20 },
-  ],
-  '결제수단 별': [
-    { label: '신용카드', value: 70 },
-    { label: '현금', value: 10 },
-    { label: '포인트', value: 20 },
-  ],
-  '회원 별': [
-    { label: '회원', value: 85 },
-    { label: '비회원', value: 15 },
-  ],
+const TAB_KEYS: Record<OrderTab, 'byType' | 'byChannel' | 'byPayment' | 'byMember'> = {
+  '주문 유형 별': 'byType',
+  '채널 별': 'byChannel',
+  '결제수단 별': 'byPayment',
+  '회원 별': 'byMember',
 };
 
 export function OrderDetailsChart() {
+  const { orderDetails, isLoading } = useOrderDetails();
   const [activeTab, setActiveTab] = useState<OrderTab>('주문 유형 별');
-  const chartData = mockData[activeTab];
+  const chartData = orderDetails?.[TAB_KEYS[activeTab]] ?? [];
+
+  if (isLoading) return <Spinner layout="center" />;
 
   return (
     <Card>
@@ -38,7 +28,7 @@ export function OrderDetailsChart() {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-4 border-b border-border">
-          {(Object.keys(mockData) as OrderTab[]).map((tab) => (
+          {(Object.keys(TAB_KEYS) as OrderTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

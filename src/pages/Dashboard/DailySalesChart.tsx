@@ -1,17 +1,19 @@
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { Spinner } from '@/components/ui/Spinner';
+import { useDailySales } from '@/hooks/useDashboard';
+import type { DashboardDateRange } from '@/types';
 
-// This would come from props or a hook in a real app
-const mockSalesData = [
-  { date: '09.01', value: 65 },
-  { date: '09.02', value: 70 },
-  { date: '09.03', value: 60 },
-  { date: '09.04', value: 55 },
-  { date: '09.05', value: 68 },
-  { date: '09.06', value: 62 },
-  { date: '09.07', value: 72 },
-];
+interface DailySalesChartProps {
+  dateRange?: DashboardDateRange;
+}
 
-export function DailySalesChart() {
+export function DailySalesChart({ dateRange }: DailySalesChartProps) {
+  const { dailySales, isLoading } = useDailySales(dateRange);
+
+  if (isLoading) return <Spinner layout="center" />;
+
+  const maxRevenue = Math.max(...dailySales.map((d) => d.revenue), 1);
+
   return (
     <Card>
       <CardHeader>
@@ -19,10 +21,16 @@ export function DailySalesChart() {
       </CardHeader>
       <CardContent>
         <div className="h-64 flex items-end justify-between gap-2">
-          {mockSalesData.map((item) => (
+          {dailySales.map((item) => (
             <div key={item.date} className="flex-1 flex flex-col items-center gap-2">
-              <div className="w-full bg-primary rounded-t-lg" style={{ height: `${item.value}%` }} />
-              <span className="text-xs text-txt-muted">{item.date}</span>
+              <span className="text-xs text-txt-muted font-medium">
+                {(item.revenue / 10000).toFixed(0)}만
+              </span>
+              <div
+                className="w-full bg-primary rounded-t-lg transition-all"
+                style={{ height: `${(item.revenue / maxRevenue) * 100}%`, minHeight: 4 }}
+              />
+              <span className="text-xs text-txt-muted">{item.date.slice(5)}</span>
             </div>
           ))}
         </div>

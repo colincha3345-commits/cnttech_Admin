@@ -46,9 +46,34 @@ export function useRecentLogins(limit: number = 10) {
   };
 }
 
+export function useOrderDetails() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard', 'orderDetails'],
+    queryFn: () => dashboardService.getOrderDetails(),
+  });
+  return { orderDetails: data?.data, isLoading };
+}
+
+export function useDailySales(dateRange?: DashboardDateRange) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard', 'dailySales', dateRange?.preset, dateRange?.from?.getTime(), dateRange?.to?.getTime()],
+    queryFn: () => dashboardService.getDailySales(dateRange),
+  });
+  return { dailySales: data?.data ?? [], isLoading };
+}
+
+export function useMemberAnalytics() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard', 'memberAnalytics'],
+    queryFn: () => dashboardService.getMemberAnalytics(),
+  });
+  return { memberAnalytics: data?.data, isLoading };
+}
+
 export function useDashboardExport(dateRange?: DashboardDateRange) {
   const { data, refetch, isFetching } = useQuery({
-    queryKey: ['dashboard', 'export', dateRange?.preset],
+    // [2026-03-24] queryKey에 from/to 포함하여 기간 변경 시 캐시 무효화
+    queryKey: ['dashboard', 'export', dateRange?.preset, dateRange?.from?.toISOString(), dateRange?.to?.toISOString()],
     queryFn: () => dashboardService.getExportData(dateRange),
     enabled: false,
   });

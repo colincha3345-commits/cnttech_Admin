@@ -535,18 +535,30 @@ export const mockUsers: User[] = [
 
 export const mockStats: DashboardStats = {
   // 오늘 통계
-  totalProducts: 1284, // 등록상품 수
-  todayOrders: 156, // 금일 주문 수
-  todayRevenue: 4850000, // 금일 주문금액 (485만원)
-  totalStores: 89, // 등록 가맹점 수
+  totalProducts: 1284,
+  todayOrders: 156,
+  todayRevenue: 4850000,
+  todayCompletedRevenue: 2910000,
+  todayCancelledRevenue: 485000,
+  totalStores: 89,
 
   // 전일 통계
-  yesterdayOrders: 142, // 전일 주문 수
-  yesterdayRevenue: 4320000, // 전일 주문금액 (432만원)
+  yesterdayOrders: 142,
+  yesterdayRevenue: 4320000,
 
-  // 변화율 (자동 계산 가능하지만 명시적으로 표시)
-  ordersChange: 9.86, // ((156-142)/142)*100
-  revenueChange: 12.27, // ((4850000-4320000)/4320000)*100
+  // 변화율
+  ordersChange: 9.86,
+  revenueChange: 12.27,
+
+  // 회원 현황
+  totalMembers: 88000,
+  newSignupNormal: 80,
+  newSignupSimple: 60,
+  withdrawalCount: 8,
+
+  // 문의 현황 (InquiryStatus: pending | resolved)
+  pendingInquiries: 80,
+  resolvedInquiries: 8,
 };
 
 export const mockAuditLogs: AuditLog[] = [

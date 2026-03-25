@@ -5,6 +5,9 @@ import type {
   MarketingStats,
   MarketingPerformanceItem,
   DashboardExportData,
+  OrderDetailsData,
+  DailySalesItem,
+  MemberAnalyticsData,
   ApiResponse,
 } from '@/types';
 import { delay } from '@/utils/async';
@@ -22,6 +25,80 @@ const MOCK_MARKETING_ITEMS: MarketingPerformanceItem[] = [
   { id: 'e4', name: '스탬프 적립 이벤트', type: 'event', impressions: 35200, clicks: 3168, ctr: 9.0, conversions: 475, conversionRate: 15.0, trafficSource: '앱 메인', avgDwellTime: 42 },
   { id: 'e5', name: '출석체크 이벤트', type: 'event', impressions: 48600, clicks: 5832, ctr: 12.0, conversions: 875, conversionRate: 15.0, trafficSource: '앱 메인', avgDwellTime: 15 },
 ];
+
+/** 회원 분석 Mock 데이터 */
+const MOCK_MEMBER_ANALYTICS: MemberAnalyticsData = {
+  summary: { total: 88000, active: 62500, dormant: 18200, newSignup: 140, withdrawal: 8 },
+  gender: [
+    { label: '여성', value: 52.3, count: 46024 },
+    { label: '남성', value: 44.1, count: 38808 },
+    { label: '미지정', value: 3.6, count: 3168 },
+  ],
+  age: [
+    { range: '10대', percentage: 4.2, count: 3696 },
+    { range: '20대', percentage: 28.5, count: 25080 },
+    { range: '30대', percentage: 32.1, count: 28248 },
+    { range: '40대', percentage: 21.8, count: 19184 },
+    { range: '50대', percentage: 9.6, count: 8448 },
+    { range: '60대+', percentage: 3.8, count: 3344 },
+  ],
+  membership: [
+    { grade: 'VIP', count: 2640, percentage: 3.0 },
+    { grade: '골드', count: 8800, percentage: 10.0 },
+    { grade: '실버', count: 22000, percentage: 25.0 },
+    { grade: '브론즈', count: 54560, percentage: 62.0 },
+  ],
+  growth: { newCustomerRate: 18.5, newCustomerChange: 2.3, existingCustomerRate: 81.5, existingRetentionChange: -0.8, monthlyNewAvg: 4200, monthlyChurnAvg: 380 },
+  topCustomers: [
+    { rank: 1, name: '김**', totalOrders: 142, totalAmount: 4250000, lastOrder: '2026-03-22', grade: 'VIP' },
+    { rank: 2, name: '이**', totalOrders: 128, totalAmount: 3890000, lastOrder: '2026-03-23', grade: 'VIP' },
+    { rank: 3, name: '박**', totalOrders: 115, totalAmount: 3420000, lastOrder: '2026-03-21', grade: 'VIP' },
+    { rank: 4, name: '최**', totalOrders: 98, totalAmount: 2980000, lastOrder: '2026-03-23', grade: '골드' },
+    { rank: 5, name: '정**', totalOrders: 92, totalAmount: 2750000, lastOrder: '2026-03-20', grade: '골드' },
+  ],
+  orderFrequency: [
+    { label: '주문 1회', percentage: 35.2, count: 30976 },
+    { label: '주문 2~5회', percentage: 28.4, count: 24992 },
+    { label: '주문 6~10회', percentage: 18.6, count: 16368 },
+    { label: '주문 11~20회', percentage: 11.3, count: 9944 },
+    { label: '주문 21회+', percentage: 6.5, count: 5720 },
+  ],
+};
+
+/**
+ * 주문 상세 분석 Mock 데이터
+ * - byType: OrderDeliveryType (delivery | pickup | dine_in)
+ * - byChannel: OrderChannel (app | kiosk | pos | web)
+ * - byPayment: PaymentMethod (card | cash | kakao_pay | naver_pay | toss_pay | mobile_gift_card | mobile_voucher | mixed)
+ * - byMember: 회원/비회원
+ */
+const MOCK_ORDER_DETAILS: OrderDetailsData = {
+  byType: [
+    { label: '배달', value: 55, count: 1560 },
+    { label: '포장', value: 35, count: 992 },
+    { label: '매장식사', value: 10, count: 283 },
+  ],
+  byChannel: [
+    { label: '앱', value: 52, count: 1474 },
+    { label: '키오스크', value: 22, count: 623 },
+    { label: 'POS', value: 15, count: 425 },
+    { label: '웹', value: 11, count: 312 },
+  ],
+  byPayment: [
+    { label: '카드', value: 48, count: 1360 },
+    { label: '카카오페이', value: 20, count: 567 },
+    { label: '네이버페이', value: 12, count: 340 },
+    { label: '토스페이', value: 8, count: 227 },
+    { label: '현금', value: 5, count: 142 },
+    { label: '모바일상품권', value: 4, count: 113 },
+    { label: '금액권', value: 2, count: 57 },
+    { label: '복합결제', value: 1, count: 28 },
+  ],
+  byMember: [
+    { label: '회원', value: 85, count: 2409 },
+    { label: '비회원', value: 15, count: 425 },
+  ],
+};
 
 /** 일별 매출 Mock 데이터 생성 */
 function generateDailySales(from: Date, to: Date) {
@@ -69,16 +146,44 @@ export const dashboardService = {
     };
   },
 
+  /** 주문 상세 분석 조회 */
+  async getOrderDetails(): Promise<ApiResponse<OrderDetailsData>> {
+    await delay(300);
+    return { success: true, data: MOCK_ORDER_DETAILS };
+  },
+
+  /** 일별 매출 조회 */
+  async getDailySales(dateRange?: DashboardDateRange): Promise<ApiResponse<DailySalesItem[]>> {
+    await delay(300);
+    const now = new Date();
+    const defaultFrom = new Date(now);
+    defaultFrom.setDate(defaultFrom.getDate() - 7);
+    const from = dateRange?.from ?? defaultFrom;
+    const to = dateRange?.to ?? now;
+    return { success: true, data: generateDailySales(from, to) };
+  },
+
+  /** 회원 분석 조회 */
+  async getMemberAnalytics(): Promise<ApiResponse<MemberAnalyticsData>> {
+    await delay(400);
+    return { success: true, data: MOCK_MEMBER_ANALYTICS };
+  },
+
+  // [2026-03-24] from/to fallback: dateRange 없으면 최근 30일 기간으로 전체 데이터 생성
   async getExportData(dateRange?: DashboardDateRange): Promise<ApiResponse<DashboardExportData>> {
     await delay(300);
     const statsRes = await this.getStats(dateRange);
-    const from = dateRange?.from ?? new Date();
-    const to = dateRange?.to ?? new Date();
+    const now = new Date();
+    const defaultFrom = new Date(now);
+    defaultFrom.setDate(defaultFrom.getDate() - 30);
+    const from = dateRange?.from ?? defaultFrom;
+    const to = dateRange?.to ?? now;
     return {
       success: true,
       data: {
         stats: statsRes.data,
         dailySales: generateDailySales(from, to),
+        orderDetails: MOCK_ORDER_DETAILS,
         marketing: MOCK_MARKETING_ITEMS,
       },
     };

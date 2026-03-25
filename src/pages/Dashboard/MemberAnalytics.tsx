@@ -1,64 +1,21 @@
-import { Card, CardHeader, CardContent, Badge } from '@/components/ui';
+import { Card, CardHeader, CardContent, Badge, Spinner } from '@/components/ui';
+import { useMemberAnalytics } from '@/hooks/useDashboard';
 
-// Mock 데이터
-const MEMBER_SUMMARY = {
-    total: 88000,
-    active: 62500,
-    dormant: 18200,
-    newSignup: 140,
-    withdrawal: 8,
+const GRADE_COLORS: Record<string, string> = {
+  VIP: 'bg-amber-500',
+  '골드': 'bg-yellow-400',
+  '실버': 'bg-gray-400',
+  '브론즈': 'bg-orange-400',
 };
-
-const GENDER_DATA = [
-    { label: '여성', value: 52.3, count: 46024 },
-    { label: '남성', value: 44.1, count: 38808 },
-    { label: '미지정', value: 3.6, count: 3168 },
-];
-
-const AGE_DATA = [
-    { range: '10대', percentage: 4.2, count: 3696 },
-    { range: '20대', percentage: 28.5, count: 25080 },
-    { range: '30대', percentage: 32.1, count: 28248 },
-    { range: '40대', percentage: 21.8, count: 19184 },
-    { range: '50대', percentage: 9.6, count: 8448 },
-    { range: '60대+', percentage: 3.8, count: 3344 },
-];
-
-const MEMBERSHIP_DATA = [
-    { grade: 'VIP', count: 2640, percentage: 3.0, color: 'bg-amber-500' },
-    { grade: '골드', count: 8800, percentage: 10.0, color: 'bg-yellow-400' },
-    { grade: '실버', count: 22000, percentage: 25.0, color: 'bg-gray-400' },
-    { grade: '브론즈', count: 54560, percentage: 62.0, color: 'bg-orange-400' },
-];
-
-const GROWTH_DATA = {
-    newCustomerRate: 18.5,
-    newCustomerChange: 2.3,
-    existingCustomerRate: 81.5,
-    existingRetentionChange: -0.8,
-    monthlyNewAvg: 4200,
-    monthlyChurnAvg: 380,
-};
-
-const TOP_CUSTOMERS = [
-    { rank: 1, name: '김**', totalOrders: 142, totalAmount: 4250000, lastOrder: '2026-02-26', grade: 'VIP' },
-    { rank: 2, name: '이**', totalOrders: 128, totalAmount: 3890000, lastOrder: '2026-02-27', grade: 'VIP' },
-    { rank: 3, name: '박**', totalOrders: 115, totalAmount: 3420000, lastOrder: '2026-02-25', grade: 'VIP' },
-    { rank: 4, name: '최**', totalOrders: 98, totalAmount: 2980000, lastOrder: '2026-02-27', grade: '골드' },
-    { rank: 5, name: '정**', totalOrders: 92, totalAmount: 2750000, lastOrder: '2026-02-24', grade: '골드' },
-];
-
-const ORDER_STATUS = [
-    { label: '주문 1회', percentage: 35.2, count: 30976 },
-    { label: '주문 2~5회', percentage: 28.4, count: 24992 },
-    { label: '주문 6~10회', percentage: 18.6, count: 16368 },
-    { label: '주문 11~20회', percentage: 11.3, count: 9944 },
-    { label: '주문 21회+', percentage: 6.5, count: 5720 },
-];
-
-const maxAge = Math.max(...AGE_DATA.map(a => a.percentage));
 
 export function MemberAnalytics() {
+    const { memberAnalytics, isLoading } = useMemberAnalytics();
+
+    if (isLoading || !memberAnalytics) return <Spinner layout="center" />;
+
+    const { summary: MEMBER_SUMMARY, gender: GENDER_DATA, age: AGE_DATA, membership: MEMBERSHIP_DATA, growth: GROWTH_DATA, topCustomers: TOP_CUSTOMERS, orderFrequency: ORDER_STATUS } = memberAnalytics;
+    const maxAge = Math.max(...AGE_DATA.map(a => a.percentage));
+
     return (
         <div className="space-y-6">
             {/* 회원 상태 요약 */}
@@ -154,7 +111,7 @@ export function MemberAnalytics() {
                             {MEMBERSHIP_DATA.map((m) => (
                                 <div
                                     key={m.grade}
-                                    className={`${m.color} flex items-center justify-center text-xs text-white font-medium`}
+                                    className={`${GRADE_COLORS[m.grade] || 'bg-gray-300'} flex items-center justify-center text-xs text-white font-medium`}
                                     style={{ width: `${m.percentage}%` }}
                                 >
                                     {m.percentage >= 10 && m.grade}
@@ -165,7 +122,7 @@ export function MemberAnalytics() {
                             {MEMBERSHIP_DATA.map((m) => (
                                 <div key={m.grade} className="flex items-center justify-between p-3 bg-bg-hover rounded-lg">
                                     <div className="flex items-center gap-2">
-                                        <div className={`w-3 h-3 rounded-full ${m.color}`} />
+                                        <div className={`w-3 h-3 rounded-full ${GRADE_COLORS[m.grade] || 'bg-gray-300'}`} />
                                         <span className="text-sm font-medium">{m.grade}</span>
                                     </div>
                                     <div className="text-right">
