@@ -3,8 +3,6 @@
  * 계정별 메뉴 접근 권한 (view / write / masking)
  */
 
-import type { UserRole } from './index';
-
 // 관리 메뉴 타입
 export type AdminMenu =
   | 'dashboard'
@@ -42,7 +40,6 @@ export interface AccountPermission {
   accountName: string;
   accountEmail: string;
   department: string;
-  role: UserRole;
   status: 'active' | 'inactive';
   permissions: MenuPermission[];
   updatedAt: string;
@@ -243,8 +240,8 @@ export const MENU_PERMISSION_CONFIG: MenuPermissionConfig[] = [
   },
 ];
 
-// admin 기본 권한 (전체 허용)
-export const ADMIN_DEFAULT_PERMISSIONS: MenuPermission[] = ADMIN_MENU_ORDER.map((menu) => ({
+// 초대 시 기본 권한 (전체 허용)
+export const DEFAULT_PERMISSIONS: MenuPermission[] = ADMIN_MENU_ORDER.map((menu) => ({
   menu,
   view: true,
   write: true,

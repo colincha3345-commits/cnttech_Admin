@@ -12,13 +12,6 @@ import { auditService } from '@/services/auditService';
 // Mock 데이터 로컬 복사
 let accountPermissions: AccountPermission[] = [...mockAccountPermissions];
 
-/** admin 권한 변경 방어 */
-function assertNotAdmin(account: AccountPermission): void {
-  if (account.role === 'admin') {
-    throw new Error('관리자 권한은 변경할 수 없습니다.');
-  }
-}
-
 /**
  * 전체 계정 권한 목록 조회
  */
@@ -37,7 +30,6 @@ async function getAccountPermissionById(accountId: string): Promise<AccountPermi
 
 /**
  * 계정 권한 수정
- * - admin 권한은 수정 불가 (항상 전체 권한)
  */
 async function updateAccountPermission(
   request: UpdatePermissionRequest,
@@ -51,7 +43,7 @@ async function updateAccountPermission(
   }
 
   const existing = accountPermissions[index]!;
-  assertNotAdmin(existing);
+
 
   const previousPermissions = existing.permissions;
 
@@ -83,7 +75,7 @@ async function updateAccountPermission(
 }
 
 /**
- * 계정 권한 초기화 (역할 기본값으로)
+ * 계정 권한 초기화 (초대 시 기본값으로)
  */
 async function resetAccountPermission(
   accountId: string,
@@ -97,7 +89,7 @@ async function resetAccountPermission(
   }
 
   const existing = accountPermissions[index]!;
-  assertNotAdmin(existing);
+
 
   // mock 원본에서 기본 권한 복원
   const defaultPermissions =

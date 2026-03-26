@@ -1,8 +1,7 @@
 /**
  * 권한관리 페이지
  * 좌측: 계정 목록 / 우측: 선택된 계정의 메뉴별 접근 권한 설정
- * - admin만 수정 가능
- * - admin 계정의 권한은 변경 불가 (항상 전체 권한)
+ * - permissions 메뉴의 write 권한이 있는 계정만 수정 가능
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
@@ -44,25 +43,9 @@ import { useToast } from '@/hooks/useToast';
 import { auditService } from '@/services/auditService';
 import { useDebounce } from '@/hooks/useDebounce';
 import { extractErrorMessage } from '@/utils/async';
-import { ROLE_DISPLAY_NAMES } from '@/types/rbac';
-import type { UserRole, BadgeVariant } from '@/types';
+import type { BadgeVariant } from '@/types';
 import type { AccountPermission, MenuPermission, AdminMenu, AccessLevel } from '@/types/permission';
 import { MENU_PERMISSION_CONFIG } from '@/types/permission';
-
-// 역할별 뱃지 variant 매핑
-const ROLE_BADGE_VARIANT: Record<UserRole, BadgeVariant> = {
-  admin: 'critical',
-  manager: 'info',
-  viewer: 'default',
-};
-
-// 역할 필터 옵션
-type RoleFilter = 'all' | UserRole;
-const ROLE_FILTER_OPTIONS: { value: RoleFilter; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'manager', label: '매니저' },
-  { value: 'viewer', label: '뷰어' },
-];
 
 // 상태 필터 옵션
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -177,9 +160,6 @@ function AccountCard({ account, isSelected, hasEdits, onSelect }: AccountCardPro
       {/* 3행: 뱃지 + 권한설정 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Badge variant={ROLE_BADGE_VARIANT[account.role]}>
-            {ROLE_DISPLAY_NAMES[account.role]}
-          </Badge>
           <Badge variant={statusBadgeVariant}>
             {statusLabel}
           </Badge>
@@ -313,15 +293,16 @@ export function PermissionManagement() {
 
   // 검색/필터 상태
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const isCurrentUserAdmin = user?.role === 'admin';
+  // 현재 로그인 사용자의 permissions 메뉴 write 권한 확인
+  const hasPermissionWrite = user?.permissions?.some(
+    (p) => p.resource === 'permissions' && p.actions.includes('write')
+  ) ?? false;
   const selectedAccount = accounts?.find((a) => a.accountId === selectedAccountId) ?? null;
-  const isSelectedAdmin = selectedAccount?.role === 'admin';
   const isSelectedInactive = selectedAccount?.status === 'inactive';
-  const canEdit = isCurrentUserAdmin && !isSelectedAdmin && !isSelectedInactive;
+  const canEdit = hasPermissionWrite && !isSelectedInactive;
 
   // 현재 선택된 계정의 권한 (편집 중이면 편집 상태 우선)
   const currentPermissions = selectedAccountId
@@ -511,12 +492,10 @@ export function PermissionManagement() {
   const masterAllChecked = selectedAccountId !== null && masterCheckedCount === totalSubPermissions;
   const masterSomeChecked = masterCheckedCount > 0 && !masterAllChecked;
 
-  // admin 제외 + 검색/필터 적용 (Hooks Rules: early return 이전에 호출)
+  // 검색/필터 적용
   const filteredAccounts = useMemo(() => {
     if (!accounts) return [];
-    const base = accounts.filter((a) => a.role !== 'admin');
-    return base.filter((a) => {
-      if (roleFilter !== 'all' && a.role !== roleFilter) return false;
+    return accounts.filter((a) => {
       if (statusFilter !== 'all' && a.status !== statusFilter) return false;
       if (debouncedSearch) {
         const q = debouncedSearch.toLowerCase();
@@ -528,7 +507,7 @@ export function PermissionManagement() {
       }
       return true;
     });
-  }, [accounts, roleFilter, statusFilter, debouncedSearch]);
+  }, [accounts, statusFilter, debouncedSearch]);
 
   if (isLoading) {
     return <Spinner text="권한 정보를 불러오는 중..." layout="fullHeight" />;
@@ -553,7 +532,7 @@ export function PermissionManagement() {
           </p>
         </div>
 
-        {isCurrentUserAdmin && hasChanges && (
+        {hasPermissionWrite && hasChanges && (
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleCancel}>
               취소
@@ -572,13 +551,13 @@ export function PermissionManagement() {
       </div>
 
       {/* admin이 아닌 경우 안내 */}
-      {!isCurrentUserAdmin && (
+      {!hasPermissionWrite && (
         <Card>
           <CardContent>
             <div className="flex items-center gap-3 text-warning">
               <SafetyOutlined style={{ fontSize: 20 }} />
               <p className="text-sm font-medium">
-                권한 설정은 관리자만 수정할 수 있습니다. 현재 조회 전용 모드입니다.
+                권한 설정 쓰기 권한이 없습니다. 현재 조회 전용 모드입니다.
               </p>
             </div>
           </CardContent>
@@ -597,26 +576,9 @@ export function PermissionManagement() {
             className="mb-3"
           />
 
-          {/* 역할/상태 필터 */}
+          {/* 상태 필터 */}
           <div className="flex items-center gap-2 mb-3">
             <FilterOutlined style={{ fontSize: 14 }} className="text-txt-muted shrink-0" />
-            <div className="flex gap-1">
-              {ROLE_FILTER_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setRoleFilter(opt.value)}
-                  className={clsx(
-                    'px-2.5 py-1 text-xs rounded-full border transition-colors',
-                    roleFilter === opt.value
-                      ? 'border-primary bg-primary/10 text-primary font-medium'
-                      : 'border-border text-txt-muted hover:border-gray-400',
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-            <span className="text-border">|</span>
             <div className="flex gap-1">
               {STATUS_FILTER_OPTIONS.map((opt) => (
                 <button
@@ -669,7 +631,7 @@ export function PermissionManagement() {
                   {/* 선택된 계정 정보 */}
                   <div className="flex items-center justify-between pb-3 border-b border-border">
                     <div className="flex items-center gap-3">
-                      {(isSelectedAdmin || isSelectedInactive) && (
+                      {isSelectedInactive && (
                         <LockOutlined style={{ fontSize: 16 }} className="text-txt-muted" />
                       )}
                       <span className="font-semibold text-txt-main">
@@ -678,17 +640,9 @@ export function PermissionManagement() {
                       <span className="text-xs text-txt-muted">
                         ({selectedAccount.accountEmail})
                       </span>
-                      <Badge variant={ROLE_BADGE_VARIANT[selectedAccount.role]}>
-                        {ROLE_DISPLAY_NAMES[selectedAccount.role]}
-                      </Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      {isSelectedAdmin && (
-                        <span className="text-xs text-txt-muted italic">
-                          관리자 권한은 변경할 수 없습니다
-                        </span>
-                      )}
-                      {isSelectedInactive && !isSelectedAdmin && (
+                      {isSelectedInactive && (
                         <span className="text-xs text-warning italic">
                           비활성 계정은 권한을 변경할 수 없습니다
                         </span>

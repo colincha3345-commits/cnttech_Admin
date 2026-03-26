@@ -26,7 +26,7 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '김관리',
     accountEmail: 'colin@cntt.co.kr',
     department: '본사운영팀',
-    role: 'admin',
+
     status: 'active',
     permissions: ADMIN_MENU_ORDER.map((menu) => ({
       menu,
@@ -44,7 +44,7 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '이정훈',
     accountEmail: 'jlee@cnttech.co.kr',
     department: '서울사업팀',
-    role: 'manager',
+
     status: 'active',
     permissions: createPermissions({
       dashboard: { view: true },
@@ -66,7 +66,7 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '박서연',
     accountEmail: 'spark@cnttech.co.kr',
     department: '경기사업팀',
-    role: 'manager',
+
     status: 'active',
     permissions: createPermissions({
       dashboard: { view: true },
@@ -86,7 +86,7 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '최민수',
     accountEmail: 'mchoi@cnttech.co.kr',
     department: '부산사업팀',
-    role: 'manager',
+
     status: 'active',
     permissions: createPermissions({
       dashboard: { view: true },
@@ -105,7 +105,7 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '정유진',
     accountEmail: 'yjung@cnttech.co.kr',
     department: '대구사업팀',
-    role: 'viewer',
+
     status: 'active',
     permissions: createPermissions({
       dashboard: { view: true },
@@ -123,7 +123,7 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '한승우',
     accountEmail: 'swhan@cnttech.co.kr',
     department: '제주사업팀',
-    role: 'viewer',
+
     status: 'inactive',
     permissions: createPermissions({
       dashboard: { view: true },

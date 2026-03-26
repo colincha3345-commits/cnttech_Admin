@@ -1,66 +1,8 @@
-import type { UserRole, PermissionAction } from './index';
+import type { PermissionAction } from './index';
 import type { AdminMenu } from './permission';
 
 // 리소스 = AdminMenu와 동일 (정합성 유지)
 export type Resource = AdminMenu;
-
-// 역할별 권한 매트릭스 타입
-export type RolePermissionMatrix = {
-  [role in UserRole]: {
-    [resource in Resource]?: PermissionAction[];
-  };
-};
-
-// 역할별 기본 권한
-export const ROLE_PERMISSIONS: RolePermissionMatrix = {
-  admin: {
-    dashboard: ['read', 'write'],
-    menu: ['read', 'write'],
-    marketing: ['read', 'write'],
-    push: ['read', 'write'],
-    events: ['read', 'write', 'unmask'],
-    orders: ['read', 'write', 'unmask'],
-    'app-members': ['read', 'write', 'unmask'],
-    staff: ['read', 'write', 'delete'],
-    design: ['read', 'write'],
-    settlement: ['read', 'write'],
-    support: ['read', 'write'],
-    'delivery-zones': ['read', 'write'],
-    'audit-logs': ['read'],
-    permissions: ['read', 'write'],
-    settings: ['read', 'write'],
-  },
-  manager: {
-    dashboard: ['read'],
-    menu: ['read', 'write'],
-    marketing: ['read', 'write'],
-    push: ['read', 'write'],
-    events: ['read', 'write'],
-    orders: ['read', 'write'],
-    'app-members': ['read', 'write'],
-    staff: ['read'],
-    design: ['read', 'write'],
-    settlement: ['read'],
-    support: ['read', 'write'],
-    'delivery-zones': ['read', 'write'],
-    'audit-logs': ['read'],
-    permissions: ['read'],
-    settings: ['read'],
-  },
-  viewer: {
-    dashboard: ['read'],
-    menu: ['read'],
-    marketing: ['read'],
-    push: ['read'],
-    events: ['read'],
-    orders: ['read'],
-    'app-members': ['read'],
-    design: ['read'],
-    support: ['read'],
-    'delivery-zones': ['read'],
-    permissions: ['read'],
-  },
-};
 
 // 라우트별 필요 권한 매핑
 export const ROUTE_PERMISSIONS: Record<string, { resource: Resource; action: PermissionAction }> = {
@@ -117,18 +59,4 @@ export const ROUTE_PERMISSIONS: Record<string, { resource: Resource; action: Per
   '/permissions': { resource: 'permissions', action: 'read' },
   // 설정
   '/settings': { resource: 'settings', action: 'read' },
-};
-
-// 역할 표시 이름
-export const ROLE_DISPLAY_NAMES: Record<UserRole, string> = {
-  admin: '관리자',
-  manager: '매니저',
-  viewer: '뷰어',
-};
-
-// 역할 설명
-export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  admin: '모든 기능에 대한 전체 접근 권한',
-  manager: '사용자 관리 및 보고서 열람 권한',
-  viewer: '대시보드 및 보고서 열람 권한',
 };

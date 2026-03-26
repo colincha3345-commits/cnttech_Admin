@@ -1,4 +1,4 @@
-import type { User, UserRole, Permission } from './index';
+import type { User, Permission } from './index';
 import type { StaffType } from './staff';
 
 // 로그인 자격 증명
@@ -13,7 +13,6 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
   staffType: StaffType;
   permissions: Permission[];
   lastLoginAt: Date | null;

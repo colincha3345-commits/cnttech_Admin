@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/DropdownMenu';
 import { useUsers } from '@/hooks/useUsers';
 import { useDebounce } from '@/hooks/useDebounce';
-import { USER_ROLE_LABELS } from '@/constants';
+
 import { formatDate } from '@/utils/date';
 import type { User } from '@/types';
 
@@ -73,13 +73,6 @@ export function Users() {
               await unmaskData({ userId: user.id, field: 'phone' });
             }}
           />
-        ),
-      },
-      {
-        key: 'role',
-        header: '역할',
-        render: (user: User) => (
-          <span className="text-sm">{USER_ROLE_LABELS[user.role]}</span>
         ),
       },
       {

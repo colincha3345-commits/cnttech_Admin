@@ -1,4 +1,4 @@
-import type { BadgeVariant, UserRole, UserStatus } from '@/types';
+import type { BadgeVariant, UserStatus } from '@/types';
 
 /**
  * 사용자 상태별 배지 설정
@@ -11,13 +11,4 @@ export const USER_STATUS_CONFIG: Record<
   inactive: { variant: 'info', label: '비활성' },
   locked: { variant: 'critical', label: '잠금' },
   pending: { variant: 'warning', label: '대기' },
-};
-
-/**
- * 사용자 역할 레이블
- */
-export const USER_ROLE_LABELS: Record<UserRole, string> = {
-  admin: '관리자',
-  manager: '매니저',
-  viewer: '뷰어',
 };

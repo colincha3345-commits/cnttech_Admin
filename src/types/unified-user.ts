@@ -6,7 +6,6 @@
  */
 import type { MemberGrade, MemberStatus, Gender, SnsConnection, TermsAgreement, Member } from './member';
 import type { StaffAccount, StaffStatus } from './staff';
-import type { UserRole } from './index';
 
 // ============================================
 // 유저 유형 (Discriminator)
@@ -95,7 +94,6 @@ export interface CustomerUser extends UnifiedUserBase {
 
 interface StaffFields {
   loginId: string;
-  role: UserRole;
   mfaEnabled: boolean;
   createdBy: string;
   invitationToken?: string;
@@ -244,7 +242,6 @@ export function staffToUnifiedUser(staff: StaffAccount): FranchiseUser | BrandAd
     updatedAt: staff.updatedAt,
     lastLoginAt: staff.lastLoginAt,
     loginId: staff.loginId,
-    role: 'manager' as UserRole,
     mfaEnabled: staff.mfaEnabled,
     createdBy: staff.createdBy,
     invitationToken: staff.invitationToken,

@@ -1,6 +1,5 @@
 // User Types
 export type UserStatus = 'active' | 'inactive' | 'locked' | 'pending';
-export type UserRole = 'admin' | 'manager' | 'viewer';
 
 export interface User {
   id: string;
@@ -8,7 +7,6 @@ export interface User {
   name: string;
   phone: string;
   status: UserStatus;
-  role: UserRole;
   lastLoginAt: Date | null;
   createdAt: Date;
   updatedAt: Date;

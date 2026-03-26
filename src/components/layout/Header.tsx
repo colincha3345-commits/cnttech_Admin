@@ -21,7 +21,6 @@ import { NotificationPanel } from './NotificationPanel';
 import { useAuth } from '@/stores/authStore';
 import { useChangePassword } from '@/hooks';
 import { useToast } from '@/hooks/useToast';
-import { USER_ROLE_LABELS } from '@/constants/user';
 import { STAFF_TYPE_LABELS } from '@/types/staff';
 
 interface HeaderProps {
@@ -134,8 +133,6 @@ export function Header({ onMenuClick, title = '대시보드' }: HeaderProps) {
                   </p>
                   <p className="text-xs text-txt-muted truncate">
                     {user?.staffType ? STAFF_TYPE_LABELS[user.staffType] : '본사'}
-                    {' | '}
-                    {user?.role ? USER_ROLE_LABELS[user.role] : '관리자'}
                   </p>
                 </div>
               </div>
