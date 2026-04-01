@@ -26,8 +26,8 @@ export const mockAccountPermissions: AccountPermission[] = [
     accountName: '김관리',
     accountEmail: 'colin@cntt.co.kr',
     department: '본사운영팀',
-
     status: 'active',
+    // 최고 관리자: 모든 메뉴 전체 권한
     permissions: ADMIN_MENU_ORDER.map((menu) => ({
       menu,
       view: true,
@@ -35,7 +35,7 @@ export const mockAccountPermissions: AccountPermission[] = [
       masking: true,
       download: true,
     })),
-    updatedAt: '2026-02-01T09:00:00Z',
+    updatedAt: '2026-04-01T09:00:00Z',
     updatedBy: '시스템',
   },
   {
