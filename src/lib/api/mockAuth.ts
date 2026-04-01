@@ -89,8 +89,15 @@ try {
     Object.entries(parsed).forEach(([token, session]) => {
       // 만료되지 않은 세션만 복원
       if (new Date() <= new Date(session.expiresAt)) {
+        // 권한 데이터를 mockAccountPermissions에서 재계산 (캐시 불일치 방지)
+        const freshUser = mockAuthUsers.find((u) => u.id === session.user.id);
+        const refreshedPermissions = freshUser
+          ? convertMenuPermissions(freshUser.id)
+          : session.user.permissions;
+
         mockSessions.set(token, {
           ...session,
+          user: { ...session.user, permissions: refreshedPermissions },
           expiresAt: new Date(session.expiresAt),
         });
       }
