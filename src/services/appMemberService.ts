@@ -95,9 +95,6 @@ class AppMemberService {
 
     // 필터별 분기
     switch (filter) {
-      case 'inactive_30days':
-        result = this.filterInactive30Days(result);
-        break;
       case 'inactive_90days':
         result = this.filterInactive90Days(result);
         break;
@@ -191,7 +188,6 @@ class AppMemberService {
   // 회원 통계
   async getMemberStats(): Promise<{
     total: number;
-    inactive30Days: number;
     inactive90Days: number;
     noOrder: number;
   }> {
@@ -199,7 +195,6 @@ class AppMemberService {
 
     return {
       total: this.members.length,
-      inactive30Days: this.filterInactive30Days(this.members).length,
       inactive90Days: this.filterInactive90Days(this.members).length,
       noOrder: this.filterNoOrder(this.members).length,
     };
@@ -742,13 +737,6 @@ class AppMemberService {
   // ============================================
   // 필터링 헬퍼 메서드
   // ============================================
-  private filterInactive30Days(members: Member[]): Member[] {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-    return members.filter((m) => !m.lastLoginAt || m.lastLoginAt < thirtyDaysAgo);
-  }
-
   private filterInactive90Days(members: Member[]): Member[] {
     const ninetyDaysAgo = new Date();
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);

@@ -66,7 +66,7 @@ export function useAppMemberStats() {
   });
 
   return {
-    stats: data || { total: 0, inactive30Days: 0, inactive90Days: 0, noOrder: 0 },
+    stats: data || { total: 0, inactive90Days: 0, noOrder: 0 },
     isLoading,
     error,
     refetch,

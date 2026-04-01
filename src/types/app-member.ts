@@ -362,11 +362,10 @@ export interface MemberNotification {
 /**
  * 회원 목록 필터 타입
  */
-export type MemberListFilter = 'all' | 'inactive_30days' | 'inactive_90days' | 'no_order';
+export type MemberListFilter = 'all' | 'inactive_90days' | 'no_order';
 
 export const MEMBER_LIST_FILTER_LABELS: Record<MemberListFilter, string> = {
   all: '전체회원',
-  inactive_30days: '30일이상 미접속',
   inactive_90days: '3개월이상 미접속',
   no_order: '미주문회원',
 };
