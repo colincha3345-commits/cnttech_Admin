@@ -82,8 +82,6 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
       expirationDate: '',
       contractStatus: 'active',
       contractType: 'franchise',
-      royaltyRate: 0,
-      depositAmount: 0,
       notes: '',
     },
     bankAccount: {
@@ -93,7 +91,6 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
       accountHolder: '',
     },
     openingDate: '',
-    operatingHours: '',
   });
 
   // 기존 데이터 로드
@@ -122,8 +119,6 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
           expirationDate: formatDateForInput(existingStore.contract.expirationDate),
           contractStatus: existingStore.contract.contractStatus,
           contractType: existingStore.contract.contractType || 'franchise',
-          royaltyRate: existingStore.contract.royaltyRate ?? 0,
-          depositAmount: existingStore.contract.depositAmount ?? 0,
           notes: existingStore.contract.notes || '',
         },
         bankAccount: {
@@ -135,7 +130,6 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
         openingDate: existingStore.openingDate
           ? formatDateForInput(existingStore.openingDate)
           : '',
-        operatingHours: existingStore.operatingHours || '',
       });
       setIsBusinessNumberValid(true); // 기존 매장은 이미 검증됨
     }
@@ -146,7 +140,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
     field: string,
     value: string | number
   ) => {
-    if (section === 'name' || section === 'code' || section === 'status' || section === 'openingDate' || section === 'operatingHours') {
+    if (section === 'name' || section === 'code' || section === 'status' || section === 'openingDate') {
       setFormData((prev) => ({ ...prev, [section]: value }));
     } else {
       setFormData((prev) => {
@@ -389,18 +383,6 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
                 type="date"
                 value={formData.openingDate}
                 onChange={(e) => handleChange('openingDate', '', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-txt-main mb-1">
-                운영 시간
-              </label>
-              <Input
-                value={formData.operatingHours}
-                onChange={(e) =>
-                  handleChange('operatingHours', '', e.target.value)
-                }
-                placeholder="예: 11:00-22:00"
               />
             </div>
           </div>
@@ -655,38 +637,6 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
                 onChange={(e) =>
                   handleChange('contract', 'expirationDate', e.target.value)
                 }
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-txt-main mb-1">
-                로열티 비율 (%)
-              </label>
-              <Input
-                type="number"
-                value={formData.contract.royaltyRate ?? 0}
-                onChange={(e) =>
-                  handleChange('contract', 'royaltyRate', Number(e.target.value) || 0)
-                }
-                min={0}
-                max={100}
-                step={0.1}
-                placeholder="0"
-              />
-              <p className="text-xs text-txt-muted mt-0.5">본사가 매장에 부과하는 수수료 비율</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-txt-main mb-1">
-                보증금 (원)
-              </label>
-              <Input
-                type="number"
-                value={formData.contract.depositAmount ?? 0}
-                onChange={(e) =>
-                  handleChange('contract', 'depositAmount', Number(e.target.value) || 0)
-                }
-                min={0}
-                step={100000}
-                placeholder="0"
               />
             </div>
             <div className="md:col-span-2">

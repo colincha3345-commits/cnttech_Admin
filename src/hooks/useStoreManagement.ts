@@ -12,7 +12,6 @@ import type {
   StoreStatus,
   OperatingInfoFormData,
   IntegrationCodesFormData,
-  VisibilitySettingsFormData,
   AmenitiesFormData,
   PaymentMethodsFormData,
 } from '@/types/store';
@@ -239,27 +238,6 @@ export function useUpdateIntegrationCodes() {
       storeId: string;
       data: IntegrationCodesFormData;
     }) => storeService.updateIntegrationCodes(storeId, data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['store', variables.storeId] });
-      queryClient.invalidateQueries({ queryKey: ['stores'] });
-    },
-  });
-}
-
-/**
- * 노출 설정 업데이트
- */
-export function useUpdateVisibilitySettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      storeId,
-      data,
-    }: {
-      storeId: string;
-      data: VisibilitySettingsFormData;
-    }) => storeService.updateVisibilitySettings(storeId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['store', variables.storeId] });
       queryClient.invalidateQueries({ queryKey: ['stores'] });

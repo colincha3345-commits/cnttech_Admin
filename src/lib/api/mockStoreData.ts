@@ -40,8 +40,6 @@ export const mockStores: Store[] = [
       expirationDate: new Date('2026-12-31'),
       contractStatus: 'active',
       contractType: 'franchise',
-      royaltyRate: 5,
-      depositAmount: 10000000,
     },
     bankAccount: {
       bankCode: '004',
@@ -50,7 +48,6 @@ export const mockStores: Store[] = [
       accountHolder: '홍길동',
     },
     openingDate: new Date('2023-02-01'),
-    operatingHours: '11:00-23:00',
 
     // 확장된 영업 정보
     operatingInfo: {
@@ -146,24 +143,6 @@ export const mockStores: Store[] = [
       ],
     },
 
-    // 노출 설정
-    visibilitySettings: {
-      channels: [
-        { channel: 'app', isVisible: true, priority: 1 },
-        { channel: 'web', isVisible: true, priority: 2 },
-        { channel: 'kiosk', isVisible: true, priority: 3 },
-        { channel: 'baemin', isVisible: true, priority: 4 },
-        { channel: 'yogiyo', isVisible: false },
-        { channel: 'coupangeats', isVisible: true, priority: 5 },
-      ],
-      isSearchable: true,
-      showNewBadge: false,
-      showEventBadge: true,
-      eventBadgeText: '런칭 프로모션',
-      isRecommended: true,
-      recommendedOrder: 1,
-    },
-
     createdAt: new Date('2023-01-01'),
     updatedAt: new Date('2024-01-15'),
     createdBy: 'admin',
@@ -199,8 +178,6 @@ export const mockStores: Store[] = [
       expirationDate: new Date('2025-06-30'),
       contractStatus: 'pending_renewal',
       contractType: 'franchise',
-      royaltyRate: 4.5,
-      depositAmount: 8000000,
     },
     bankAccount: {
       bankCode: '088',
@@ -209,7 +186,6 @@ export const mockStores: Store[] = [
       accountHolder: '김철수',
     },
     openingDate: new Date('2023-04-15'),
-    operatingHours: '12:00-24:00',
 
     operatingInfo: {
       appOperatingStatus: 'open',
@@ -250,21 +226,6 @@ export const mockStores: Store[] = [
       },
       voucherVendor: { isEnabled: false },
     },
-    visibilitySettings: {
-      channels: [
-        { channel: 'app', isVisible: true, priority: 1 },
-        { channel: 'web', isVisible: true, priority: 2 },
-        { channel: 'baemin', isVisible: true, priority: 3 },
-        { channel: 'yogiyo', isVisible: true, priority: 4 },
-        { channel: 'coupangeats', isVisible: false },
-        { channel: 'kiosk', isVisible: false },
-      ],
-      isSearchable: true,
-      showNewBadge: false,
-      showEventBadge: false,
-      isRecommended: false,
-    },
-
     createdAt: new Date('2023-03-01'),
     updatedAt: new Date('2024-06-20'),
     createdBy: 'admin',
@@ -300,8 +261,6 @@ export const mockStores: Store[] = [
       expirationDate: new Date('2027-05-31'),
       contractStatus: 'active',
       contractType: 'direct',
-      royaltyRate: 0,
-      depositAmount: 0,
     },
     bankAccount: {
       bankCode: '011',
@@ -310,7 +269,6 @@ export const mockStores: Store[] = [
       accountHolder: '박영희',
     },
     openingDate: new Date('2022-07-01'),
-    operatingHours: '11:00-22:00',
 
     operatingInfo: {
       appOperatingStatus: 'open',
@@ -357,21 +315,6 @@ export const mockStores: Store[] = [
         isEnabled: true,
       },
     },
-    visibilitySettings: {
-      channels: [
-        { channel: 'app', isVisible: true, priority: 1 },
-        { channel: 'web', isVisible: true, priority: 2 },
-        { channel: 'baemin', isVisible: true, priority: 3 },
-        { channel: 'yogiyo', isVisible: false },
-        { channel: 'coupangeats', isVisible: false },
-        { channel: 'kiosk', isVisible: false },
-      ],
-      isSearchable: true,
-      showNewBadge: false,
-      showEventBadge: false,
-      isRecommended: false,
-    },
-
     createdAt: new Date('2022-06-01'),
     updatedAt: new Date('2024-03-10'),
     createdBy: 'admin',
@@ -407,8 +350,6 @@ export const mockStores: Store[] = [
       expirationDate: new Date('2027-12-31'),
       contractStatus: 'active',
       contractType: 'franchise',
-      royaltyRate: 5,
-      depositAmount: 10000000,
     },
     bankAccount: {
       bankCode: '020',
@@ -417,7 +358,6 @@ export const mockStores: Store[] = [
       accountHolder: '이민준',
     },
     openingDate: new Date('2024-02-15'),
-    operatingHours: '11:30-22:30',
 
     operatingInfo: {
       appOperatingStatus: 'open',
@@ -459,22 +399,6 @@ export const mockStores: Store[] = [
       },
       voucherVendor: { isEnabled: false },
     },
-    visibilitySettings: {
-      channels: [
-        { channel: 'app', isVisible: true, priority: 1 },
-        { channel: 'web', isVisible: true, priority: 2 },
-        { channel: 'baemin', isVisible: false },
-        { channel: 'yogiyo', isVisible: false },
-        { channel: 'coupangeats', isVisible: false },
-        { channel: 'kiosk', isVisible: false },
-      ],
-      isSearchable: true,
-      showNewBadge: true,
-      newBadgeEndDate: new Date('2026-05-15'),
-      showEventBadge: false,
-      isRecommended: false,
-    },
-
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-02-15'),
     createdBy: 'admin',
@@ -510,8 +434,6 @@ export const mockStores: Store[] = [
       expirationDate: new Date('2029-01-14'),
       contractStatus: 'active',
       contractType: 'license',
-      royaltyRate: 3,
-      depositAmount: 5000000,
     },
     bankAccount: {
       bankCode: '081',
@@ -520,7 +442,6 @@ export const mockStores: Store[] = [
       accountHolder: '최수진',
     },
     openingDate: new Date('2026-03-01'),
-    operatingHours: '11:00-22:00',
 
     operatingInfo: {
       appOperatingStatus: 'closed', // 오픈예정
@@ -554,21 +475,6 @@ export const mockStores: Store[] = [
       },
       voucherVendor: { isEnabled: false },
     },
-    visibilitySettings: {
-      channels: [
-        { channel: 'app', isVisible: false }, // 오픈 전 비노출
-        { channel: 'web', isVisible: false },
-        { channel: 'baemin', isVisible: false },
-        { channel: 'yogiyo', isVisible: false },
-        { channel: 'coupangeats', isVisible: false },
-        { channel: 'kiosk', isVisible: false },
-      ],
-      isSearchable: false,
-      showNewBadge: true,
-      showEventBadge: false,
-      isRecommended: false,
-    },
-
     createdAt: new Date('2026-01-15'),
     updatedAt: new Date('2026-01-20'),
     createdBy: 'admin',
@@ -690,6 +596,8 @@ export function toStoreSummary(store: Store): StoreSummary {
     name: store.name,
     region: store.address.region,
     address: `${store.address.address} ${store.address.addressDetail}`.trim(),
+    latitude: store.address.latitude,
+    longitude: store.address.longitude,
   };
 }
 

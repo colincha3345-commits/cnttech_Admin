@@ -24,7 +24,6 @@ const mockDeliveryZones: DeliveryZone[] = [
     center: { lat: 37.4979, lng: 127.0276 },
     radius: 3,
     deliveryFee: 3000,
-    minOrderAmount: 15000,
     isActive: true,
     color: '#3B82F6',
     createdAt: new Date('2025-01-15'),
@@ -40,7 +39,6 @@ const mockDeliveryZones: DeliveryZone[] = [
     center: { lat: 37.4979, lng: 127.0276 },
     radius: 5,
     deliveryFee: 5000,
-    minOrderAmount: 20000,
     isActive: true,
     color: '#10B981',
     createdAt: new Date('2025-02-01'),
@@ -72,7 +70,6 @@ const mockDeliveryZones: DeliveryZone[] = [
     center: { lat: 37.5563, lng: 126.9236 },
     radius: 2.5,
     deliveryFee: 2500,
-    minOrderAmount: 12000,
     isActive: true,
     color: '#F59E0B',
     createdAt: new Date('2025-01-20'),
@@ -179,7 +176,6 @@ class DeliveryZoneService {
       radius: data.radius,
       polygon: data.polygon,
       deliveryFee: data.deliveryFee,
-      minOrderAmount: data.zoneLevel === 'main' ? data.minOrderAmount : undefined,
       isActive: data.isActive,
       color: data.color,
       createdAt: new Date(),
@@ -210,7 +206,6 @@ class DeliveryZoneService {
       radius: data.radius ?? existing.radius,
       polygon: data.polygon ?? existing.polygon,
       deliveryFee: data.deliveryFee ?? existing.deliveryFee,
-      minOrderAmount: data.zoneLevel === 'sub' ? undefined : (data.minOrderAmount ?? existing.minOrderAmount),
       isActive: data.isActive ?? existing.isActive,
       color: data.color ?? existing.color,
       updatedAt: new Date(),
@@ -262,7 +257,6 @@ class DeliveryZoneService {
       innerRadius: interval.innerRadius,
       outerRadius: interval.outerRadius,
       deliveryFee: interval.deliveryFee,
-      minOrderAmount: undefined,
       isActive: true,
       color: DEFAULT_ZONE_COLORS[idx % DEFAULT_ZONE_COLORS.length] ?? '#3B82F6',
       createdAt: new Date(),
@@ -291,10 +285,9 @@ export const deliveryZoneService = new DeliveryZoneService();
 // ============================================
 // GET    /api/delivery-zones?storeId=&isActive=&keyword=&page=&limit=  → 목록 조회
 // GET    /api/delivery-zones/:id                                       → 상세 조회
-// POST   /api/delivery-zones                                           → 생성 (minOrderAmount: 메인상권만)
-// PATCH  /api/delivery-zones/:id                                       → 수정 (minOrderAmount: 메인상권만)
+// POST   /api/delivery-zones                                           → 생성
+// PATCH  /api/delivery-zones/:id                                       → 수정
 // DELETE /api/delivery-zones/:id                                       → 삭제
 //
-// 주의: 최소주문금액(minOrderAmount)은 메인상권(zoneLevel='main')에서만 설정 가능
-//       소상권(zoneLevel='sub')은 minOrderAmount를 null로 전송
-//       매장(Store)의 DeliverySettings.minOrderAmount는 해당 매장의 메인상권 값을 참조 (읽기전용)
+// 참고: 최소주문금액(minOrderAmount)은 매장관리(Store.deliverySettings)에서 설정.
+//       상권에는 배달비(deliveryFee)만 관리.

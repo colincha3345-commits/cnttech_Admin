@@ -64,7 +64,6 @@ export const DeliveryZoneEditor: React.FC = () => {
     type: 'radius',
     radius: 3,
     deliveryFee: 3000,
-    minOrderAmount: 15000,
     isActive: true,
     color: DEFAULT_ZONE_COLORS[0] ?? '#3B82F6',
   });
@@ -78,6 +77,7 @@ export const DeliveryZoneEditor: React.FC = () => {
   const [drawnRadius, setDrawnRadius] = useState<number | undefined>();
   const [drawnPolygon, setDrawnPolygon] = useState<Coordinate[] | undefined>();
   const [focusTarget, setFocusTarget] = useState<FocusTarget | undefined>();
+  const [storePin, setStorePin] = useState<Coordinate | undefined>();
 
   // 수정 모드: 기존 데이터 로드
   useEffect(() => {
@@ -90,7 +90,6 @@ export const DeliveryZoneEditor: React.FC = () => {
         type: editingZone.type,
         radius: editingZone.radius,
         deliveryFee: editingZone.deliveryFee,
-        minOrderAmount: editingZone.minOrderAmount,
         isActive: editingZone.isActive,
         color: editingZone.color,
       });
@@ -110,15 +109,20 @@ export const DeliveryZoneEditor: React.FC = () => {
   }, [editingZone]);
 
   const storeOptions = useMemo(
-    () => stores.map((s) => ({ id: s.id, name: s.name })),
+    () => stores.map((s) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude })),
     [stores]
   );
 
   useEffect(() => {
     if (!isEdit && storeOptions.length > 0 && !formData.storeId) {
-      const firstId = storeOptions[0]!.id;
-      setFormData((prev) => ({ ...prev, storeId: firstId }));
-      setSelectedStoreId(firstId);
+      const first = storeOptions[0]!;
+      setFormData((prev) => ({ ...prev, storeId: first.id }));
+      setSelectedStoreId(first.id);
+      if (first.latitude && first.longitude) {
+        const coord: Coordinate = { lat: first.latitude, lng: first.longitude };
+        setStorePin(coord);
+        setFocusTarget({ center: coord, _ts: Date.now() });
+      }
     }
   }, [isEdit, storeOptions, formData.storeId]);
 
@@ -225,7 +229,6 @@ export const DeliveryZoneEditor: React.FC = () => {
       ...prev,
       zoneLevel: level,
       parentZoneId: level === 'sub' ? mainZonesForStore[0]?.id : undefined,
-      minOrderAmount: level === 'sub' ? undefined : prev.minOrderAmount ?? 15000,
       deliveryFee: level === 'sub' ? 1000 : prev.deliveryFee,
     }));
   };
@@ -302,7 +305,6 @@ export const DeliveryZoneEditor: React.FC = () => {
       center: drawnCenter,
       radius: formData.type === 'radius' ? (drawnRadius ?? formData.radius) : undefined,
       polygon: formData.type === 'polygon' ? drawnPolygon : undefined,
-      minOrderAmount: formData.zoneLevel === 'main' ? formData.minOrderAmount : undefined,
     };
 
     if (isEdit) {
@@ -470,8 +472,17 @@ export const DeliveryZoneEditor: React.FC = () => {
             <select
               value={formData.storeId}
               onChange={(e) => {
-                setFormData((prev) => ({ ...prev, storeId: e.target.value, parentZoneId: undefined }));
-                setSelectedStoreId(e.target.value);
+                const storeId = e.target.value;
+                setFormData((prev) => ({ ...prev, storeId, parentZoneId: undefined }));
+                setSelectedStoreId(storeId);
+                const selected = storeOptions.find((s) => s.id === storeId);
+                if (selected?.latitude && selected?.longitude) {
+                  const coord: Coordinate = { lat: selected.latitude, lng: selected.longitude };
+                  setStorePin(coord);
+                  setFocusTarget({ center: coord, _ts: Date.now() });
+                } else {
+                  setStorePin(undefined);
+                }
               }}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               disabled={isEdit}
@@ -545,27 +556,6 @@ export const DeliveryZoneEditor: React.FC = () => {
             )}
           </div>
 
-          {/* 최소주문금액 (메인상권 전용) */}
-          {formData.zoneLevel === 'main' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                최소주문금액 (원)
-              </label>
-              <Input
-                type="number"
-                value={formData.minOrderAmount ?? ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    minOrderAmount: e.target.value ? Number(e.target.value) : undefined,
-                  }))
-                }
-                placeholder="15000"
-                min={0}
-                step={1000}
-              />
-            </div>
-          )}
 
           {/* 소상권 자동 생성 (거리별 배달비) — 반경 모드 메인상권 전용 */}
           {formData.zoneLevel === 'main' && formData.type === 'radius' && (drawnRadius || formData.radius) && (
@@ -727,6 +717,7 @@ export const DeliveryZoneEditor: React.FC = () => {
           onDrawUpdate={handleDrawUpdate}
           onDrawComplete={handleDrawComplete}
           focusTarget={focusTarget}
+          storePin={storePin}
         />
 
         {/* 폴리곤 드로잉 중 실행취소/다시그리기 버튼 */}
@@ -934,11 +925,6 @@ const ZoneListCard: React.FC<{
             {zone.isActive ? '활성' : '비활성'}
           </Badge>
         </div>
-        {zone.zoneLevel === 'main' && zone.minOrderAmount && (
-          <p className="text-[10px] text-gray-400 mt-0.5">
-            최소 {zone.minOrderAmount.toLocaleString()}원
-          </p>
-        )}
       </div>
     </div>
     {!isEditing && (

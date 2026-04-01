@@ -20,11 +20,9 @@ import type {
   Region,
   OperatingInfo,
   IntegrationCodes,
-  VisibilitySettings,
   StoreAmenities,
   OperatingInfoFormData,
   IntegrationCodesFormData,
-  VisibilitySettingsFormData,
   AmenitiesFormData,
   POSBulkUploadRow,
   PGBulkUploadRow,
@@ -242,7 +240,6 @@ class StoreService {
       },
       bankAccount: data.bankAccount,
       openingDate: data.openingDate ? new Date(data.openingDate) : undefined,
-      operatingHours: data.operatingHours,
       createdAt: new Date(),
       updatedAt: new Date(),
       createdBy: 'admin',
@@ -306,9 +303,6 @@ class StoreService {
         ? new Date(data.openingDate)
         : undefined;
     }
-    if (data.operatingHours !== undefined)
-      store.operatingHours = data.operatingHours;
-
     store.updatedAt = new Date();
     return store;
   }
@@ -514,11 +508,7 @@ class StoreService {
         : undefined,
       isDeliveryAvailable: data.deliverySettings?.isAvailable ?? data.isDeliveryAvailable,
       isPickupAvailable: data.pickupSettings?.isAvailable ?? data.isPickupAvailable,
-      // 배달 최소주문금액은 상권관리에서만 설정 → 기존값 보존
-      deliverySettings: {
-        ...data.deliverySettings,
-        minOrderAmount: store.operatingInfo?.deliverySettings?.minOrderAmount,
-      } as OperatingInfo['deliverySettings'],
+      deliverySettings: data.deliverySettings,
       pickupSettings: data.pickupSettings,
       isVisible: data.isVisible,
     };
@@ -587,39 +577,6 @@ class StoreService {
     store.updatedAt = new Date();
 
     return integrationCodes;
-  }
-
-  /**
-   * 노출 설정 업데이트
-   */
-  async updateVisibilitySettings(
-    storeId: string,
-    data: VisibilitySettingsFormData
-  ): Promise<VisibilitySettings> {
-    await this.delay();
-
-    const store = this.stores.find((s) => s.id === storeId);
-    if (!store) {
-      throw new Error('매장을 찾을 수 없습니다.');
-    }
-
-    const visibilitySettings: VisibilitySettings = {
-      channels: data.channels,
-      isSearchable: data.isSearchable,
-      showNewBadge: data.showNewBadge,
-      newBadgeEndDate: data.newBadgeEndDate
-        ? new Date(data.newBadgeEndDate)
-        : undefined,
-      showEventBadge: data.showEventBadge,
-      eventBadgeText: data.eventBadgeText,
-      isRecommended: data.isRecommended,
-      recommendedOrder: data.recommendedOrder,
-    };
-
-    store.visibilitySettings = visibilitySettings;
-    store.updatedAt = new Date();
-
-    return visibilitySettings;
   }
 
   /**

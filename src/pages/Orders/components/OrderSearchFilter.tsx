@@ -1,3 +1,4 @@
+import React, { useRef } from 'react';
 import {
   Card,
   CardHeader,
@@ -47,8 +48,15 @@ export function OrderSearchFilter({
   storeId, setStoreId,
   dateFrom, setDateFrom,
   dateTo, setDateTo,
-  onSearch, onReset, onExcelDownload
+  onSearch, onReset, onExcelDownload,
 }: OrderSearchFilterProps) {
+  const dateFromRef = useRef<HTMLInputElement>(null);
+  const dateToRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    try { ref.current?.showPicker(); } catch { ref.current?.focus(); }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -77,21 +85,33 @@ export function OrderSearchFilter({
           {/* 기간 */}
           <div>
             <label className="block text-xs font-medium text-txt-muted mb-1">시작일</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => { setDateFrom(e.target.value); onSearch(); }}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+            <div
+              className="relative cursor-pointer"
+              onClick={() => openPicker(dateFromRef)}
+            >
+              <input
+                ref={dateFromRef}
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); onSearch(); }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-txt-muted mb-1">종료일</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => { setDateTo(e.target.value); onSearch(); }}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
+            <div
+              className="relative cursor-pointer"
+              onClick={() => openPicker(dateToRef)}
+            >
+              <input
+                ref={dateToRef}
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); onSearch(); }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+              />
+            </div>
           </div>
 
           {/* 주문유형 */}

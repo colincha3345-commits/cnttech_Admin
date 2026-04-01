@@ -261,10 +261,6 @@ export const StoreDetail: React.FC = () => {
                 <label className="text-sm text-txt-muted">지역</label>
                 <p className="mt-1">{store.address.region}</p>
               </div>
-              <div>
-                <label className="text-sm text-txt-muted">운영 시간</label>
-                <p className="mt-1">{store.operatingHours || '-'}</p>
-              </div>
             </div>
           </div>
         )}
@@ -345,18 +341,6 @@ export const StoreDetail: React.FC = () => {
                   <label className="text-sm text-txt-muted">만료일</label>
                   <p className="mt-1">{formatDate(store.contract.expirationDate)}</p>
                 </div>
-                {store.contract.royaltyRate != null && store.contract.royaltyRate > 0 && (
-                  <div>
-                    <label className="text-sm text-txt-muted">로열티 비율</label>
-                    <p className="mt-1">{store.contract.royaltyRate}%</p>
-                  </div>
-                )}
-                {store.contract.depositAmount != null && store.contract.depositAmount > 0 && (
-                  <div>
-                    <label className="text-sm text-txt-muted">보증금</label>
-                    <p className="mt-1">{store.contract.depositAmount.toLocaleString()}원</p>
-                  </div>
-                )}
                 {store.contract.notes && (
                   <div className="md:col-span-2">
                     <label className="text-sm text-txt-muted">비고</label>

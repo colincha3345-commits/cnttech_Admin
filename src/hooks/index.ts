@@ -113,7 +113,6 @@ export {
   useUpdateStoreStaffLink,
   useUpdateOperatingInfo,
   useUpdateIntegrationCodes,
-  useUpdateVisibilitySettings,
   useUpdateAmenities,
   useUpdatePaymentMethods,
   useCheckBusinessNumber,

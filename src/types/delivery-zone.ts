@@ -36,7 +36,7 @@ export interface DeliveryZone {
   radius?: number; // km (반경 모드)
   polygon?: Coordinate[]; // 폴리곤 좌표
   deliveryFee: number; // 메인상권: 기본 배달비 / 추가상권: 추가 배달비 (고객 청구 = 메인 배달비 + 추가 배달비)
-  minOrderAmount?: number; // 메인상권 전용
+  // minOrderAmount 삭제 — 최소주문금액은 매장관리(Store.deliverySettings)에서 설정
   innerRadius?: number; // 동심원 소상권: 내측 반경 (km)
   outerRadius?: number; // 동심원 소상권: 외측 반경 (km)
   isActive: boolean;
@@ -74,7 +74,7 @@ export interface DeliveryZoneFormData {
   polygon?: Coordinate[];
   center?: Coordinate;
   deliveryFee: number; // 메인상권: 기본 배달비 / 추가상권: 추가 배달비 (고객 청구 = 메인 배달비 + 추가 배달비)
-  minOrderAmount?: number; // 메인상권 전용
+  // minOrderAmount 삭제 — 매장관리에서 설정
   isActive: boolean;
   color: string;
   // 반경 기반 소상권 자동 생성

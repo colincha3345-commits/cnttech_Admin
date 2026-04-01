@@ -72,8 +72,6 @@ export interface ContractInfo {
   expirationDate: Date;      // 가맹 계약 만료일
   contractStatus: ContractStatus;
   contractType?: ContractType;  // 계약 유형
-  royaltyRate?: number;      // 로열티 비율 (%, 본사→가맹점 수수료)
-  depositAmount?: number;    // 보증금 (원)
   contractDocumentUrl?: string;
   notes?: string;
 }
@@ -153,7 +151,7 @@ export interface IrregularClosedDay {
 // 배달 상세 설정
 export interface DeliverySettings {
   isAvailable: boolean;
-  /** 배달 최소주문금액 (읽기전용 — 상권관리 메인상권에서 설정) */
+  /** 배달 최소주문금액 (원) — 매장에서 직접 설정 */
   minOrderAmount?: number;
   /** 예상 배달시간 (분) — 고객 앱 안내용 */
   estimatedMinutes?: number;
@@ -260,36 +258,11 @@ export interface IntegrationCodes {
 }
 
 // ============================================
-// 노출 설정
+// 노출 설정 (폐기됨 — isVisible은 OperatingInfo에 통합)
 // ============================================
-
-export type VisibilityChannel = 'app' | 'web' | 'kiosk' | 'baemin' | 'yogiyo' | 'coupangeats';
-
-export interface ChannelVisibility {
-  channel: VisibilityChannel;
-  isVisible: boolean;
-  priority?: number; // 노출 우선순위
-}
-
-export interface VisibilitySettings {
-  // 채널별 노출 설정
-  channels: ChannelVisibility[];
-
-  // 검색 노출
-  isSearchable: boolean;
-
-  // 신규 매장 뱃지
-  showNewBadge: boolean;
-  newBadgeEndDate?: Date;
-
-  // 이벤트 매장 표시
-  showEventBadge: boolean;
-  eventBadgeText?: string;
-
-  // 추천 매장
-  isRecommended: boolean;
-  recommendedOrder?: number;
-}
+// VisibilityChannel, ChannelVisibility, VisibilitySettings 삭제
+// 뱃지(showNewBadge, showEventBadge), 채널별 노출, isSearchable, isRecommended 모두 제거
+// 매장 노출은 OperatingInfo.isVisible 단일 필드로 관리
 
 // ============================================
 // 결제 수단
@@ -332,12 +305,10 @@ export interface Store {
   contract: ContractInfo;
   bankAccount: BankAccountInfo;
   openingDate?: Date;
-  operatingHours?: string; // 기존 호환용 (간단한 문자열)
 
-  // 확장된 영업/연동/노출 정보
+  // 영업/연동 정보
   operatingInfo?: OperatingInfo;
   integrationCodes?: IntegrationCodes;
-  visibilitySettings?: VisibilitySettings;
 
   // 매장 편의시설
   amenities?: StoreAmenities;
@@ -356,6 +327,8 @@ export interface StoreSummary {
   name: string;
   region: Region;
   address: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 // 매장-직원 연결
@@ -432,8 +405,6 @@ export interface ContractFormData {
   expirationDate: string;
   contractStatus: ContractStatus;
   contractType?: ContractType;
-  royaltyRate?: number;
-  depositAmount?: number;
   contractDocumentUrl?: string;
   notes?: string;
 }
@@ -458,7 +429,6 @@ export interface StoreFormData {
   contract: ContractFormData;
   bankAccount: BankAccountFormData;
   openingDate?: string;
-  operatingHours?: string;
 }
 
 /**
@@ -527,18 +497,6 @@ export interface IntegrationCodesFormData {
     storeCode?: string;
     isEnabled: boolean;
   };
-}
-
-// 노출 설정 폼 데이터
-export interface VisibilitySettingsFormData {
-  channels: ChannelVisibility[];
-  isSearchable: boolean;
-  showNewBadge: boolean;
-  newBadgeEndDate?: string;
-  showEventBadge: boolean;
-  eventBadgeText?: string;
-  isRecommended: boolean;
-  recommendedOrder?: number;
 }
 
 // 편의시설 폼 데이터
@@ -729,42 +687,12 @@ export const VOUCHER_VENDORS = [
   { code: 'other', name: '기타' },
 ] as const;
 
-// 노출 채널 목록
-export const VISIBILITY_CHANNELS: Array<{
-  code: VisibilityChannel;
-  name: string;
-  icon?: string;
-}> = [
-    { code: 'app', name: '자사 앱' },
-    { code: 'web', name: '웹사이트' },
-    { code: 'kiosk', name: '키오스크' },
-    { code: 'baemin', name: '배달의민족' },
-    { code: 'yogiyo', name: '요기요' },
-    { code: 'coupangeats', name: '쿠팡이츠' },
-  ];
-
 // 기본 영업시간
 export const DEFAULT_OPERATING_HOURS: DayOperatingHours = {
   isOpen: true,
   openTime: '11:00',
   closeTime: '22:00',
   lastOrderMinutes: 30,
-};
-
-// 기본 노출 설정
-export const DEFAULT_VISIBILITY_SETTINGS: VisibilitySettings = {
-  channels: [
-    { channel: 'app', isVisible: true, priority: 1 },
-    { channel: 'web', isVisible: true, priority: 2 },
-    { channel: 'kiosk', isVisible: false },
-    { channel: 'baemin', isVisible: false },
-    { channel: 'yogiyo', isVisible: false },
-    { channel: 'coupangeats', isVisible: false },
-  ],
-  isSearchable: true,
-  showNewBadge: false,
-  showEventBadge: false,
-  isRecommended: false,
 };
 
 // 기본 연동 정보

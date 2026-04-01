@@ -11,6 +11,7 @@ import {
   Polygon as LeafletPolygon,
   Polyline,
   CircleMarker,
+  Marker,
   useMapEvents,
   useMap,
   Tooltip,
@@ -47,6 +48,7 @@ interface MapViewProps {
   onDrawUpdate?: (state: Partial<DrawingState>) => void;
   onDrawComplete?: (state: DrawingState) => void;
   focusTarget?: FocusTarget;
+  storePin?: Coordinate;
   readOnly?: boolean;
   className?: string;
 }
@@ -533,6 +535,7 @@ export const MapView: React.FC<MapViewProps> = ({
   onDrawUpdate,
   onDrawComplete,
   focusTarget,
+  storePin,
   readOnly = false,
   className = '',
 }) => {
@@ -564,6 +567,23 @@ export const MapView: React.FC<MapViewProps> = ({
 
         <FitBounds zones={zones} />
         <FlyToTarget target={focusTarget} />
+
+        {/* 매장 위치 핀 */}
+        {storePin && (
+          <Marker
+            position={toLL(storePin)}
+            icon={L.divIcon({
+              className: '',
+              html: '<div style="width:28px;height:28px;background:#EF4444;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+              iconSize: [28, 28],
+              iconAnchor: [14, 14],
+            })}
+          >
+            <Tooltip direction="top" offset={[0, -16]} permanent>
+              매장 위치
+            </Tooltip>
+          </Marker>
+        )}
 
         {/* 존 오버레이 */}
         {zones.map((zone) => (

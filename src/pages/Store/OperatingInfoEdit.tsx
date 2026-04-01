@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 
-import { Card, Button, Input, Spinner, Accordion, Switch } from '@/components/ui';
-import type { AccordionItemData } from '@/components/ui';
+import { Card, Button, Input, Spinner, Switch } from '@/components/ui';
 import { useStore, useUpdateOperatingInfo, useToast } from '@/hooks';
 import type {
   OperatingInfoFormData,
@@ -400,20 +399,16 @@ export const OperatingInfoEdit: React.FC = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-txt-secondary mb-2">최소 주문금액</label>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {formData.deliverySettings.minOrderAmount
-                    ? `${formData.deliverySettings.minOrderAmount.toLocaleString()}원`
-                    : '미설정'}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => navigate('/delivery-zones')}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
-                >
-                  상권관리에서 설정
-                </button>
-              </div>
+              <Input
+                type="number"
+                value={formData.deliverySettings.minOrderAmount ?? 0}
+                onChange={(e) =>
+                  handleDeliveryChange('minOrderAmount', e.target.value ? Number(e.target.value) : 0)
+                }
+                placeholder="15000"
+                min={0}
+                step={1000}
+              />
             </div>
           </div>
 
@@ -656,13 +651,18 @@ export const OperatingInfoEdit: React.FC = () => {
     </div>
   );
 
-  const accordionItems: AccordionItemData[] = [
-    { id: 'visibility', title: '매장 노출', content: visibilityContent },
-    { id: 'hours', title: '영업시간', content: hoursContent },
-    { id: 'delivery', title: '배달 설정', content: deliveryContent },
-    { id: 'pickup', title: '포장 설정', content: pickupContent },
-    { id: 'reservation', title: '예약 설정', content: reservationContent },
-    { id: 'closure', title: '임시 휴업', content: closureContent },
+  // 5개 독립 카드 섹션 정의
+  const sections = [
+    { id: 'status', title: '운영 상태', description: '매장 노출 여부와 임시 휴업을 관리합니다.', content: (
+      <div className="space-y-6">
+        {visibilityContent}
+        <div className="border-t border-border pt-4">{closureContent}</div>
+      </div>
+    )},
+    { id: 'hours', title: '영업시간', description: '평일/주말/공휴일 또는 요일별 영업시간을 설정합니다.', content: hoursContent },
+    { id: 'delivery', title: '배달 설정', description: '배달 가능 여부, 최소주문금액, 예상 배달시간을 설정합니다.', content: deliveryContent },
+    { id: 'pickup', title: '포장 설정', description: '포장 가능 여부, 최소주문금액, 예상 준비시간을 설정합니다.', content: pickupContent },
+    { id: 'reservation', title: '예약 설정', description: '예약 주문 가능 여부와 예약 가능 시간을 설정합니다.', content: reservationContent },
   ];
 
   if (isLoading) {
@@ -687,28 +687,32 @@ export const OperatingInfoEdit: React.FC = () => {
         </h1>
       </div>
 
-      <Card className="p-6">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4 text-txt-muted">
-            매장명: {store?.name}
-          </div>
-          <Accordion
-            items={accordionItems}
-            defaultOpenId="hours"
-            allowMultiple
-            className="!p-0"
-          />
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4 text-txt-muted text-sm">
+          매장명: <span className="font-medium text-txt-main">{store?.name}</span>
+        </div>
 
-          <div className="flex justify-end gap-3 pt-6 border-t border-border mt-6">
-            <Button type="button" variant="outline" onClick={() => navigate(`/staff/stores/${id}`)}>
-              취소
-            </Button>
-            <Button type="submit" disabled={updateOperatingInfo.isPending}>
-              {updateOperatingInfo.isPending ? <Spinner size="sm" /> : '저장'}
-            </Button>
-          </div>
-        </form>
-      </Card>
+        <div className="space-y-4">
+          {sections.map((section) => (
+            <Card key={section.id} className="p-6">
+              <div className="mb-4">
+                <h2 className="text-lg font-semibold text-txt-main">{section.title}</h2>
+                <p className="text-sm text-txt-muted mt-0.5">{section.description}</p>
+              </div>
+              {section.content}
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex justify-end gap-3 pt-6 mt-2">
+          <Button type="button" variant="outline" onClick={() => navigate(`/staff/stores/${id}`)}>
+            취소
+          </Button>
+          <Button type="submit" disabled={updateOperatingInfo.isPending}>
+            {updateOperatingInfo.isPending ? <Spinner size="sm" /> : '저장'}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };

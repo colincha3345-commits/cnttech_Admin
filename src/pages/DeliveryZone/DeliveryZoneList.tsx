@@ -82,9 +82,6 @@ const ZoneCard: React.FC<ZoneCardProps> = ({
         {zone.zoneLevel === 'sub' ? '+' : ''}
         {zone.deliveryFee.toLocaleString()}원
       </span>
-      {zone.zoneLevel === 'main' && zone.minOrderAmount && (
-        <span>최소 {zone.minOrderAmount.toLocaleString()}원</span>
-      )}
     </div>
 
     <div className="mt-2 flex justify-end gap-1">
@@ -293,16 +290,6 @@ export const DeliveryZoneList: React.FC = () => {
                           {selectedZone.deliveryFee.toLocaleString()}원
                         </p>
                       </div>
-                      {selectedZone.zoneLevel === 'main' && (
-                        <div>
-                          <p className="text-xs text-gray-500">최소주문금액</p>
-                          <p className="text-sm font-medium">
-                            {selectedZone.minOrderAmount
-                              ? `${selectedZone.minOrderAmount.toLocaleString()}원`
-                              : '-'}
-                          </p>
-                        </div>
-                      )}
                     </div>
 
                     <div className="mt-3 text-xs text-gray-400">
