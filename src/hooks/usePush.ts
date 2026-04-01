@@ -81,6 +81,18 @@ export function usePushEstimateCount(params: PushEstimateParams) {
   return { estimatedCount: data?.count ?? 0, isLoading };
 }
 
+/** 자동 발송 활성/비활성 토글 */
+export function useTogglePushStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => pushService.toggleStatus(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PUSH_KEYS.all });
+    },
+  });
+}
+
 /** 푸시 취소 */
 export function useCancelPush() {
   const queryClient = useQueryClient();

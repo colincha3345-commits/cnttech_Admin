@@ -5,6 +5,7 @@ import { useToast } from '@/hooks';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useCreatePush, usePushEstimateCount } from '@/hooks/usePush';
 import type { PushNotificationForm, PushEstimateParams, PushType, TriggerType } from '@/types/push';
+import { isOrderTrigger } from '@/types/push';
 
 // 회원 세그먼트 옵션
 const GRADE_OPTIONS = ['전체', 'VIP', 'GOLD', 'SILVER', 'BRONZE'];
@@ -162,6 +163,32 @@ export const PushNotificationFormPage = () => {
 
     // 전송 핸들러 (백엔드 API 연동 예시)
     const handleSubmit = async () => {
+        // 필수 값 검증
+        if (!formData.title.trim()) {
+            toast.error('푸시 제목을 입력해주세요.');
+            return;
+        }
+        if (!formData.body.trim()) {
+            toast.error('푸시 내용을 입력해주세요.');
+            return;
+        }
+        if (formData.isScheduled && !formData.scheduledAt) {
+            toast.error('예약 발송 시간을 설정해주세요.');
+            return;
+        }
+        if (formData.triggerType === 'time_limit' && !formData.timeLimitEventId) {
+            toast.error('연결할 타임 세일 이벤트를 선택해주세요.');
+            return;
+        }
+        if (
+            formData.triggerType === 'regular_schedule' && 
+            formData.regularScheduleType === 'weekly' && 
+            (!formData.regularScheduleDays || formData.regularScheduleDays.length === 0)
+        ) {
+            toast.error('정기 발송 요일을 최소 1개 이상 선택해주세요.');
+            return;
+        }
+
         // 광고성 야간 발송 차단
         if (isNightTimeSendBlocked()) {
             alert('광고성 푸시는 21:00~08:00 사이에 발송할 수 없습니다. (정보통신망법 제50조)');
@@ -234,7 +261,9 @@ export const PushNotificationFormPage = () => {
                 <h1 className="text-2xl font-bold">앱 푸시 발송</h1>
                 <div className="gap-2 flex">
                     <Button variant="outline">임시 저장</Button>
-                    <Button onClick={handleSubmit}>전송/예약</Button>
+                    <Button onClick={handleSubmit}>
+                        {isOrderTrigger(formData.triggerType) ? '자동 발송 활성화' : '전송/예약'}
+                    </Button>
                 </div>
             </div>
 
@@ -268,6 +297,12 @@ export const PushNotificationFormPage = () => {
                                     <option value="product_viewed">특정 상품 반복 조회</option>
                                     <option value="app_installed">설치/실행 (첫 실행 시 웰컴 메시지)</option>
                                     <option value="purchase_completed">구매 완료 (관련 추천 상품 제안)</option>
+                                </optgroup>
+                                <optgroup label="주문 상태 기반 (자동 발송)">
+                                    <option value="order_confirmed">매장 접수 시 (주문 확인)</option>
+                                    <option value="order_ready">픽업 준비 완료 시</option>
+                                    <option value="order_delivering">배달 출발 시</option>
+                                    <option value="order_completed">주문 완료 시</option>
                                 </optgroup>
                                 <optgroup label="시간/예약 기반 트리거">
                                     <option value="regular_schedule">정기 발송 (매일/매주 정해진 시간)</option>
@@ -332,38 +367,46 @@ export const PushNotificationFormPage = () => {
                             )}
                         </div>
 
-                        <div className="flex flex-col gap-2">
-                            <label className="text-sm font-medium">발송 시점</label>
-                            <div className="flex gap-4 items-center">
-                                <label className="flex items-center gap-2">
-                                    <input type="radio" checked={!formData.isScheduled} onChange={() => setFormData({ ...formData, isScheduled: false })} /> 즉시 발송
-                                </label>
-                                <label className="flex items-center gap-2">
-                                    <input type="radio" checked={formData.isScheduled} onChange={() => setFormData({ ...formData, isScheduled: true })} /> 예약 발송
-                                </label>
+                        {isOrderTrigger(formData.triggerType) ? (
+                            <div className="p-3 bg-blue-50 rounded border border-blue-200 text-sm text-blue-700">
+                                주문 상태 변경 시 해당 주문의 고객에게 자동으로 발송됩니다.
                             </div>
-                            {formData.isScheduled && (
-                                <input type="datetime-local" className="border p-2 rounded w-64 mt-1 text-sm"
-                                    value={formData.scheduledAt} onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })} />
-                            )}
-                            {isNightTimeWarning && (
-                                <p className="text-red-500 text-xs mt-1 bg-red-50 p-2 rounded">
-                                    ※ <strong>야간 발송 제한:</strong> 정보통신망법에 따라 오후 9시부터 익일 오전 8시 사이의 광고성 정보 전송은 <strong>별도의 야간 수신 동의</strong>를 받은 사용자에게만 이루어져야 합니다.
-                                </p>
-                            )}
-                        </div>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                <label className="text-sm font-medium">발송 시점</label>
+                                <div className="flex gap-4 items-center">
+                                    <label className="flex items-center gap-2">
+                                        <input type="radio" checked={!formData.isScheduled} onChange={() => setFormData({ ...formData, isScheduled: false })} /> 즉시 발송
+                                    </label>
+                                    <label className="flex items-center gap-2">
+                                        <input type="radio" checked={formData.isScheduled} onChange={() => setFormData({ ...formData, isScheduled: true })} /> 예약 발송
+                                    </label>
+                                </div>
+                                {formData.isScheduled && (
+                                    <input type="datetime-local" className="border p-2 rounded w-64 mt-1 text-sm"
+                                        value={formData.scheduledAt} onChange={(e) => setFormData({ ...formData, scheduledAt: e.target.value })} />
+                                )}
+                                {isNightTimeWarning && (
+                                    <p className="text-red-500 text-xs mt-1 bg-red-50 p-2 rounded">
+                                        ※ <strong>야간 발송 제한:</strong> 정보통신망법에 따라 오후 9시부터 익일 오전 8시 사이의 광고성 정보 전송은 <strong>별도의 야간 수신 동의</strong>를 받은 사용자에게만 이루어져야 합니다.
+                                    </p>
+                                )}
+                            </div>
+                        )}
                     </Card>
 
-                    {/* 회원 세그먼트 */}
-                    <Card className="p-4 space-y-4">
-                        <div className="flex justify-between items-center border-b pb-2">
-                            <h2 className="font-semibold text-lg">회원 세그먼트</h2>
-                            <span className="text-sm text-blue-600 font-semibold">예상 대상: {isEstimating ? '계산 중...' : `${estimatedCount.toLocaleString()}명`}</span>
-                        </div>
-                        <ChipGroup label="등급별" options={GRADE_OPTIONS} selected={selectedGrades} setSelected={setSelectedGrades} />
-                        <ChipGroup label="지역 (배달지 기준)" options={REGION_OPTIONS} selected={selectedRegions} setSelected={setSelectedRegions} />
-                        <ChipGroup label="연령" options={AGE_OPTIONS} selected={selectedAges} setSelected={setSelectedAges} />
-                    </Card>
+                    {/* 회원 세그먼트 (주문 트리거 시 숨김) */}
+                    {!isOrderTrigger(formData.triggerType) && (
+                        <Card className="p-4 space-y-4">
+                            <div className="flex justify-between items-center border-b pb-2">
+                                <h2 className="font-semibold text-lg">회원 세그먼트</h2>
+                                <span className="text-sm text-blue-600 font-semibold">예상 대상: {isEstimating ? '계산 중...' : `${estimatedCount.toLocaleString()}명`}</span>
+                            </div>
+                            <ChipGroup label="등급별" options={GRADE_OPTIONS} selected={selectedGrades} setSelected={setSelectedGrades} />
+                            <ChipGroup label="지역 (배달지 기준)" options={REGION_OPTIONS} selected={selectedRegions} setSelected={setSelectedRegions} />
+                            <ChipGroup label="연령" options={AGE_OPTIONS} selected={selectedAges} setSelected={setSelectedAges} />
+                        </Card>
+                    )}
 
                     {/* 메시지 작성 */}
                     <Card className="p-4 space-y-4">
@@ -383,6 +426,18 @@ export const PushNotificationFormPage = () => {
                         <Input label="딥링크 URL (옵션)" placeholder="yourapp://path/to/page"
                             value={formData.deepLink}
                             onChange={(e) => setFormData({ ...formData, deepLink: e.target.value })} />
+
+                        {isOrderTrigger(formData.triggerType) && (
+                            <div className="p-3 bg-gray-50 rounded border text-xs text-gray-600 space-y-1">
+                                <p className="font-semibold text-gray-700">사용 가능한 변수</p>
+                                <p>메시지에 아래 변수를 입력하면 발송 시 자동으로 치환됩니다.</p>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                    {['{{주문번호}}', '{{매장명}}', '{{고객명}}', '{{주문금액}}'].map((v) => (
+                                        <code key={v} className="px-2 py-0.5 bg-white border rounded text-blue-600">{v}</code>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* 안드로이드 펼친 화면 설정 */}
                         <div className="flex flex-col gap-4 border-t pt-4 mt-2">

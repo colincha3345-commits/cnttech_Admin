@@ -1,5 +1,5 @@
 export type PushType = 'info' | 'ad';
-export type PushStatus = 'draft' | 'scheduled' | 'sending' | 'completed' | 'failed' | 'cancelled';
+export type PushStatus = 'draft' | 'scheduled' | 'sending' | 'completed' | 'failed' | 'cancelled' | 'active' | 'inactive';
 export type TriggerType =
     | 'none'
     | 'cart_abandoned'
@@ -7,7 +7,11 @@ export type TriggerType =
     | 'app_installed'
     | 'purchase_completed'
     | 'regular_schedule'
-    | 'time_limit';
+    | 'time_limit'
+    | 'order_confirmed'
+    | 'order_ready'
+    | 'order_delivering'
+    | 'order_completed';
 
 export interface PushNotification {
     id: string;
@@ -20,6 +24,7 @@ export interface PushNotification {
     targetCount: number;
     triggerType: TriggerType;
     triggerConfig?: Record<string, unknown>;
+    totalSentCount?: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -83,4 +88,32 @@ export interface PushEstimateParams {
     regions: string[];
     ages: string[];
     triggerType: TriggerType;
+}
+
+/** 주문 상태 기반 트리거 타입 목록 */
+export const ORDER_TRIGGER_TYPES: TriggerType[] = [
+    'order_confirmed',
+    'order_ready',
+    'order_delivering',
+    'order_completed',
+];
+
+/** 트리거 타입별 한글 라벨 */
+export const TRIGGER_TYPE_LABELS: Record<TriggerType, string> = {
+    none: '수동 발송',
+    cart_abandoned: '장바구니 방치',
+    product_viewed: '상품 반복 조회',
+    app_installed: '앱 설치',
+    purchase_completed: '구매 완료',
+    regular_schedule: '정기 발송',
+    time_limit: '시간 제한',
+    order_confirmed: '매장 접수',
+    order_ready: '픽업 준비',
+    order_delivering: '배달 출발',
+    order_completed: '주문 완료',
+};
+
+/** 주문 트리거 여부 판별 */
+export function isOrderTrigger(type: TriggerType): boolean {
+    return ORDER_TRIGGER_TYPES.includes(type);
 }

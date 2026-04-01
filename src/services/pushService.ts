@@ -11,7 +11,9 @@ import type {
   PushListParams,
   PushEstimateParams,
   PushStatus,
+  TriggerType,
 } from '@/types/push';
+import { ORDER_TRIGGER_TYPES } from '@/types/push';
 
 interface Pagination {
   page: number;
@@ -56,6 +58,30 @@ const mockPushList: PushNotification[] = [
     createdAt: new Date('2026-02-25T09:30:00'),
     updatedAt: new Date('2026-02-25T09:30:00'),
     scheduledAt: new Date('2026-02-28T12:00:00'),
+  },
+  {
+    id: '4',
+    type: 'info',
+    title: '주문이 접수되었습니다',
+    body: '{{매장명}}에서 {{고객명}}님의 주문({{주문번호}})을 확인했습니다. 맛있게 준비할게요!',
+    status: 'active',
+    targetCount: 8420,
+    totalSentCount: 8420,
+    triggerType: 'order_confirmed',
+    createdAt: new Date('2026-01-15T10:00:00'),
+    updatedAt: new Date('2026-03-30T14:00:00'),
+  },
+  {
+    id: '5',
+    type: 'info',
+    title: '주문이 완료되었습니다',
+    body: '{{고객명}}님, {{매장명}} 주문({{주문금액}})이 완료되었습니다. 이용해주셔서 감사합니다!',
+    status: 'active',
+    targetCount: 7650,
+    totalSentCount: 7650,
+    triggerType: 'order_completed',
+    createdAt: new Date('2026-01-15T10:30:00'),
+    updatedAt: new Date('2026-03-30T14:00:00'),
   },
 ];
 
@@ -171,14 +197,20 @@ class PushService {
   async create(payload: FormData): Promise<PushNotification> {
     if (IS_MOCK_MODE) {
       await mockDelay(500);
+      const triggerType = (payload.get('triggerType') as TriggerType) ?? 'none';
+      const isOrderTrigger = ORDER_TRIGGER_TYPES.includes(triggerType);
       const newPush: PushNotification = {
         id: `push_${Date.now()}`,
         type: (payload.get('type') as 'ad' | 'info') ?? 'info',
         title: (payload.get('title') as string) ?? '',
         body: (payload.get('body') as string) ?? '',
-        status: payload.get('isScheduled') === 'true' ? 'scheduled' : 'sending',
+        status: isOrderTrigger
+          ? 'active'
+          : payload.get('isScheduled') === 'true'
+            ? 'scheduled'
+            : 'sending',
         targetCount: 0,
-        triggerType: 'none',
+        triggerType,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -201,6 +233,20 @@ class PushService {
     }
 
     return apiClient.post<{ count: number }>('/push/estimate-count', params);
+  }
+
+  /** 자동 발송 활성/비활성 토글 */
+  async toggleStatus(id: string): Promise<PushNotification> {
+    if (IS_MOCK_MODE) {
+      await mockDelay();
+      const item = mockPushList.find((p) => p.id === id);
+      if (!item) throw new Error('푸시를 찾을 수 없습니다.');
+      item.status = (item.status === 'active' ? 'inactive' : 'active') as PushStatus;
+      item.updatedAt = new Date();
+      return { ...item };
+    }
+
+    return apiClient.post<PushNotification>(`/push/${id}/toggle-status`);
   }
 
   /** 푸시 취소 */

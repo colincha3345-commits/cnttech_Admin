@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, Spinner, MaskedData, Pagination } from '@/components/ui';
-import { usePushDetail, usePushRecipients } from '@/hooks/usePush';
+import { usePushDetail, usePushRecipients, useTogglePushStatus } from '@/hooks/usePush';
 import type { BadgeVariant } from '@/types';
 import type { PushDeliveryStatus } from '@/types/push';
+import { TRIGGER_TYPE_LABELS, isOrderTrigger } from '@/types/push';
 
 const DELIVERY_STATUS_BADGE: Record<PushDeliveryStatus, { variant: BadgeVariant; label: string }> = {
     opened: { variant: 'success', label: '읽음' },
@@ -18,6 +19,7 @@ export const PushDetail = () => {
     const [recipientLimit, setRecipientLimit] = useState(20);
 
     const { detail, isLoading } = usePushDetail(id);
+    const toggleStatus = useTogglePushStatus();
     const { recipients, pagination: recipientPagination, isLoading: isLoadingRecipients } = usePushRecipients(id, {
         page: recipientPage,
         limit: recipientLimit,
@@ -51,12 +53,33 @@ export const PushDetail = () => {
                             <div><span className="text-gray-500 block mb-1">유형</span> {detail.type === 'ad' ? '광고성' : '정보성'}</div>
                             <div>
                                 <span className="text-gray-500 block mb-1">상태</span>
-                                <Badge variant={detail.status === 'completed' ? 'success' : 'info'}>
-                                    {detail.status === 'completed' ? '발송 완료' : detail.status}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                    <Badge variant={detail.status === 'completed' ? 'success' : detail.status === 'active' ? 'success' : detail.status === 'inactive' ? 'secondary' : 'info'}>
+                                        {detail.status === 'completed' ? '발송 완료' : detail.status === 'active' ? '자동 발송 중' : detail.status === 'inactive' ? '자동 발송 중지' : detail.status}
+                                    </Badge>
+                                    {isOrderTrigger(detail.triggerType) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleStatus.mutate(detail.id)}
+                                            className={`text-xs px-2 py-0.5 rounded border transition-colors ${
+                                                detail.status === 'active'
+                                                    ? 'border-red-300 text-red-600 hover:bg-red-50'
+                                                    : 'border-green-300 text-green-600 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            {detail.status === 'active' ? '중지' : '활성화'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
+                            <div><span className="text-gray-500 block mb-1">트리거</span> {TRIGGER_TYPE_LABELS[detail.triggerType]}</div>
                             <div><span className="text-gray-500 block mb-1">작성일</span> {new Date(detail.createdAt).toLocaleString('ko-KR')}</div>
-                            <div><span className="text-gray-500 block mb-1">발송일</span> {detail.sentAt ? new Date(detail.sentAt).toLocaleString('ko-KR') : '-'}</div>
+                            {isOrderTrigger(detail.triggerType) && detail.totalSentCount != null && (
+                                <div><span className="text-gray-500 block mb-1">누적 발송</span> {detail.totalSentCount.toLocaleString()}건</div>
+                            )}
+                            {!isOrderTrigger(detail.triggerType) && (
+                                <div><span className="text-gray-500 block mb-1">발송일</span> {detail.sentAt ? new Date(detail.sentAt).toLocaleString('ko-KR') : '-'}</div>
+                            )}
                         </div>
                     </Card>
 

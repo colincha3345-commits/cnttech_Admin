@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Badge, SearchInput, Spinner, Pagination, SortableHeader } from '@/components/ui';
 import { useTableSort } from '@/hooks/useTableSort';
-import { usePushList } from '@/hooks/usePush';
+import { usePushList, useTogglePushStatus } from '@/hooks/usePush';
 import type { BadgeVariant } from '@/types';
 import type { PushNotification, PushStatus, PushType } from '@/types/push';
+import { TRIGGER_TYPE_LABELS, isOrderTrigger } from '@/types/push';
 
 const STATUS_BADGE: Record<PushStatus, { variant: BadgeVariant; label: string }> = {
     completed: { variant: 'success', label: '발송 완료' },
@@ -13,6 +14,8 @@ const STATUS_BADGE: Record<PushStatus, { variant: BadgeVariant; label: string }>
     draft: { variant: 'default', label: '임시 저장' },
     failed: { variant: 'critical', label: '발송 실패' },
     cancelled: { variant: 'secondary', label: '취소됨' },
+    active: { variant: 'success', label: '자동 발송 중' },
+    inactive: { variant: 'secondary', label: '자동 발송 중지' },
 };
 
 export const PushList = () => {
@@ -23,6 +26,7 @@ export const PushList = () => {
     const [limit, setLimit] = useState(20);
 
     const { sortKey, sortOrder, handleSort, sortData } = useTableSort<PushNotification>();
+    const toggleStatus = useTogglePushStatus();
 
     const { pushList, pagination, isLoading } = usePushList({
         keyword: searchKeyword || undefined,
@@ -66,6 +70,7 @@ export const PushList = () => {
                         <tr>
                             <SortableHeader label="유형" sortKey="type" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
                             <SortableHeader label="타이틀 / 내용" sortKey="title" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
+                            <th className="p-4 font-medium">트리거</th>
                             <SortableHeader label="상태" sortKey="status" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
                             <SortableHeader label="대상자 수" sortKey="targetCount" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium text-right" />
                             <SortableHeader label="생성일" sortKey="createdAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
@@ -75,13 +80,13 @@ export const PushList = () => {
                     <tbody className="divide-y text-sm">
                         {isLoading ? (
                             <tr>
-                                <td colSpan={6} className="text-center py-12">
+                                <td colSpan={7} className="text-center py-12">
                                     <Spinner size="sm" />
                                 </td>
                             </tr>
                         ) : pushList.length === 0 ? (
                             <tr>
-                                <td colSpan={6} className="text-center p-8 text-gray-500">
+                                <td colSpan={7} className="text-center p-8 text-gray-500">
                                     검색된 푸시 알림이 없습니다.
                                 </td>
                             </tr>
@@ -94,11 +99,36 @@ export const PushList = () => {
                                         <p className="text-gray-500 text-xs mt-1 truncate max-w-[250px]">{item.body}</p>
                                     </td>
                                     <td className="p-4">
-                                        <Badge variant={STATUS_BADGE[item.status].variant}>
-                                            {STATUS_BADGE[item.status].label}
-                                        </Badge>
+                                        <span className="text-xs text-gray-600">{TRIGGER_TYPE_LABELS[item.triggerType]}</span>
                                     </td>
-                                    <td className="p-4 text-right font-medium">{item.targetCount.toLocaleString()}명</td>
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant={STATUS_BADGE[item.status].variant}>
+                                                {STATUS_BADGE[item.status].label}
+                                            </Badge>
+                                            {isOrderTrigger(item.triggerType) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        toggleStatus.mutate(item.id);
+                                                    }}
+                                                    className={`text-[11px] px-2 py-0.5 rounded border transition-colors ${
+                                                        item.status === 'active'
+                                                            ? 'border-red-300 text-red-600 hover:bg-red-50'
+                                                            : 'border-green-300 text-green-600 hover:bg-green-50'
+                                                    }`}
+                                                >
+                                                    {item.status === 'active' ? '중지' : '활성화'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="p-4 text-right font-medium">
+                                        {isOrderTrigger(item.triggerType) && item.totalSentCount != null
+                                            ? `${item.totalSentCount.toLocaleString()}건 (누적)`
+                                            : `${item.targetCount.toLocaleString()}명`}
+                                    </td>
                                     <td className="p-4 text-gray-500">{new Date(item.createdAt).toLocaleDateString('ko-KR')}</td>
                                     <td className="p-4 text-gray-500">
                                         {item.scheduledAt ? new Date(item.scheduledAt).toLocaleString('ko-KR') : '-'}
