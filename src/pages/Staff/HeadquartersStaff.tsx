@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined, MailOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
-import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput, Pagination } from '@/components/ui';
+import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput, Pagination, SortableHeader } from '@/components/ui';
+import { useTableSort } from '@/hooks/useTableSort';
 import {
   useHeadquartersStaff,
   useTeams,
@@ -21,8 +22,9 @@ export const HeadquartersStaff: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StaffStatus | ''>('');
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<StaffAccount | null>(null);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
+  const { sortKey, sortOrder, handleSort, sortData } = useTableSort<StaffAccount>();
   const { data: teamsData } = useTeams();
   const { data, isLoading } = useHeadquartersStaff({
     teamId: teamFilter || undefined,
@@ -185,13 +187,13 @@ export const HeadquartersStaff: React.FC = () => {
           <table className="data-table w-full min-w-[900px]">
             <thead>
               <tr>
-                <th className="whitespace-nowrap">이름</th>
-                <th className="whitespace-nowrap">아이디</th>
-                <th className="whitespace-nowrap">소속팀</th>
-                <th className="whitespace-nowrap">연락처</th>
-                <th className="whitespace-nowrap">이메일</th>
-                <th className="whitespace-nowrap">상태</th>
-                <th className="whitespace-nowrap">최근 접속</th>
+                <SortableHeader label="이름" sortKey="name" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="아이디" sortKey="loginId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="소속팀" sortKey="teamId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="연락처" sortKey="phone" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="이메일" sortKey="email" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="상태" sortKey="status" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="최근 접속" sortKey="lastLoginAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
                 <th className="whitespace-nowrap w-20"></th>
               </tr>
             </thead>
@@ -209,7 +211,7 @@ export const HeadquartersStaff: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                staff.map((item) => (
+                sortData(staff).map((item) => (
                   <tr key={item.id}>
                     <td className="font-medium text-txt-main">{item.name}</td>
                     <td className="text-sm text-txt-secondary">{item.loginId}</td>
@@ -286,6 +288,7 @@ export const HeadquartersStaff: React.FC = () => {
             onPageChange={setPage}
             totalElements={pagination.total}
             limit={limit}
+            onLimitChange={setLimit}
             unit="명"
           />
         )}

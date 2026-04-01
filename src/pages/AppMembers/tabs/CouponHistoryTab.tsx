@@ -15,7 +15,7 @@ export const CouponHistoryTab: React.FC<CouponHistoryTabProps> = ({ memberId }) 
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const limit = 15;
+  const [limit, setLimit] = useState(15);
 
   const { coupons, pagination, summary, isLoading, refetch } = useMemberCoupons({
     memberId,
@@ -210,6 +210,7 @@ export const CouponHistoryTab: React.FC<CouponHistoryTabProps> = ({ memberId }) 
           onPageChange={setPage}
           totalElements={pagination.total}
           limit={limit}
+          onLimitChange={setLimit}
           unit="건"
         />
       </Card>

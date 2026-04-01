@@ -17,7 +17,7 @@ import {
 import {
   getGroupMemberIds,
 } from '@/lib/api/mockMemberGroupData';
-import type { Member, MemberSearchFilter, MemberGrade, MemberStatus } from '@/types/member';
+import type { Member, MemberSearchFilter, MemberGrade, MemberStatus, WithdrawnRecord } from '@/types/member';
 import type {
   AppUsageLog,
   AppAction,
@@ -55,6 +55,7 @@ class AppMemberService {
   private coupons: MemberCoupon[] = [...mockMemberCoupons];
   private vouchers: MemberVoucher[] = [...mockMemberVouchers];
   private notifications: MemberNotification[] = [...mockMemberNotifications];
+  private withdrawnRecords: WithdrawnRecord[] = [];
 
   private delay(ms = 300): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -69,6 +70,9 @@ class AppMemberService {
     searchKeyword?: string;
     grades?: MemberGrade[];
     statuses?: MemberStatus[];
+    dateType?: MemberSearchFilter['dateType'];
+    dateFrom?: string;
+    dateTo?: string;
     page?: number;
     limit?: number;
   }): Promise<{ data: Member[]; pagination: Pagination }> {
@@ -80,6 +84,9 @@ class AppMemberService {
       searchKeyword = '',
       grades = [],
       statuses = [],
+      dateType,
+      dateFrom,
+      dateTo,
       page = 1,
       limit = 10,
     } = params;
@@ -136,6 +143,31 @@ class AppMemberService {
     // 상태 필터
     if (statuses.length > 0) {
       result = result.filter((m) => statuses.includes(m.status));
+    }
+
+    // 날짜 범위 필터
+    if (dateType && (dateFrom || dateTo)) {
+      const fromDate = dateFrom ? new Date(dateFrom) : null;
+      const toDate = dateTo ? new Date(dateTo + 'T23:59:59') : null;
+
+      result = result.filter((m) => {
+        let target: Date | null = null;
+        switch (dateType) {
+          case 'registeredAt':
+            target = m.registeredAt;
+            break;
+          case 'lastLoginAt':
+            target = m.lastLoginAt;
+            break;
+          case 'lastOrderDate':
+            target = m.lastOrderDate;
+            break;
+        }
+        if (!target) return false;
+        if (fromDate && target < fromDate) return false;
+        if (toDate && target > toDate) return false;
+        return true;
+      });
     }
 
     // 전체 수
@@ -861,6 +893,79 @@ class AppMemberService {
       const hasParticipated = participantIds.has(m.id);
       return participated ? hasParticipated : !hasParticipated;
     });
+  }
+
+  // ============================================
+  // 회원 탈퇴 처리
+  // ============================================
+
+  /**
+   * 회원 탈퇴 처리
+   * - Member 레코드 익명화 (개인정보 삭제)
+   * - 주문 레코드 익명화
+   * - WithdrawnRecord 생성 (CS 보관용)
+   */
+  async withdrawMember(memberId: string): Promise<void> {
+    await this.delay();
+
+    const memberIndex = this.members.findIndex((m) => m.id === memberId);
+    if (memberIndex === -1) {
+      throw new Error(`회원을 찾을 수 없습니다: ${memberId}`);
+    }
+
+    const member = this.members[memberIndex]!;
+
+    // 1. Member 레코드 익명화
+    const withdrawnAt = new Date();
+    this.members[memberIndex] = {
+      ...member,
+      memberId: '', // 재가입 가능하게 로그인ID 초기화
+      name: '탈퇴회원', // 익명화
+      phone: '', // 삭제
+      email: '', // 삭제
+      ci: null, // CI 삭제
+      birthDate: null, // 생년월일 삭제
+      gender: null, // 성별 삭제
+      linkedSns: [], // SNS 연동 삭제
+      termsAgreements: [], // 약관 동의 이력 삭제
+      favoriteStores: [], // 단골매장 삭제
+      deliveryAddresses: [], // 배달지 주소 삭제
+      status: 'withdrawn',
+      withdrawnAt,
+    };
+
+    // 2. 해당 회원의 주문 레코드 익명화
+    const anonymousId = `WITHDRAWN_${member.id}`;
+    const memberOrders = this.orders.filter((o) => o.memberId === memberId);
+    const orderNumbers = memberOrders.map((o) => o.orderNumber);
+
+    memberOrders.forEach((order) => {
+      const orderIndex = this.orders.findIndex((o) => o.id === order.id);
+      if (orderIndex !== -1) {
+        this.orders[orderIndex] = {
+          ...order,
+          memberName: '탈퇴회원',
+          memberPhone: '',
+        };
+      }
+    });
+
+    // 3. WithdrawnRecord 생성 (CS 문의 대응용)
+    if (orderNumbers.length > 0) {
+      this.withdrawnRecords.push({
+        anonymousId,
+        orderNumbers,
+        withdrawnAt,
+      });
+    }
+  }
+
+  /**
+   * 탈퇴 회원 기록 조회 (CS 용)
+   */
+  async getWithdrawnRecord(anonymousId: string): Promise<WithdrawnRecord | null> {
+    await this.delay(200);
+    return this.withdrawnRecords.find((r) => r.anonymousId === anonymousId) ?? null;
   }
 }
 

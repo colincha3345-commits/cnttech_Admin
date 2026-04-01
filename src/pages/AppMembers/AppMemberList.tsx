@@ -5,16 +5,24 @@ import {
   UserOutlined,
   ClockCircleOutlined,
   ShoppingOutlined,
+  TeamOutlined,
 } from '@ant-design/icons';
 
 import {
   Card,
+  CardHeader,
+  CardContent,
   Badge,
+  Button,
   SearchInput,
   MaskedData,
   Pagination,
+  SortableHeader,
 } from '@/components/ui';
 import { useAppMembers, useAppMemberStats } from '@/hooks';
+import { useTableSort } from '@/hooks/useTableSort';
+import { useMemberGroups } from '@/hooks/useMemberGroups';
+import { GroupFormModal } from '@/pages/AppMembers/components/GroupFormModal';
 import type { MemberListFilter } from '@/types/app-member';
 import type { Member, MemberGrade, MemberStatus } from '@/types/member';
 import {
@@ -31,6 +39,13 @@ interface AppMemberListProps {
 
 // 검색 타입
 type SearchType = 'all' | 'name' | 'memberId' | 'phone' | 'email';
+type DateType = 'registeredAt' | 'lastLoginAt' | 'lastOrderDate';
+
+const DATE_TYPE_LABELS: Record<DateType, string> = {
+  registeredAt: '가입일',
+  lastLoginAt: '최근 접속일',
+  lastOrderDate: '최근 주문일',
+};
 
 export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) => {
   const navigate = useNavigate();
@@ -40,8 +55,42 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedGrades, setSelectedGrades] = useState<MemberGrade[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<MemberStatus[]>([]);
+  const [dateType, setDateType] = useState<DateType>('registeredAt');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
+
+  // 체크박스 선택
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 그룹 생성 모달
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const { groups } = useMemberGroups();
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleToggleAll = () => {
+    if (members.length > 0 && members.every((m) => selectedIds.has(m.id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(members.map((m) => m.id)));
+    }
+  };
+
+  const handleGroupCreateSuccess = () => {
+    setShowGroupModal(false);
+    setSelectedIds(new Set());
+  };
+
+  // 소팅
+  const { sortKey, sortOrder, handleSort, sortData } = useTableSort<Member>();
 
   // 데이터 조회
   const { members, pagination, isLoading } = useAppMembers({
@@ -50,6 +99,9 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
     searchKeyword,
     grades: selectedGrades,
     statuses: selectedStatuses,
+    dateType: dateFrom || dateTo ? dateType : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
     page,
     limit,
   });
@@ -74,8 +126,6 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
         return 'success';
       case 'inactive':
         return 'warning';
-      case 'dormant':
-        return 'default';
       case 'withdrawn':
         return 'critical';
       default:
@@ -246,37 +296,48 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
         </Card>
       </div>
 
-      {/* 검색 및 필터 */}
-      <Card className="p-4">
-        <div className="space-y-4">
-          {/* 검색 */}
-          <div className="flex gap-2">
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as SearchType)}
-              className="h-10 px-3 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {Object.entries(MEMBER_SEARCH_TYPE_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <div className="flex-1">
-              <SearchInput
-                placeholder="검색어를 입력하세요..."
-                value={searchKeyword}
-                onChange={handleSearch}
-              />
-            </div>
+      {/* 검색 필터 */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-txt-main flex items-center gap-2">
+              <SearchOutlined />
+              회원 검색
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => {
+              setSearchType('all');
+              setSearchKeyword('');
+              setSelectedGrades([]);
+              setSelectedStatuses([]);
+              setDateType('registeredAt');
+              setDateFrom('');
+              setDateTo('');
+              setPage(1);
+            }}>
+              초기화
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* 검색 유형 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">검색 유형</label>
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as SearchType)}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {Object.entries(MEMBER_SEARCH_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
 
-          {/* 필터 */}
-          <div className="flex flex-wrap gap-4">
-            {/* 등급 필터 */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-txt-muted">등급:</span>
-              <div className="flex gap-1">
+            {/* 등급 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">등급</label>
+              <div className="flex flex-wrap gap-1 min-h-[38px] items-center">
                 {(Object.entries(MEMBER_GRADE_LABELS) as [MemberGrade, string][]).map(
                   ([grade, label]) => (
                     <button
@@ -295,10 +356,10 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
               </div>
             </div>
 
-            {/* 상태 필터 */}
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-txt-muted">상태:</span>
-              <div className="flex gap-1">
+            {/* 상태 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">상태</label>
+              <div className="flex flex-wrap gap-1 min-h-[38px] items-center">
                 {(Object.entries(MEMBER_STATUS_LABELS) as [MemberStatus, string][]).map(
                   ([status, label]) => (
                     <button
@@ -316,30 +377,112 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
                 )}
               </div>
             </div>
+
+            {/* 날짜 유형 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">날짜 유형</label>
+              <select
+                value={dateType}
+                onChange={(e) => { setDateType(e.target.value as DateType); setPage(1); }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {Object.entries(DATE_TYPE_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 시작일 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">시작일</label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            {/* 종료일 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">종료일</label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            {/* 검색어 */}
+            <div className="sm:col-span-2 lg:col-span-3">
+              <label className="block text-xs font-medium text-txt-muted mb-1">검색</label>
+              <SearchInput
+                placeholder="이름, 회원ID, 연락처, 이메일로 검색"
+                value={searchKeyword}
+                onChange={handleSearch}
+                onSearch={() => setPage(1)}
+              />
+            </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
+
+      {/* 선택 액션 바 */}
+      {selectedIds.size > 0 && (
+        <Card className="p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-txt-main">
+              {selectedIds.size}명 선택됨
+            </span>
+            <div className="flex gap-2">
+              <Button variant="primary" size="sm" onClick={() => setShowGroupModal(true)}>
+                <TeamOutlined className="mr-1" />
+                그룹 생성
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                선택 해제
+              </Button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* 회원 목록 테이블 */}
       <Card>
         <table className="data-table">
           <thead>
             <tr>
+              <th className="w-10">
+                <input
+                  type="checkbox"
+                  checked={members.length > 0 && members.every((m) => selectedIds.has(m.id))}
+                  onChange={handleToggleAll}
+                  className="rounded border-border"
+                />
+              </th>
               {columns.map((column) => (
-                <th key={column.key}>{column.header}</th>
+                <SortableHeader
+                  key={column.key}
+                  label={column.header}
+                  sortKey={column.key}
+                  currentSortKey={sortKey}
+                  currentSortOrder={sortOrder}
+                  onSort={handleSort}
+                />
               ))}
             </tr>
           </thead>
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-12">
+                <td colSpan={columns.length + 1} className="text-center py-12">
                   <div className="text-txt-muted">로딩 중...</div>
                 </td>
               </tr>
             ) : members.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-12">
+                <td colSpan={columns.length + 1} className="text-center py-12">
                   <div className="text-txt-muted">
                     <SearchOutlined className="text-3xl mb-2 opacity-50" />
                     <p>조건에 맞는 회원이 없습니다.</p>
@@ -347,12 +490,20 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
                 </td>
               </tr>
             ) : (
-              members.map((member) => (
+              sortData(members).map((member) => (
                 <tr
                   key={member.id}
                   onClick={() => handleRowClick(member)}
                   className="hover:bg-bg-hover cursor-pointer"
                 >
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(member.id)}
+                      onChange={() => handleToggleSelect(member.id)}
+                      className="rounded border-border"
+                    />
+                  </td>
                   {columns.map((column) => (
                     <td key={column.key} data-label={column.header}>
                       {column.render(member)}
@@ -371,9 +522,19 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
           onPageChange={setPage}
           totalElements={pagination.total}
           limit={limit}
+          onLimitChange={setLimit}
           unit="명"
         />
       </Card>
+
+      {/* 그룹 생성 모달 */}
+      <GroupFormModal
+        isOpen={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        groups={groups}
+        onSuccess={handleGroupCreateSuccess}
+        initialMemberIds={Array.from(selectedIds)}
+      />
     </div>
   );
 };

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { CloseOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
 
 import { Button, Input, Label } from '@/components/ui';
-import { appMemberService } from '@/services/appMemberService';
 import { useToast } from '@/hooks';
+import { useAdjustPoint } from '@/hooks/useAppMembers';
 
 interface PointAdjustModalProps {
   isOpen: boolean;
@@ -26,11 +26,12 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
   const [adjustType, setAdjustType] = useState<'earn_manual' | 'withdraw_manual'>('earn_manual');
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('ko-KR').format(num);
   };
+
+  const adjustPointMutation = useAdjustPoint();
 
   const handleSubmit = async () => {
     const numAmount = parseInt(amount, 10);
@@ -55,9 +56,8 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
       if (!confirmNegative) return;
     }
 
-    setIsLoading(true);
     try {
-      await appMemberService.adjustPoint({
+      await adjustPointMutation.mutateAsync({
         memberId,
         type: adjustType,
         amount: numAmount,
@@ -76,13 +76,11 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
       onClose();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    if (!isLoading) {
+    if (!adjustPointMutation.isPending) {
       setAmount('');
       setReason('');
       onClose();
@@ -107,7 +105,7 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
           <button
             onClick={handleClose}
             className="p-1 hover:bg-bg-hover rounded transition-colors"
-            disabled={isLoading}
+            disabled={adjustPointMutation.isPending}
           >
             <CloseOutlined />
           </button>
@@ -206,15 +204,15 @@ export const PointAdjustModal: React.FC<PointAdjustModalProps> = ({
 
         {/* 푸터 */}
         <div className="flex justify-end gap-3 p-4 border-t border-border">
-          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+          <Button variant="outline" onClick={handleClose} disabled={adjustPointMutation.isPending}>
             취소
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || !amount || !reason.trim()}
+            disabled={adjustPointMutation.isPending || !amount || !reason.trim()}
             variant={adjustType === 'earn_manual' ? 'primary' : 'danger'}
           >
-            {isLoading
+            {adjustPointMutation.isPending
               ? '처리 중...'
               : adjustType === 'earn_manual'
                 ? '지급하기'

@@ -15,7 +15,7 @@ export const PointHistoryTab: React.FC<PointHistoryTabProps> = ({ memberId }) =>
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const limit = 15;
+  const [limit, setLimit] = useState(15);
 
   const { history, pagination, summary, isLoading, refetch } = usePointHistory({
     memberId,
@@ -211,6 +211,7 @@ export const PointHistoryTab: React.FC<PointHistoryTabProps> = ({ memberId }) =>
           onPageChange={setPage}
           totalElements={pagination.total}
           limit={limit}
+          onLimitChange={setLimit}
           unit="건"
         />
       </Card>

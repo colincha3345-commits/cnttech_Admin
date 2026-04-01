@@ -57,8 +57,6 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
         return 'success';
       case 'inactive':
         return 'warning';
-      case 'dormant':
-        return 'default';
       case 'withdrawn':
         return 'critical';
       default:

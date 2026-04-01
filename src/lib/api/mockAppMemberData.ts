@@ -131,6 +131,8 @@ export const mockMemberOrders: MemberOrder[] = [
     paymentMethod: '카카오페이',
     storeId: 'store-1',
     storeName: '강남점',
+    memberName: '김VIP',
+    memberPhone: '010-****-1234',
   },
   {
     id: 'order-2',
@@ -148,6 +150,8 @@ export const mockMemberOrders: MemberOrder[] = [
     paymentMethod: '신용카드',
     storeId: 'store-1',
     storeName: '강남점',
+    memberName: '김VIP',
+    memberPhone: '010-****-1234',
   },
   {
     id: 'order-3',
@@ -165,6 +169,8 @@ export const mockMemberOrders: MemberOrder[] = [
     paymentMethod: '네이버페이',
     storeId: 'store-2',
     storeName: '서초점',
+    memberName: '김VIP',
+    memberPhone: '010-****-1234',
   },
   // member-2 (이골드) 주문
   {
@@ -184,6 +190,8 @@ export const mockMemberOrders: MemberOrder[] = [
     paymentMethod: '카카오페이',
     storeId: 'store-3',
     storeName: '역삼점',
+    memberName: '이골드',
+    memberPhone: '010-****-5678',
   },
   {
     id: 'order-5',
@@ -201,6 +209,8 @@ export const mockMemberOrders: MemberOrder[] = [
     paymentMethod: '신용카드',
     storeId: 'store-3',
     storeName: '역삼점',
+    memberName: '이골드',
+    memberPhone: '010-****-5678',
   },
 ];
 
@@ -486,7 +496,7 @@ export const mockMemberNotifications: MemberNotification[] = [
 export const mockInactiveUsageLogs: AppUsageLog[] = [
   {
     id: 'log-inactive-1',
-    memberId: 'member-6', // 한휴면 (dormant)
+    memberId: 'member-6', // 한휴면 (inactive)
     action: 'login',
     detail: '앱 로그인',
     deviceInfo: { os: 'ios', osVersion: '16.5', appVersion: '2.3.0', deviceModel: 'iPhone 13' },

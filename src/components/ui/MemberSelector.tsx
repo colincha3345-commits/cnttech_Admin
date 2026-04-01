@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   UserOutlined,
   CloseOutlined,
@@ -9,9 +9,8 @@ import {
 import { format } from 'date-fns';
 
 import { Badge } from './Badge';
-import { mockMembers } from '@/lib/api/mockData';
+import { useMemberSelector } from './useMemberSelector';
 import type {
-  Member,
   MemberGrade,
   MemberSearchFilter,
 } from '@/types/member';
@@ -52,96 +51,7 @@ export const MemberSelector: React.FC<MemberSelectorProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  // 검색 필터 상태
-  const [filter, setFilter] = useState<MemberSearchFilter>({
-    searchType: 'all',
-    searchKeyword: '',
-    grades: [],
-    statuses: ['active'],
-    orderCountMin: undefined,
-    orderCountMax: undefined,
-  });
-
-  // 필터링된 회원 목록
-  const filteredMembers = useMemo(() => {
-    let result = [...mockMembers];
-
-    // 텍스트 검색 (LIKE 검색)
-    if (filter.searchKeyword) {
-      const keyword = filter.searchKeyword.toLowerCase();
-      result = result.filter((m) => {
-        switch (filter.searchType) {
-          case 'all':
-            // 전체 필드에서 검색
-            return (
-              m.name.toLowerCase().includes(keyword) ||
-              m.memberId.toLowerCase().includes(keyword) ||
-              m.phone.includes(keyword) ||
-              m.email.toLowerCase().includes(keyword)
-            );
-          case 'name':
-            return m.name.toLowerCase().includes(keyword);
-          case 'memberId':
-            return m.memberId.toLowerCase().includes(keyword);
-          case 'phone':
-            return m.phone.includes(keyword);
-          case 'email':
-            return m.email.toLowerCase().includes(keyword);
-          default:
-            return true;
-        }
-      });
-    }
-
-    // 등급 필터
-    if (filter.grades && filter.grades.length > 0) {
-      result = result.filter((m) => filter.grades!.includes(m.grade));
-    }
-
-    // 상태 필터
-    if (filter.statuses && filter.statuses.length > 0) {
-      result = result.filter((m) => filter.statuses!.includes(m.status));
-    }
-
-    // 가입일 범위
-    if (filter.registeredFrom) {
-      const fromDate = new Date(filter.registeredFrom);
-      result = result.filter((m) => m.registeredAt >= fromDate);
-    }
-    if (filter.registeredTo) {
-      const toDate = new Date(filter.registeredTo);
-      toDate.setHours(23, 59, 59, 999);
-      result = result.filter((m) => m.registeredAt <= toDate);
-    }
-
-    // 주문 횟수 범위
-    if (filter.orderCountMin !== undefined) {
-      result = result.filter((m) => m.orderCount >= filter.orderCountMin!);
-    }
-    if (filter.orderCountMax !== undefined) {
-      result = result.filter((m) => m.orderCount <= filter.orderCountMax!);
-    }
-
-    // 총 주문 금액 범위
-    if (filter.totalAmountMin !== undefined) {
-      result = result.filter((m) => m.totalOrderAmount >= filter.totalAmountMin!);
-    }
-    if (filter.totalAmountMax !== undefined) {
-      result = result.filter((m) => m.totalOrderAmount <= filter.totalAmountMax!);
-    }
-
-    // 마케팅 동의
-    if (filter.marketingAgreed !== undefined) {
-      result = result.filter((m) => m.marketingAgreed === filter.marketingAgreed);
-    }
-
-    return result;
-  }, [filter]);
-
-  // 회원 ID로 회원 정보 찾기
-  const getMemberById = (id: string): Member | undefined => {
-    return mockMembers.find((m) => m.id === id);
-  };
+  const { filter, setFilter, filteredMembers, getMemberById } = useMemberSelector();
 
   // 회원 토글
   const handleToggleMember = (memberId: string) => {

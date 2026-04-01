@@ -3,7 +3,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
-import { useCreateGroup, useUpdateGroup } from '@/hooks/useMemberGroups';
+import { useCreateGroup, useUpdateGroup, useAddMembersToGroup } from '@/hooks/useMemberGroups';
 import { useToast } from '@/hooks';
 import type { MemberGroup } from '@/types/member-segment';
 
@@ -13,6 +13,7 @@ interface GroupFormModalProps {
   group?: MemberGroup | null;
   groups?: MemberGroup[];
   onSuccess: () => void;
+  initialMemberIds?: string[];
 }
 
 export const GroupFormModal: React.FC<GroupFormModalProps> = ({
@@ -21,6 +22,7 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
   group,
   groups,
   onSuccess,
+  initialMemberIds,
 }) => {
   const toast = useToast();
   const isEditMode = !!group;
@@ -32,8 +34,10 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
   // mutations
   const { createGroupAsync, isCreating } = useCreateGroup();
   const { updateGroupAsync, isUpdating } = useUpdateGroup();
+  const { addMembersAsync } = useAddMembersToGroup();
 
   const isLoading = isCreating || isUpdating;
+  const memberCount = initialMemberIds?.length ?? 0;
 
   // 폼 초기화
   useEffect(() => {
@@ -71,11 +75,16 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
         });
         toast.success('그룹이 수정되었습니다.');
       } else {
-        await createGroupAsync({
+        const newGroup = await createGroupAsync({
           name: name.trim(),
           description: description.trim() || undefined,
         });
-        toast.success('그룹이 생성되었습니다.');
+        if (initialMemberIds && initialMemberIds.length > 0) {
+          await addMembersAsync({ groupId: newGroup.id, memberIds: initialMemberIds });
+          toast.success(`그룹이 생성되고 ${initialMemberIds.length}명의 회원이 추가되었습니다.`);
+        } else {
+          toast.success('그룹이 생성되었습니다.');
+        }
       }
       onSuccess();
     } catch {
@@ -119,6 +128,12 @@ export const GroupFormModal: React.FC<GroupFormModalProps> = ({
             {description.length}/200자
           </p>
         </div>
+
+        {memberCount > 0 && !isEditMode && (
+          <div className="bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 text-sm text-primary">
+            선택된 회원 {memberCount}명이 그룹에 추가됩니다.
+          </div>
+        )}
 
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="secondary" onClick={onClose}>

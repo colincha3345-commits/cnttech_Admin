@@ -55,7 +55,15 @@ export function AuditLogList() {
     const [actionFilter, setActionFilter] = useState<AuditAction[]>([]);
     const [showFilters, setShowFilters] = useState(false);
     const [page, setPage] = useState(1);
-    const limit = 20;
+    const [limit, setLimit] = useState(20);
+    const [sortKey, setSortKey] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    const handleSort = (key: string, order: 'asc' | 'desc') => {
+        setSortKey(key);
+        setSortOrder(order);
+        setPage(1);
+    };
 
     // 상세 모달
     const [selectedLog, setSelectedLog] = useState<AuditLogEntry | null>(null);
@@ -269,10 +277,14 @@ export function AuditLogList() {
             {/* 로그 테이블 */}
             <Card className="overflow-hidden">
                 <DataTable<AuditLogEntry>
+                    sortKey={sortKey}
+                    sortOrder={sortOrder}
+                    onSort={handleSort}
                     columns={[
                         {
                             key: 'createdAt',
                             header: '발생 시각',
+                            sortable: true,
                             render: (item) => (
                                 <span className="text-sm text-txt-main whitespace-nowrap">
                                     {format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm:ss')}
@@ -282,6 +294,7 @@ export function AuditLogList() {
                         {
                             key: 'userName',
                             header: '수정자 ID',
+                            sortable: true,
                             render: (item) => (
                                 <div className="flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-primary-light text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
@@ -296,6 +309,7 @@ export function AuditLogList() {
                         {
                             key: 'action',
                             header: '행위',
+                            sortable: true,
                             render: (item) => (
                                 <Badge
                                     variant={
@@ -310,6 +324,7 @@ export function AuditLogList() {
                         {
                             key: 'pagePath',
                             header: '페이지 경로',
+                            sortable: true,
                             render: (item) => (
                                 <span className="px-2 py-1 bg-bg-muted rounded text-xs text-txt-main font-mono border border-border">
                                     {item.pagePath ?? '-'}
@@ -319,6 +334,7 @@ export function AuditLogList() {
                         {
                             key: 'resource',
                             header: '대상 리소스',
+                            sortable: true,
                             render: (item) => (
                                 <div className="flex flex-col gap-0.5">
                                     <span className="text-sm text-txt-main font-mono">{item.resource}</span>
@@ -338,6 +354,7 @@ export function AuditLogList() {
                         {
                             key: 'ipAddress',
                             header: 'IP',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => <span className="text-xs text-txt-muted font-mono">{item.ipAddress}</span>,
                         },
@@ -355,6 +372,7 @@ export function AuditLogList() {
                             onPageChange={handlePageChange}
                             totalElements={pagination.total}
                             limit={limit}
+                            onLimitChange={setLimit}
                             unit="건"
                         />
                     </div>

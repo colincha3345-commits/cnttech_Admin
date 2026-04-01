@@ -28,7 +28,6 @@ export const USER_TYPE_LABELS: Record<UserType, string> = {
 export type UnifiedUserStatus =
   | 'active'
   | 'inactive'
-  | 'dormant'
   | 'withdrawn'
   | 'invited'
   | 'pending_approval'
@@ -39,7 +38,6 @@ export type UnifiedUserStatus =
 export const UNIFIED_USER_STATUS_LABELS: Record<UnifiedUserStatus, string> = {
   active: '활성',
   inactive: '비활성',
-  dormant: '장기미접속',
   withdrawn: '탈퇴',
   invited: '초대됨',
   pending_approval: '승인대기',
@@ -277,7 +275,6 @@ export function staffToUnifiedUser(staff: StaffAccount): FranchiseUser | BrandAd
 const MEMBER_STATUS_MAP: Record<string, MemberStatus> = {
   active: 'active',
   inactive: 'inactive',
-  dormant: 'dormant',
   withdrawn: 'withdrawn',
 };
 

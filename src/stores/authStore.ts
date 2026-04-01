@@ -27,6 +27,8 @@ interface AuthState {
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   clearError: () => void;
+  getLoginAttemptInfo: (email: string) => { remainingAttempts: number; isLocked: boolean } | null;
+  resendVerificationCode: () => Promise<string | null>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -215,6 +217,26 @@ export const useAuthStore = create<AuthState>()(
     clearError: () => {
       set({ error: null, errorMessage: null });
     },
+
+    getLoginAttemptInfo: (email: string) => {
+      return authService.getLoginAttemptInfo(email);
+    },
+
+    resendVerificationCode: async () => {
+      const { pendingMfaUserId } = get();
+      if (!pendingMfaUserId) return null;
+
+      try {
+        const result = await authService.resendVerificationCode(pendingMfaUserId);
+        if ('data' in result && result.success) {
+          return result.data.email;
+        }
+        return null;
+      } catch (err) {
+        if (import.meta.env.DEV) console.error('[AUTH] 재발송 예외:', err);
+        return null;
+      }
+    },
   })
 );
 
@@ -235,5 +257,7 @@ export function useAuth() {
     logout: store.logout,
     checkAuth: store.checkAuth,
     clearError: store.clearError,
+    getLoginAttemptInfo: store.getLoginAttemptInfo,
+    resendVerificationCode: store.resendVerificationCode,
   };
 }

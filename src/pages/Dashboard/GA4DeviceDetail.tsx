@@ -4,6 +4,9 @@ import { ArrowLeftOutlined, MobileOutlined, DesktopOutlined, TabletOutlined, Glo
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
+import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
+import type { DashboardDateRange } from '@/types';
+
 import { Card, CardHeader, CardContent, Badge } from '@/components/ui';
 import { StatCard } from '@/components/ui/StatCard';
 
@@ -59,6 +62,10 @@ export function GA4DeviceDetail() {
     const navigate = useNavigate();
     const now = new Date();
     const [activeTab, setActiveTab] = useState<DeviceTab>('overview');
+    const [dateRange, setDateRange] = useState<DashboardDateRange>({
+        preset: 'today',
+        ...getDateRangeFromPreset('today'),
+    });
 
     const tabs: { key: DeviceTab; label: string }[] = [
         { key: 'overview', label: '디바이스 개요' },
@@ -71,22 +78,25 @@ export function GA4DeviceDetail() {
 
     return (
         <div className="space-y-6">
-            {/* 헤더 */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/dashboard/ga4')}
-                        className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
-                    >
-                        <ArrowLeftOutlined />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-txt-main">디바이스 상세 분석</h1>
-                        <p className="text-sm text-txt-muted mt-1">
-                            {format(now, 'yyyy-MM-dd eeee', { locale: ko })} 기준
-                        </p>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/dashboard/ga4')}
+                            className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
+                        >
+                            <ArrowLeftOutlined />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-bold text-txt-main">디바이스 상세 분석</h1>
+                            <p className="text-sm text-txt-muted mt-1">
+                                {format(now, 'yyyy-MM-dd eeee', { locale: ko })} (최종 업데이트 :{' '}
+                                {format(now, 'yyyy년 M월 d일 HH:mm')})
+                            </p>
+                        </div>
                     </div>
                 </div>
+                <DateRangeFilter value={dateRange} onChange={setDateRange} />
             </div>
 
             {/* 상단 요약 카드 */}

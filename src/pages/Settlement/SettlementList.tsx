@@ -29,7 +29,15 @@ export function SettlementList() {
     const [keyword, setKeyword] = useState('');
     const [status, setStatus] = useState<SettlementStatus | ''>('');
     const [page, setPage] = useState(1);
-    const limit = 20;
+    const [limit, setLimit] = useState(20);
+    const [sortKey, setSortKey] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    const handleSort = (key: string, order: 'asc' | 'desc') => {
+        setSortKey(key);
+        setSortOrder(order);
+        setPage(1);
+    };
 
     const { settlements, pagination, isLoading, fetchSettlements } = useSettlements();
     const runSettlement = useRunSettlement();
@@ -156,10 +164,14 @@ export function SettlementList() {
             {/* 목록 테이블 */}
             <Card className="overflow-hidden">
                 <DataTable<Settlement>
+                    sortKey={sortKey}
+                    sortOrder={sortOrder}
+                    onSort={handleSort}
                     columns={[
                         {
                             key: 'createdAt',
                             header: '날짜',
+                            sortable: true,
                             render: (item) => (
                                 <span className="text-sm text-txt-main whitespace-nowrap">{item.createdAt.slice(0, 10)}</span>
                             ),
@@ -167,6 +179,7 @@ export function SettlementList() {
                         {
                             key: 'storeName',
                             header: '가맹점',
+                            sortable: true,
                             render: (item) => (
                                 <div>
                                     <div className="text-sm font-medium text-txt-main">{item.storeName}</div>
@@ -177,6 +190,7 @@ export function SettlementList() {
                         {
                             key: 'totalSales',
                             header: '총 매출액',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm font-medium text-txt-main whitespace-nowrap">₩{item.totalSales.toLocaleString()}</span>
@@ -185,6 +199,7 @@ export function SettlementList() {
                         {
                             key: 'deliveryFee',
                             header: '배달비용',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-txt-sub whitespace-nowrap">₩{item.deliveryFee.toLocaleString()}</span>
@@ -193,6 +208,7 @@ export function SettlementList() {
                         {
                             key: 'pointsUsed',
                             header: '포인트',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-purple-600 whitespace-nowrap">₩{item.pointsUsed.toLocaleString()}</span>
@@ -201,6 +217,7 @@ export function SettlementList() {
                         {
                             key: 'couponsUsed',
                             header: '쿠폰',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-purple-600 whitespace-nowrap">₩{item.couponsUsed.toLocaleString()}</span>
@@ -209,6 +226,7 @@ export function SettlementList() {
                         {
                             key: 'vouchersUsed',
                             header: '교환권',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-txt-sub whitespace-nowrap">₩{item.vouchersUsed.toLocaleString()}</span>
@@ -217,6 +235,7 @@ export function SettlementList() {
                         {
                             key: 'hqDiscount',
                             header: '할인액(본사)',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-red-500 font-bold whitespace-nowrap">₩{item.hqSupport.toLocaleString()}</span>
@@ -225,6 +244,7 @@ export function SettlementList() {
                         {
                             key: 'storeDiscount',
                             header: '할인액(가맹)',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-red-500 font-bold whitespace-nowrap">₩{(item.promotionDiscount - item.hqSupport).toLocaleString()}</span>
@@ -233,6 +253,7 @@ export function SettlementList() {
                         {
                             key: 'platformFee',
                             header: '플랫폼 수수료',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.platformFee.toLocaleString()}</span>
@@ -241,6 +262,7 @@ export function SettlementList() {
                         {
                             key: 'pgFee',
                             header: 'PG 수수료',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.pgFee.toLocaleString()}</span>
@@ -249,6 +271,7 @@ export function SettlementList() {
                         {
                             key: 'netAmount',
                             header: '정산 대상액',
+                            sortable: true,
                             className: 'text-right',
                             render: (item) => (
                                 <span className="text-sm font-bold text-blue-600 whitespace-nowrap">₩{item.netAmount.toLocaleString()}</span>
@@ -268,6 +291,7 @@ export function SettlementList() {
                             onPageChange={handlePageChange}
                             totalElements={pagination.total}
                             limit={limit}
+                            onLimitChange={setLimit}
                             unit="건"
                         />
                     </div>

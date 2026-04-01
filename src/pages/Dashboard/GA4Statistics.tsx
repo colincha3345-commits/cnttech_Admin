@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -6,11 +7,17 @@ import { UserOutlined, TeamOutlined, UsergroupAddOutlined, RiseOutlined } from '
 import { StatCard } from '@/components/ui/StatCard';
 import { DevGuide, DASHBOARD_DEV_GUIDE } from '@/components/dev';
 import { InfoCard } from './InfoCard';
+import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
+import type { DashboardDateRange } from '@/types';
 import { Card, CardHeader, CardContent } from '@/components/ui';
 
 export function GA4Statistics() {
     const navigate = useNavigate();
     const now = new Date();
+    const [dateRange, setDateRange] = useState<DashboardDateRange>({
+        preset: 'today',
+        ...getDateRangeFromPreset('today'),
+    });
 
     // Mock data for DAU / MAU
     const usersData = {
@@ -46,15 +53,18 @@ export function GA4Statistics() {
     return (
         <div className="space-y-6">
             {/* 페이지 헤더 */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-txt-main">GA4 통계 현황</h1>
-                    <p className="text-sm text-txt-muted mt-1">
-                        {format(now, 'yyyy-MM-dd eeee', { locale: ko })} (최종 업데이트 :{' '}
-                        {format(now, 'yyyy년 M월 d일 HH:mm')})
-                    </p>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-txt-main">GA4 통계 현황</h1>
+                        <p className="text-sm text-txt-muted mt-1">
+                            {format(now, 'yyyy-MM-dd eeee', { locale: ko })} (최종 업데이트 :{' '}
+                            {format(now, 'yyyy년 M월 d일 HH:mm')})
+                        </p>
+                    </div>
+                    <DevGuide {...DASHBOARD_DEV_GUIDE} />
                 </div>
-                <DevGuide {...DASHBOARD_DEV_GUIDE} />
+                <DateRangeFilter value={dateRange} onChange={setDateRange} />
             </div>
 
             {/* 상단 4개 요약 통계 카드 */}

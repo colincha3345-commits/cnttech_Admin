@@ -132,6 +132,8 @@ export interface MemberOrder {
   paymentMethod: string;
   storeId: string;
   storeName: string;
+  memberName: string;      // 주문자명 (스냅샷 - 탈퇴 시 익명화)
+  memberPhone: string;     // 주문자 연락처 (스냅샷 - 탈퇴 시 익명화)
 }
 
 // ============================================

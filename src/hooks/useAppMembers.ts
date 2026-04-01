@@ -1,7 +1,7 @@
 /**
  * 앱회원 목록 Hook
  */
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appMemberService } from '@/services/appMemberService';
 import type { MemberListFilter } from '@/types/app-member';
 import type { MemberGrade, MemberStatus, MemberSearchFilter } from '@/types/member';
@@ -12,6 +12,9 @@ interface UseAppMembersParams {
   searchKeyword?: string;
   grades?: MemberGrade[];
   statuses?: MemberStatus[];
+  dateType?: MemberSearchFilter['dateType'];
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }
@@ -23,12 +26,15 @@ export function useAppMembers(params: UseAppMembersParams = {}) {
     searchKeyword = '',
     grades = [],
     statuses = [],
+    dateType,
+    dateFrom,
+    dateTo,
     page = 1,
     limit = 10,
   } = params;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['app-members', filter, searchType, searchKeyword, grades, statuses, page, limit],
+    queryKey: ['app-members', filter, searchType, searchKeyword, grades, statuses, dateType, dateFrom, dateTo, page, limit],
     queryFn: () =>
       appMemberService.getMembers({
         filter,
@@ -36,6 +42,9 @@ export function useAppMembers(params: UseAppMembersParams = {}) {
         searchKeyword,
         grades,
         statuses,
+        dateType,
+        dateFrom,
+        dateTo,
         page,
         limit,
       }),
@@ -276,4 +285,35 @@ export function useMemberNotifications(params: UseNotificationsParams) {
     error,
     refetch,
   };
+}
+
+// 회원 포인트 수동 조정 Hook
+export function useAdjustPoint() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: Parameters<typeof appMemberService.adjustPoint>[0]) =>
+      appMemberService.adjustPoint(params),
+    onSuccess: (_, variables) => {
+      // 포인트 조정 성공 시, 연관된 쿼리들을 무효화하여 새로운 데이터를 패치합니다.
+      queryClient.invalidateQueries({ queryKey: ['point-history', variables.memberId] });
+      queryClient.invalidateQueries({ queryKey: ['app-member', variables.memberId] });
+      queryClient.invalidateQueries({ queryKey: ['app-members'] });
+    },
+  });
+}
+
+// 회원 쿠폰 수동 조정 Hook
+export function useAdjustCoupon() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (params: Parameters<typeof appMemberService.adjustCoupon>[0]) =>
+      appMemberService.adjustCoupon(params),
+    onSuccess: (_, variables) => {
+      // 쿠폰 조정 성공 시, 연관된 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: ['member-coupons', variables.memberId] });
+      queryClient.invalidateQueries({ queryKey: ['app-member', variables.memberId] });
+    },
+  });
 }

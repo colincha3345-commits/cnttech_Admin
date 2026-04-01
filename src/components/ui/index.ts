@@ -50,3 +50,4 @@ export { MemberSelector } from './MemberSelector';
 export { ToggleButtonGroup } from './ToggleButtonGroup';
 export { RichTextEditor } from './RichTextEditor';
 export { IdCell } from './IdCell';
+export { SortableHeader } from './SortableHeader';

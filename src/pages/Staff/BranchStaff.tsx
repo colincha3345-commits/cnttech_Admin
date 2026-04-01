@@ -6,7 +6,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, EditOutlined, DeleteOutlined, MailOutlined, CloseCircleOutlined } from '@ant-design/icons';
 
-import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput, Pagination } from '@/components/ui';
+import { Card, Button, Badge, Spinner, MaskedData, ConfirmDialog, SearchInput, Pagination, SortableHeader } from '@/components/ui';
+import { useTableSort } from '@/hooks/useTableSort';
 import {
   useBranchStaff,
   useBranches,
@@ -27,8 +28,9 @@ export const BranchStaff: React.FC = () => {
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<StaffAccount | null>(null);
   const [cancelTarget, setCancelTarget] = useState<StaffAccount | null>(null);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
+  const { sortKey, sortOrder, handleSort, sortData } = useTableSort<StaffAccount>();
   const { data: branchesData } = useBranches();
   const { data, isLoading } = useBranchStaff({
     branchId: branchFilter || undefined,
@@ -157,12 +159,12 @@ export const BranchStaff: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-bg-secondary border-b border-border">
-                <th className="px-4 py-3 text-xs font-semibold text-txt-muted">이름</th>
-                <th className="px-4 py-3 text-xs font-semibold text-txt-muted">아이디</th>
-                <th className="px-4 py-3 text-xs font-semibold text-txt-muted">소속지사</th>
-                <th className="px-4 py-3 text-xs font-semibold text-txt-muted">연락처</th>
-                <th className="px-4 py-3 text-xs font-semibold text-txt-muted">상태</th>
-                <th className="px-4 py-3 text-xs font-semibold text-txt-muted">최근 로그인</th>
+                <SortableHeader label="이름" sortKey="name" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="px-4 py-3 text-xs font-semibold text-txt-muted" />
+                <SortableHeader label="아이디" sortKey="loginId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="px-4 py-3 text-xs font-semibold text-txt-muted" />
+                <SortableHeader label="소속지사" sortKey="branchId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="px-4 py-3 text-xs font-semibold text-txt-muted" />
+                <SortableHeader label="연락처" sortKey="phone" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="px-4 py-3 text-xs font-semibold text-txt-muted" />
+                <SortableHeader label="상태" sortKey="status" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="px-4 py-3 text-xs font-semibold text-txt-muted" />
+                <SortableHeader label="최근 로그인" sortKey="lastLoginAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="px-4 py-3 text-xs font-semibold text-txt-muted" />
                 <th className="px-4 py-3 text-xs font-semibold text-txt-muted">액션</th>
               </tr>
             </thead>
@@ -170,7 +172,7 @@ export const BranchStaff: React.FC = () => {
               {staff.length === 0 ? (
                 <tr><td colSpan={7} className="px-4 py-8 text-center text-txt-muted">직원이 없습니다.</td></tr>
               ) : (
-                staff.map((item) => (
+                sortData(staff).map((item) => (
                   <tr key={item.id} className="border-b border-border hover:bg-bg-hover transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-txt-main">{item.name}</td>
                     <td className="px-4 py-3 text-sm text-txt-secondary">{item.loginId}</td>
@@ -215,7 +217,7 @@ export const BranchStaff: React.FC = () => {
         </div>
 
         {pagination && (
-          <Pagination page={page} totalPages={pagination.totalPages} onPageChange={setPage} totalElements={pagination.total} limit={limit} unit="명" />
+          <Pagination page={page} totalPages={pagination.totalPages} onPageChange={setPage} totalElements={pagination.total} limit={limit} onLimitChange={setLimit} unit="명" />
         )}
       </Card>
 

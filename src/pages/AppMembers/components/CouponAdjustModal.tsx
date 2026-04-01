@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { CloseOutlined, PlusOutlined, MinusOutlined } from '@ant-design/icons';
 
 import { Button, Label } from '@/components/ui';
-import { appMemberService } from '@/services/appMemberService';
 import { useToast } from '@/hooks';
+import { useAdjustCoupon } from '@/hooks/useAppMembers';
 
 interface CouponAdjustModalProps {
   isOpen: boolean;
@@ -32,11 +32,12 @@ export const CouponAdjustModal: React.FC<CouponAdjustModalProps> = ({
   const [adjustType, setAdjustType] = useState<'issue' | 'withdraw'>('issue');
   const [selectedCouponId, setSelectedCouponId] = useState('');
   const [reason, setReason] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('ko-KR').format(num);
   };
+
+  const adjustCouponMutation = useAdjustCoupon();
 
   const handleSubmit = async () => {
     if (!selectedCouponId) {
@@ -49,9 +50,8 @@ export const CouponAdjustModal: React.FC<CouponAdjustModalProps> = ({
       return;
     }
 
-    setIsLoading(true);
     try {
-      await appMemberService.adjustCoupon({
+      await adjustCouponMutation.mutateAsync({
         memberId,
         couponId: selectedCouponId,
         type: adjustType,
@@ -71,13 +71,11 @@ export const CouponAdjustModal: React.FC<CouponAdjustModalProps> = ({
       onClose();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '처리 중 오류가 발생했습니다.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleClose = () => {
-    if (!isLoading) {
+    if (!adjustCouponMutation.isPending) {
       setSelectedCouponId('');
       setReason('');
       onClose();
@@ -97,7 +95,7 @@ export const CouponAdjustModal: React.FC<CouponAdjustModalProps> = ({
           <button
             onClick={handleClose}
             className="p-1 hover:bg-bg-hover rounded transition-colors"
-            disabled={isLoading}
+            disabled={adjustCouponMutation.isPending}
           >
             <CloseOutlined />
           </button>
@@ -192,15 +190,15 @@ export const CouponAdjustModal: React.FC<CouponAdjustModalProps> = ({
 
         {/* 푸터 */}
         <div className="flex justify-end gap-3 p-4 border-t border-border">
-          <Button variant="outline" onClick={handleClose} disabled={isLoading}>
+          <Button variant="outline" onClick={handleClose} disabled={adjustCouponMutation.isPending}>
             취소
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || !selectedCouponId || !reason.trim()}
+            disabled={adjustCouponMutation.isPending || !selectedCouponId || !reason.trim()}
             variant={adjustType === 'issue' ? 'primary' : 'danger'}
           >
-            {isLoading
+            {adjustCouponMutation.isPending
               ? '처리 중...'
               : adjustType === 'issue'
                 ? '지급하기'

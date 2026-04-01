@@ -6,7 +6,6 @@ import { OTPInput } from '@/components/auth';
 import { DevGuide, LOGIN_DEV_GUIDE } from '@/components/dev';
 import { useAuth } from '@/stores/authStore';
 import { useAuthStore } from '@/stores/authStore';
-import { authService } from '@/services/authService';
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -19,6 +18,8 @@ export function LoginPage() {
     login,
     verifyMfa,
     clearError,
+    getLoginAttemptInfo,
+    resendVerificationCode,
   } = useAuth();
 
   const pendingMfaUserId = useAuthStore((state) => state.pendingMfaUserId);
@@ -58,10 +59,10 @@ export function LoginPage() {
   // 이메일 변경 시 시도 정보 업데이트
   useEffect(() => {
     if (email) {
-      const info = authService.getLoginAttemptInfo(email);
+      const info = getLoginAttemptInfo(email);
       setAttemptInfo(info);
     }
-  }, [email]);
+  }, [email, getLoginAttemptInfo]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -71,7 +72,7 @@ export function LoginPage() {
 
     if (!success) {
       // 시도 정보 갱신
-      const info = authService.getLoginAttemptInfo(email);
+      const info = getLoginAttemptInfo(email);
       setAttemptInfo(info);
     }
   };
@@ -93,9 +94,10 @@ export function LoginPage() {
     clearError();
 
     try {
-      const result = await authService.resendVerificationCode(pendingMfaUserId);
-      if ('data' in result && result.success) {
-        setMaskedEmail(result.data.email);
+      const emailRes = await resendVerificationCode();
+      if (emailRes) {
+        setMaskedEmail(emailRes);
+        // 성공 시 쿨다운
         setResendCooldown(60); // 60초 쿨다운
       }
     } finally {

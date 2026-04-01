@@ -43,7 +43,15 @@ export function InquiryList({ type, title }: InquiryListProps) {
     const [keyword, setKeyword] = useState('');
     const [statusFilter, setStatusFilter] = useState<InquiryStatus | ''>('');
     const [page, setPage] = useState(1);
-    const limit = 20;
+    const [limit, setLimit] = useState(20);
+    const [sortKey, setSortKey] = useState<string>('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+    const handleSort = (key: string, order: 'asc' | 'desc') => {
+        setSortKey(key);
+        setSortOrder(order);
+        setPage(1);
+    };
     const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
     const [answer, setAnswer] = useState('');
     const [answerStatus, setAnswerStatus] = useState<InquiryStatus>('resolved');
@@ -175,10 +183,14 @@ export function InquiryList({ type, title }: InquiryListProps) {
             {/* 목록 */}
             <Card>
                 <DataTable<Inquiry>
+                    sortKey={sortKey}
+                    sortOrder={sortOrder}
+                    onSort={handleSort}
                     columns={[
                         {
                             key: 'category',
                             header: '분류',
+                            sortable: true,
                             render: (item) => (
                                 <Badge variant="default">{CATEGORY_LABELS[item.category]}</Badge>
                             ),
@@ -186,6 +198,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
                         {
                             key: 'title',
                             header: '제목',
+                            sortable: true,
                             render: (item) => (
                                 <div>
                                     <div className="text-sm font-medium text-gray-900">{item.title}</div>
@@ -196,6 +209,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
                         {
                             key: 'author',
                             header: '작성자',
+                            sortable: true,
                             render: (item) => (
                                 <div>
                                     <div className="text-sm text-gray-900">{item.authorName}</div>
@@ -206,6 +220,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
                         {
                             key: 'status',
                             header: '상태',
+                            sortable: true,
                             render: (item) => (
                                 <Badge variant={STATUS_VARIANTS[item.status]}>{STATUS_LABELS[item.status]}</Badge>
                             ),
@@ -213,6 +228,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
                         {
                             key: 'createdAt',
                             header: '등록일',
+                            sortable: true,
                             render: (item) => (
                                 <span className="text-sm text-gray-500 whitespace-nowrap">{item.createdAt.slice(0, 10)}</span>
                             ),
@@ -239,6 +255,7 @@ export function InquiryList({ type, title }: InquiryListProps) {
                         onPageChange={handlePageChange}
                         totalElements={pagination.total}
                         limit={limit}
+                        onLimitChange={setLimit}
                         unit="건"
                     />
                 )}

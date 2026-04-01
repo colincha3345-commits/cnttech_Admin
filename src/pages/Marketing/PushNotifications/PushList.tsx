@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, Button, Badge, SearchInput, Spinner, Pagination } from '@/components/ui';
+import { Card, Button, Badge, SearchInput, Spinner, Pagination, SortableHeader } from '@/components/ui';
+import { useTableSort } from '@/hooks/useTableSort';
 import { usePushList } from '@/hooks/usePush';
 import type { BadgeVariant } from '@/types';
-import type { PushStatus, PushType } from '@/types/push';
+import type { PushNotification, PushStatus, PushType } from '@/types/push';
 
 const STATUS_BADGE: Record<PushStatus, { variant: BadgeVariant; label: string }> = {
     completed: { variant: 'success', label: '발송 완료' },
@@ -19,7 +20,9 @@ export const PushList = () => {
     const [keyword, setKeyword] = useState('');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [page, setPage] = useState(1);
-    const limit = 20;
+    const [limit, setLimit] = useState(20);
+
+    const { sortKey, sortOrder, handleSort, sortData } = useTableSort<PushNotification>();
 
     const { pushList, pagination, isLoading } = usePushList({
         keyword: searchKeyword || undefined,
@@ -61,12 +64,12 @@ export const PushList = () => {
                 <table className="w-full text-left">
                     <thead className="bg-gray-50 border-b text-sm text-gray-500">
                         <tr>
-                            <th className="p-4 font-medium">유형</th>
-                            <th className="p-4 font-medium">타이틀 / 내용</th>
-                            <th className="p-4 font-medium">상태</th>
-                            <th className="p-4 font-medium text-right">대상자 수</th>
-                            <th className="p-4 font-medium">생성일</th>
-                            <th className="p-4 font-medium">예약/발송일시</th>
+                            <SortableHeader label="유형" sortKey="type" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
+                            <SortableHeader label="타이틀 / 내용" sortKey="title" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
+                            <SortableHeader label="상태" sortKey="status" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
+                            <SortableHeader label="대상자 수" sortKey="targetCount" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium text-right" />
+                            <SortableHeader label="생성일" sortKey="createdAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
+                            <SortableHeader label="예약/발송일시" sortKey="scheduledAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="p-4 font-medium" />
                         </tr>
                     </thead>
                     <tbody className="divide-y text-sm">
@@ -83,7 +86,7 @@ export const PushList = () => {
                                 </td>
                             </tr>
                         ) : (
-                            pushList.map((item) => (
+                            sortData(pushList).map((item) => (
                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => navigate(`/marketing/push/${item.id}`)}>
                                     <td className="p-4">{getPushTypeBadge(item.type)}</td>
                                     <td className="p-4">
@@ -112,6 +115,7 @@ export const PushList = () => {
                     onPageChange={setPage}
                     totalElements={pagination.total}
                     limit={limit}
+                    onLimitChange={setLimit}
                     unit="건"
                 />
             </Card>

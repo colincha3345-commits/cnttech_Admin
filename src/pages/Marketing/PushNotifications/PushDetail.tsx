@@ -15,7 +15,7 @@ export const PushDetail = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const [recipientPage, setRecipientPage] = useState(1);
-    const recipientLimit = 20;
+    const [recipientLimit, setRecipientLimit] = useState(20);
 
     const { detail, isLoading } = usePushDetail(id);
     const { recipients, pagination: recipientPagination, isLoading: isLoadingRecipients } = usePushRecipients(id, {
@@ -113,6 +113,7 @@ export const PushDetail = () => {
                                     onPageChange={setRecipientPage}
                                     totalElements={recipientPagination.total}
                                     limit={recipientLimit}
+                                    onLimitChange={setRecipientLimit}
                                     unit="명"
                                 />
                             </>

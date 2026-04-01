@@ -10,7 +10,8 @@ import {
   DeleteOutlined,
 } from '@ant-design/icons';
 
-import { Card, Button, Badge, ConfirmDialog, SearchInput, Pagination } from '@/components/ui';
+import { Card, Button, Badge, ConfirmDialog, SearchInput, Pagination, SortableHeader } from '@/components/ui';
+import { useTableSort } from '@/hooks/useTableSort';
 import { useMemberGroups, useDeleteGroup } from '@/hooks/useMemberGroups';
 import { useToast } from '@/hooks';
 import type { MemberGroup } from '@/types/member-segment';
@@ -24,7 +25,10 @@ export const MemberGroups: React.FC = () => {
   const [keyword, setKeyword] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
+
+  // 소팅
+  const { sortKey, sortOrder, handleSort, sortData } = useTableSort<MemberGroup>();
 
   // 모달 상태
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -116,15 +120,15 @@ export const MemberGroups: React.FC = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>그룹명</th>
-                  <th>설명</th>
-                  <th className="text-center">회원 수</th>
-                  <th>생성일</th>
+                  <SortableHeader label="그룹명" sortKey="name" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="설명" sortKey="description" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="회원 수" sortKey="memberCount" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="text-center" />
+                  <SortableHeader label="생성일" sortKey="createdAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
                   <th className="text-center w-24">관리</th>
                 </tr>
               </thead>
               <tbody>
-                {groups.map((group) => (
+                {sortData(groups).map((group) => (
                   <tr
                     key={group.id}
                     onClick={() => handleRowClick(group)}
@@ -179,6 +183,8 @@ export const MemberGroups: React.FC = () => {
               page={page}
               totalPages={pagination.totalPages}
               onPageChange={setPage}
+              limit={limit}
+              onLimitChange={setLimit}
             />
           </>
         )}

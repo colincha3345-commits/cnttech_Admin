@@ -123,7 +123,7 @@ export const DeliveryZoneList: React.FC = () => {
   // 필터 상태
   const [filterStoreId, setFilterStoreId] = useState<string>('');
   const [page, setPage] = useState(1);
-  const limit = 20;
+  const [limit, setLimit] = useState(20);
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
 
   // 삭제 모달
@@ -237,6 +237,7 @@ export const DeliveryZoneList: React.FC = () => {
                   onPageChange={setPage}
                   totalElements={pagination.total}
                   limit={limit}
+                  onLimitChange={setLimit}
                   unit="개"
                 />
               </div>

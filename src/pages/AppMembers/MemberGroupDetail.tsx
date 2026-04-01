@@ -11,7 +11,8 @@ import {
   UserDeleteOutlined,
 } from '@ant-design/icons';
 
-import { Card, Button, Badge, ConfirmDialog, MaskedData, Pagination } from '@/components/ui';
+import { Card, Button, Badge, ConfirmDialog, MaskedData, Pagination, SortableHeader } from '@/components/ui';
+import { useTableSort } from '@/hooks/useTableSort';
 import {
   useMemberGroup,
   useGroupMembers,
@@ -30,9 +31,12 @@ export const MemberGroupDetail: React.FC = () => {
   const navigate = useNavigate();
   const toast = useToast();
 
+  // 소팅
+  const { sortKey, sortOrder, handleSort, sortData } = useTableSort<Member>();
+
   // 페이지네이션 상태
   const [page, setPage] = useState(1);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   // 선택된 회원 (다중 제거용)
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
@@ -62,8 +66,6 @@ export const MemberGroupDetail: React.FC = () => {
         return 'success';
       case 'inactive':
         return 'warning';
-      case 'dormant':
-        return 'default';
       case 'withdrawn':
         return 'critical';
       default:
@@ -241,17 +243,17 @@ export const MemberGroupDetail: React.FC = () => {
                       className="w-4 h-4"
                     />
                   </th>
-                  <th>이름</th>
-                  <th>아이디</th>
-                  <th>등급</th>
-                  <th>상태</th>
-                  <th>연락처</th>
-                  <th>가입일</th>
+                  <SortableHeader label="이름" sortKey="name" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="아이디" sortKey="memberId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="등급" sortKey="grade" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="상태" sortKey="status" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="연락처" sortKey="phone" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
+                  <SortableHeader label="가입일" sortKey="registeredAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} />
                   <th className="w-20 text-center">관리</th>
                 </tr>
               </thead>
               <tbody>
-                {members.map((member) => (
+                {sortData(members).map((member) => (
                   <tr key={member.id}>
                     <td>
                       <input
@@ -308,6 +310,7 @@ export const MemberGroupDetail: React.FC = () => {
               onPageChange={setPage}
               totalElements={pagination.total}
               limit={limit}
+              onLimitChange={setLimit}
               unit="명"
             />
           </>

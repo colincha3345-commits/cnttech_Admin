@@ -16,7 +16,7 @@ interface VoucherHistoryTabProps {
 export const VoucherHistoryTab: React.FC<VoucherHistoryTabProps> = ({ memberId }) => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [page, setPage] = useState(1);
-  const limit = 15;
+  const [limit, setLimit] = useState(15);
 
   const { vouchers, pagination, isLoading } = useMemberVouchers({
     memberId,
@@ -208,6 +208,7 @@ export const VoucherHistoryTab: React.FC<VoucherHistoryTabProps> = ({ memberId }
           onPageChange={setPage}
           totalElements={pagination.total}
           limit={limit}
+          onLimitChange={setLimit}
           unit="건"
         />
       </Card>

@@ -152,9 +152,9 @@ export const DeliveryZoneEditor: React.FC = () => {
         setDrawnRadius(undefined);
         setDrawnPolygon(undefined);
       }
-      // 반경 모드 전환 시 zoneLevel을 main으로 강제 (소상권은 하단 자동 생성으로 대체)
+      // 반경 모드 전환
       if (mode === 'radius') {
-        setFormData((prev) => ({ ...prev, type: 'radius', zoneLevel: 'main' }));
+        setFormData((prev) => ({ ...prev, type: 'radius' }));
       } else if (mode === 'polygon') {
         setFormData((prev) => ({ ...prev, type: 'polygon' }));
       }
@@ -407,17 +407,13 @@ export const DeliveryZoneEditor: React.FC = () => {
             </label>
             <div className="flex gap-2">
               {(['main', 'sub'] as ZoneLevel[]).map((level) => {
-                const isSubDisabled = level === 'sub' && formData.type === 'radius';
                 return (
                   <button
                     key={level}
                     type="button"
-                    onClick={() => !isSubDisabled && handleZoneLevelChange(level)}
-                    disabled={isSubDisabled}
+                    onClick={() => handleZoneLevelChange(level)}
                     className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-                      isSubDisabled
-                        ? 'border-gray-200 text-gray-300 bg-gray-50 cursor-not-allowed'
-                        : formData.zoneLevel === level
+                      formData.zoneLevel === level
                           ? level === 'main'
                             ? 'bg-blue-50 border-blue-500 text-blue-700'
                             : 'bg-purple-50 border-purple-500 text-purple-700'
@@ -429,11 +425,11 @@ export const DeliveryZoneEditor: React.FC = () => {
                 );
               })}
             </div>
-            {formData.type === 'radius' && (
-              <p className="text-xs text-gray-400 mt-1">반경 모드에서는 하단 "소상권 사용"으로 거리별 소상권을 자동 생성합니다.</p>
+            {formData.type === 'radius' && formData.zoneLevel === 'main' && (
+              <p className="text-xs text-gray-400 mt-1">반경 모드 메인 상권에서는 하단 "소상권 사용"으로 거리별 동심원 소상권을 자동 생성할 수 있습니다.</p>
             )}
-            {formData.type === 'polygon' && formData.zoneLevel === 'sub' && (
-              <p className="text-xs text-gray-400 mt-1">폴리곤 모드에서는 소상권을 직접 그려서 생성합니다.</p>
+            {formData.zoneLevel === 'sub' && (
+              <p className="text-xs text-gray-400 mt-1">지도에 영역을 직접 그려서 소상권을 생성합니다. (기본상권보다 크게 그릴 수 있습니다)</p>
             )}
           </div>
 

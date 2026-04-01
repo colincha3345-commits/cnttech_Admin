@@ -28,7 +28,7 @@ const MOCK_MARKETING_ITEMS: MarketingPerformanceItem[] = [
 
 /** 회원 분석 Mock 데이터 */
 const MOCK_MEMBER_ANALYTICS: MemberAnalyticsData = {
-  summary: { total: 88000, active: 62500, dormant: 18200, newSignup: 140, withdrawal: 8 },
+  summary: { total: 88000, active: 62500, inactive: 18200, newSignup: 140, withdrawal: 8 },
   gender: [
     { label: '여성', value: 52.3, count: 46024 },
     { label: '남성', value: 44.1, count: 38808 },

@@ -38,7 +38,15 @@ export const StoreList: React.FC = () => {
   const [isBulkMenuOpen, setIsBulkMenuOpen] = useState(false);
   const [isPOSUploadOpen, setIsPOSUploadOpen] = useState(false);
   const [isPGUploadOpen, setIsPGUploadOpen] = useState(false);
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
+  const [sortKey, setSortKey] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (key: string, order: 'asc' | 'desc') => {
+    setSortKey(key);
+    setSortOrder(order);
+    setPage(1);
+  };
 
   const { data, isLoading } = useStoreList({
     region: regionFilter || undefined,
@@ -245,34 +253,42 @@ export const StoreList: React.FC = () => {
       {/* 테이블 */}
       <Card className="overflow-hidden">
         <DataTable<Store>
+          sortKey={sortKey}
+          sortOrder={sortOrder}
+          onSort={handleSort}
           columns={[
             {
               key: 'name',
               header: '매장명',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => <span className="font-medium text-txt-main">{store.name}</span>,
             },
             {
               key: 'region',
               header: '지역',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => <span className="text-sm text-txt-secondary">{store.address.region}</span>,
             },
             {
               key: 'ownerName',
               header: '점주명',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => <span className="text-sm">{store.owner.name}</span>,
             },
             {
               key: 'businessNumber',
               header: '사업자번호',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => <span className="text-sm text-txt-secondary font-mono">{store.business.businessNumber}</span>,
             },
             {
               key: 'status',
               header: '상태',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => (
                 <Badge variant={getStatusBadgeVariant(store.status)}>
@@ -283,6 +299,7 @@ export const StoreList: React.FC = () => {
             {
               key: 'contractStatus',
               header: '계약 상태',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => (
                 <Badge variant={getContractBadgeVariant(store.contract.contractStatus)}>
@@ -293,6 +310,7 @@ export const StoreList: React.FC = () => {
             {
               key: 'expirationDate',
               header: '계약 만료일',
+              sortable: true,
               className: 'whitespace-nowrap',
               render: (store) => (
                 <span className="text-sm text-txt-muted whitespace-nowrap">
@@ -352,6 +370,7 @@ export const StoreList: React.FC = () => {
               onPageChange={setPage}
               totalElements={pagination.total}
               limit={limit}
+              onLimitChange={setLimit}
               className="mt-0 pt-0 border-t-0"
             />
           </div>

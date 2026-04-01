@@ -46,8 +46,6 @@ export const AppMemberDetail: React.FC = () => {
         return 'success';
       case 'inactive':
         return 'warning';
-      case 'dormant':
-        return 'default';
       case 'withdrawn':
         return 'critical';
       default:

@@ -83,7 +83,7 @@ export function EventParticipantList({ eventId }: EventParticipantListProps) {
   const [actionFilter, setActionFilter] = useState<ParticipantActionType | 'all'>('all');
   const [page, setPage] = useState(1);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const limit = 20;
+  const [limit, setLimit] = useState(20);
 
   const { data: participantData, isLoading } = useEventParticipants(eventId, {
     keyword,
@@ -220,6 +220,7 @@ export function EventParticipantList({ eventId }: EventParticipantListProps) {
               onPageChange={setPage}
               totalElements={total}
               limit={limit}
+              onLimitChange={setLimit}
               unit="명"
             />
           )}

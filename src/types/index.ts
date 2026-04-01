@@ -112,7 +112,7 @@ export interface DailySalesItem {
 
 // 회원 분석 데이터
 export interface MemberAnalyticsData {
-  summary: { total: number; active: number; dormant: number; newSignup: number; withdrawal: number };
+  summary: { total: number; active: number; inactive: number; newSignup: number; withdrawal: number };
   gender: { label: string; value: number; count: number }[];
   age: { range: string; percentage: number; count: number }[];
   membership: { grade: string; count: number; percentage: number }[];

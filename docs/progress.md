@@ -104,3 +104,4 @@
 - 2026-03-25: 소상권 자동 생성 반경 모드 전용으로 변경 — 폴리곤 모드에서 소상권 자동 생성(거리별 배달비) 제거, 폴리곤은 수동 소상권 그리기만 유지. subZoneBaseRadiusKm state 삭제.
 - 2026-03-25: 상권 리스트 UX 개선 — (1) 수정 클릭 시 해당 상권 영역으로 지도 flyTo 이동(MapView에 FocusTarget/FlyToTarget 추가), (2) 메인상권 클릭 시 이미 그려진 영역이 있으면 초기화 여부 confirm 얼럿.
 - 2026-03-25: 매장 계약정보 성격 변경 — 슈퍼어드민 상속이 아닌 브랜드 본사↔매장 간 가맹 계약 관리 데이터로 변경. (1) store.ts ContractInfo에 contractType(가맹/직영/라이선스), royaltyRate(로열티%), depositAmount(보증금) 필드 추가, ContractType 타입+CONTRACT_TYPE_LABELS 상수 신규, (2) StoreForm.tsx 계약 유형/로열티/보증금 입력 UI 추가, (3) StoreDetail.tsx 계약 유형/로열티/보증금 표시 추가, (4) mockStoreData 5건에 contractType/royaltyRate/depositAmount 반영, (5) spec_store.md "슈퍼어드민에서 상속" 문구 제거, 계약 정보 상세 필드 테이블+본사↔매장 계약 설명 추가.
+- 2026-04-01: 상권관리 반경 모드 제한 해제 — 반경 모드에서 소상권을 수동으로 직접 그릴 수 없도록 블락된 제약사항(isSubDisabled) 제거. "기본 상권보다 크게 그릴 수 있다"는 요구사항에 맞춰 자유도를 부여하고, 사용자 안내 문구를 상황에 맞게 최적화. spec_store.md 프론트단 명세도 함께 업데이트.

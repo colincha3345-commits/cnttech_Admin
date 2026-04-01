@@ -4,16 +4,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { Card, Button, Badge, Spinner, Pagination } from '@/components/ui';
+import { Card, Button, Badge, Spinner, Pagination, SortableHeader } from '@/components/ui';
+import { useTableSort } from '@/hooks/useTableSort';
 import { usePendingApprovals, useTeams, useStores } from '@/hooks';
 import { STAFF_TYPE_LABELS } from '@/types/staff';
-import type { StaffType } from '@/types/staff';
+import type { StaffAccount, StaffType } from '@/types/staff';
 
 export const StaffApprovals: React.FC = () => {
   const [staffTypeFilter, setStaffTypeFilter] = useState<StaffType | ''>('');
   const [page, setPage] = useState(1);
-  const limit = 20;
+  const [limit, setLimit] = useState(20);
   const navigate = useNavigate();
+
+  const { sortKey, sortOrder, handleSort, sortData } = useTableSort<StaffAccount>();
 
   const { data, isLoading } = usePendingApprovals({
     staffType: staffTypeFilter || undefined,
@@ -78,12 +81,12 @@ export const StaffApprovals: React.FC = () => {
           <table className="data-table w-full min-w-[800px]">
             <thead>
               <tr>
-                <th className="whitespace-nowrap">이름</th>
-                <th className="whitespace-nowrap">아이디</th>
-                <th className="whitespace-nowrap">이메일</th>
-                <th className="whitespace-nowrap">유형</th>
-                <th className="whitespace-nowrap">소속</th>
-                <th className="whitespace-nowrap">비밀번호 설정일</th>
+                <SortableHeader label="이름" sortKey="name" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="아이디" sortKey="loginId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="이메일" sortKey="email" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="유형" sortKey="staffType" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="소속" sortKey="teamId" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
+                <SortableHeader label="비밀번호 설정일" sortKey="passwordSetAt" currentSortKey={sortKey} currentSortOrder={sortOrder} onSort={handleSort} className="whitespace-nowrap" />
                 <th className="whitespace-nowrap w-32">액션</th>
               </tr>
             </thead>
@@ -95,7 +98,7 @@ export const StaffApprovals: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                pendingStaff.map((staff) => (
+                sortData(pendingStaff).map((staff) => (
                   <tr key={staff.id}>
                     <td className="font-medium text-txt-main">{staff.name}</td>
                     <td className="text-sm text-txt-secondary">{staff.loginId}</td>
@@ -143,6 +146,7 @@ export const StaffApprovals: React.FC = () => {
             onPageChange={setPage}
             totalElements={pagination.total}
             limit={limit}
+            onLimitChange={setLimit}
             unit="건"
           />
         )}

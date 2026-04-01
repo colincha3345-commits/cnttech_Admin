@@ -52,7 +52,7 @@ const BasicFilter: React.FC<{
   onChange: (filter: Partial<MemberSegmentFilter>) => void;
 }> = ({ filter, onChange }) => {
   const grades: MemberGrade[] = ['vip', 'gold', 'silver', 'bronze', 'normal'];
-  const statuses: MemberStatus[] = ['active', 'inactive', 'dormant', 'withdrawn'];
+  const statuses: MemberStatus[] = ['active', 'inactive', 'withdrawn'];
   const genders: (Gender | 'all')[] = ['all', 'male', 'female'];
 
   const toggleGrade = (grade: MemberGrade) => {
@@ -524,7 +524,6 @@ const ResultTable: React.FC<{
     switch (status) {
       case 'active': return 'success';
       case 'inactive': return 'warning';
-      case 'dormant': return 'default';
       case 'withdrawn': return 'critical';
       default: return 'secondary';
     }

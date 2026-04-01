@@ -23,7 +23,7 @@ export function MemberAnalytics() {
                 {[
                     { label: '전체 회원', value: MEMBER_SUMMARY.total, color: 'text-txt-main' },
                     { label: '활성 회원', value: MEMBER_SUMMARY.active, color: 'text-success' },
-                    { label: '휴면 회원', value: MEMBER_SUMMARY.dormant, color: 'text-warning' },
+                    { label: '비활성 회원', value: MEMBER_SUMMARY.inactive, color: 'text-warning' },
                     { label: '오늘 가입', value: MEMBER_SUMMARY.newSignup, color: 'text-primary' },
                     { label: '오늘 탈퇴', value: MEMBER_SUMMARY.withdrawal, color: 'text-critical' },
                 ].map((item) => (

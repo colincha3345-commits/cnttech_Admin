@@ -23,15 +23,14 @@ export const MEMBER_GRADE_LABELS: Record<string, string> = {
 /**
  * 회원 상태
  */
-export type MemberStatus = 'active' | 'inactive' | 'dormant' | 'withdrawn';
+export type MemberStatus = 'active' | 'inactive' | 'withdrawn';
 
 /**
  * 회원 상태 라벨
  */
 export const MEMBER_STATUS_LABELS: Record<MemberStatus, string> = {
   active: '활성',
-  inactive: '휴면',
-  dormant: '장기미접속',
+  inactive: '비활성',
   withdrawn: '탈퇴',
 };
 
@@ -133,6 +132,7 @@ export interface Member {
   status: MemberStatus;   // 회원 상태
 
   // 개인 정보
+  ci?: string | null;         // CI (Connecting Information) - 탈퇴 시 삭제
   birthDate: string | null;   // 생년월일 (YYYY-MM-DD)
   gender: Gender | null;      // 성별
 
@@ -166,6 +166,9 @@ export interface Member {
 
   // 배달지 주소 (최대 10개, lastUsedAt 내림차순 정렬)
   deliveryAddresses: DeliveryAddress[];
+
+  // 탈퇴 정보
+  withdrawnAt?: Date | null;   // 탈퇴 일시 (status='withdrawn'일 때만 설정)
 }
 
 /**
@@ -182,7 +185,12 @@ export interface MemberSearchFilter {
   // 상태 필터
   statuses?: MemberStatus[];
 
-  // 가입일 범위
+  // 날짜 검색 유형
+  dateType?: 'registeredAt' | 'lastLoginAt' | 'lastOrderDate';
+  dateFrom?: string; // YYYY-MM-DD
+  dateTo?: string;
+
+  // 가입일 범위 (하위 호환)
   registeredFrom?: string; // YYYY-MM-DD
   registeredTo?: string;
 
@@ -208,3 +216,13 @@ export const MEMBER_SEARCH_TYPE_LABELS: Record<string, string> = {
   phone: '전화번호',
   email: '이메일',
 };
+
+/**
+ * 탈퇴 회원 보관 정보
+ * CS 대비 최소 정보: 익명ID ↔ 주문번호 매칭 관리
+ */
+export interface WithdrawnRecord {
+  anonymousId: string;      // 내부 익명 식별자 (member.id 기반)
+  orderNumbers: string[];   // 주문번호 목록 (CS 매칭용)
+  withdrawnAt: Date;        // 탈퇴 일시
+}

@@ -19,7 +19,7 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ memberId }) =>
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
-  const limit = 10;
+  const [limit, setLimit] = useState(10);
 
   const { orders, pagination, isLoading } = useMemberOrders({
     memberId,
@@ -254,6 +254,7 @@ export const OrderHistoryTab: React.FC<OrderHistoryTabProps> = ({ memberId }) =>
           onPageChange={setPage}
           totalElements={pagination.total}
           limit={limit}
+          onLimitChange={setLimit}
           unit="건"
         />
       </Card>

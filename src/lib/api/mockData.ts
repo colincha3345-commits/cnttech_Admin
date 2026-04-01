@@ -185,7 +185,7 @@ export const mockMembers: Member[] = [
     phone: '010-****-6789',
     email: 'dormant.han@example.com',
     grade: 'silver',
-    status: 'dormant',
+    status: 'inactive',
     birthDate: '1982-09-12',
     gender: 'female',
     linkedSns: [
