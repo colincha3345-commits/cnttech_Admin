@@ -23,7 +23,7 @@
 5. **일별 매출 차트** — 선택 기간의 일별 매출 추이를 막대 차트로 표시한다. `useDailySales(dateRange)` hook 연동. 기간 변경 시 자동 재조회.
 6. **회원 분석** — 회원 상태 요약, 성별/연령대 분포, 등급별 구성, 성장 지표, Top5 고객, 주문 빈도를 표시한다. `useMemberAnalytics` hook 연동.
 7. **마케팅 성과** — 배너/이벤트별 노출·클릭·전환율을 테이블로 표시한다. `useMarketingStats` hook 연동.
-8. **GA4 통계** — 디바이스별 상세(`GA4DeviceDetail`), 퍼널 분석(`GA4FunnelDetail`) 컴포넌트를 제공한다.
+8. **GA4 통계** — 디바이스별 상세(`GA4DeviceDetail`), 퍼널 분석(`GA4FunnelDetail`) 컴포넌트를 제공한다. 각 하위 페이지에서 `DateRangeFilter`로 기간을 변경하면 세션 수·퍼널 수치가 기간 비율에 따라 재계산된다.
 
 ---
 

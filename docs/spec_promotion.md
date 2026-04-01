@@ -892,9 +892,9 @@ expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 
 ## 2. 페이지 프로세스
 
-1. **푸시 목록** (`PushList`) — 상태별(draft/scheduled/sending/completed/failed/cancelled) Badge 표기. 검색, 유형(info/ad) 필터 제공.
-2. **푸시 등록/수정** (`PushForm`) — 알림 유형, 제목/본문, 딥링크, 발송 대상(세그먼트), 예약 설정, 트리거 조건, Android 확장 필드 입력.
-3. **푸시 상세** (`PushDetail`) — 발송 현황 통계(대상 수, 도달률, 클릭률)와 발송 이력 조회.
+1. **푸시 목록** (`PushList`) — 상태별(draft/scheduled/sending/completed/failed/cancelled/active/inactive) Badge 표기. 검색, 유형(info/ad) 필터, 트리거 유형 컬럼 제공. 주문 트리거 항목에는 활성/비활성 토글 버튼을 표시한다.
+2. **푸시 등록/수정** (`PushForm`) — 알림 유형, 제목/본문, 딥링크, 발송 대상(세그먼트), 예약 설정, 트리거 조건, Android 확장 필드 입력. 주문 상태 기반 트리거 선택 시 발송 시점/세그먼트 섹션이 숨겨지고, 메시지 변수(`{{주문번호}}`, `{{매장명}}`, `{{고객명}}`, `{{주문금액}}`) 안내가 표시된다.
+3. **푸시 상세** (`PushDetail`) — 발송 현황 통계(대상 수, 도달률, 클릭률)와 발송 이력 조회. 자동 발송 항목은 트리거 조건, 누적 발송 횟수, 활성/비활성 토글 버튼을 표시한다.
 
 ---
 
@@ -924,7 +924,7 @@ expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 비고 |
 | :--- | :--- | :---: | :--- |
-| **트리거 유형 (triggerType)** | Select | Y | none/cart_abandoned/product_viewed/app_installed/purchase_completed/regular_schedule/time_limit 7가지다. |
+| **트리거 유형 (triggerType)** | Select | Y | none/cart_abandoned/product_viewed/app_installed/purchase_completed/regular_schedule/time_limit 7가지 + 주문 상태 기반 4가지(order_confirmed/order_ready/order_delivering/order_completed)다. 주문 트리거 선택 시 발송 시점·세그먼트 섹션 숨김 처리한다. |
 | **정기 발송 주기** | ToggleButton | C(regular) | daily/weekly이다. |
 | **정기 발송 요일** | Multi Checkbox | C(weekly) | 월~일 선택이다. |
 
@@ -951,6 +951,7 @@ expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 | PUT | `/api/push-notifications/:id` | 수정(draft 상태에서만)이다. |
 | POST | `/api/push-notifications/:id/send` | 즉시 발송이다. |
 | POST | `/api/push-notifications/:id/cancel` | 예약 취소이다. |
+| POST | `/api/push-notifications/:id/toggle-status` | 자동 발송 활성/비활성 토글이다. active ↔ inactive 전환한다. |
 | GET | `/api/push-notifications/estimate-count` | 세그먼트 기반 예상 발송 수 조회이다. |
 
 #### DB 스키마
@@ -962,10 +963,11 @@ expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 | **title** | String | Y | 2~50자이다. |
 | **body** | String | Y | 최대 200자이다. |
 | **deepLink** | String | N | scheme 형식이다. |
-| **status** | Enum | Y | draft/scheduled/sending/completed/failed/cancelled이다. |
+| **status** | Enum | Y | draft/scheduled/sending/completed/failed/cancelled/active/inactive이다. active/inactive는 주문 트리거 기반 자동 발송 항목 전용이다. |
 | **targetCount** | Integer | Y | 대상 회원 수다. |
-| **triggerType** | Enum | Y | 7가지이다. |
+| **triggerType** | Enum | Y | 11가지이다(기존 7종 + 주문 트리거 4종). |
 | **triggerConfig** | JSON | N | 트리거별 상세 설정이다. |
+| **totalSentCount** | Integer | N | 자동 발송 누적 발송 횟수이다. 주문 트리거 항목에서만 사용한다. |
 | **segment** | JSON | N | {grades, regions, ageRanges} 세그먼트 조건이다. |
 | **androidExtended** | JSON | N | {expandedTitle, expandedBody, summary, smallIconUrl, largeImageUrl}이다. |
 | **scheduledAt** | Timestamp | N | 예약 발송 시각이다. |
@@ -977,6 +979,7 @@ expiryPolicy: {defaultValidityDays, expiryNotificationDays}
 - **정보성 푸시** — pushEnabled=true 회원 전체 대상이다.
 - **예약 발송** — 스케줄러가 scheduledAt 도래 시 status→sending 전환 후 FCM/APNs 발송한다.
 - **트리거 기반** — 이벤트 발생 시 조건 충족 회원 자동 발송이다.
+- **주문 트리거 자동 발송** — 주문 상태 변경(매장 접수/픽업 준비/배달 출발/주문 완료) 시 해당 주문 고객에게 자동 발송한다. status=active/inactive로 관리하며 토글로 활성/비활성 전환한다. 메시지에 `{{주문번호}}`, `{{매장명}}`, `{{고객명}}`, `{{주문금액}}` 변수를 사용할 수 있다.
 
 **[⚠️ 트래픽/성능 검토]**
 - **대량 발송** — 10만 명 이상 대상 시 FCM batch API(500건/요청)로 청크 분할 발송. 발송 큐(Redis/RabbitMQ)를 사용하여 비동기 처리한다.
