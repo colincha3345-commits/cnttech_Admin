@@ -79,6 +79,28 @@ export const mockPermissions: Permission[] = [
 
 const MOCK_DB_KEY = 'mock_backend_sessions';
 
+// MenuPermission[] → Permission[] 변환
+function convertMenuPermissions(userId: string): Permission[] {
+  const account = mockAccountPermissions.find((a) => a.accountId === userId);
+  if (!account) return [];
+
+  return account.permissions
+    .filter((mp) => mp.view || mp.write || mp.masking || mp.download)
+    .map((mp, idx) => {
+      const actions: Permission['actions'] = [];
+      if (mp.view) actions.push('read');
+      if (mp.write) actions.push('write');
+      if (mp.masking) actions.push('unmask');
+      return {
+        id: `perm-${userId}-${idx}`,
+        userId,
+        resource: mp.menu,
+        actions,
+        createdAt: new Date(),
+      };
+    });
+}
+
 // 세션 저장소 (메모리 + localStorage 동기화로 백엔드 DB 시뮬레이션)
 export const mockSessions: Map<string, AuthSession> = new Map();
 
@@ -125,29 +147,6 @@ export const mockLoginAttempts: Map<string, LoginAttempt> = new Map();
 // 토큰 생성 유틸 (암호학적으로 안전)
 export function generateToken(): string {
   return crypto.randomUUID();
-}
-
-// MenuPermission[] → Permission[] 변환
-function convertMenuPermissions(userId: string): Permission[] {
-  const account = mockAccountPermissions.find((a) => a.accountId === userId);
-  if (!account) return [];
-
-  return account.permissions
-    .filter((mp) => mp.view || mp.write || mp.masking || mp.download)
-    .map((mp, idx) => {
-      const actions: Permission['actions'] = [];
-      if (mp.view) actions.push('read');
-      if (mp.write) actions.push('write');
-      if (mp.masking) actions.push('unmask');
-      // download는 PermissionAction에 없으므로 별도 처리 불필요 (UI에서 MenuPermission 직접 참조)
-      return {
-        id: `perm-${userId}-${idx}`,
-        userId,
-        resource: mp.menu,
-        actions,
-        createdAt: new Date(),
-      };
-    });
 }
 
 // Mock 사용자를 AuthUser로 변환
