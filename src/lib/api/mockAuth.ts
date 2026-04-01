@@ -1,5 +1,6 @@
 import type { MockAuthUser, AuthSession, AuthUser, LoginAttempt } from '@/types/auth';
 import type { Permission } from '@/types/index';
+import { mockAccountPermissions } from '@/lib/api/mockPermissionData';
 
 // Mock 사용자 데이터
 export const mockAuthUsers: MockAuthUser[] = [
@@ -119,9 +120,32 @@ export function generateToken(): string {
   return crypto.randomUUID();
 }
 
+// MenuPermission[] → Permission[] 변환
+function convertMenuPermissions(userId: string): Permission[] {
+  const account = mockAccountPermissions.find((a) => a.accountId === userId);
+  if (!account) return [];
+
+  return account.permissions
+    .filter((mp) => mp.view || mp.write || mp.masking || mp.download)
+    .map((mp, idx) => {
+      const actions: Permission['actions'] = [];
+      if (mp.view) actions.push('read');
+      if (mp.write) actions.push('write');
+      if (mp.masking) actions.push('unmask');
+      // download는 PermissionAction에 없으므로 별도 처리 불필요 (UI에서 MenuPermission 직접 참조)
+      return {
+        id: `perm-${userId}-${idx}`,
+        userId,
+        resource: mp.menu,
+        actions,
+        createdAt: new Date(),
+      };
+    });
+}
+
 // Mock 사용자를 AuthUser로 변환
 export function toAuthUser(mockUser: MockAuthUser): AuthUser {
-  const userPermissions = mockPermissions.filter((p) => p.userId === mockUser.id);
+  const userPermissions = convertMenuPermissions(mockUser.id);
 
   return {
     id: mockUser.id,
