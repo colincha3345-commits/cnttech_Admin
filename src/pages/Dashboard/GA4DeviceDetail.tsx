@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftOutlined, MobileOutlined, DesktopOutlined, TabletOutlined, GlobalOutlined, ChromeOutlined, AppleOutlined, AndroidOutlined, WindowsOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
@@ -67,6 +67,37 @@ export function GA4DeviceDetail() {
         ...getDateRangeFromPreset('today'),
     });
 
+    const multiplier = useMemo(() => {
+        switch (dateRange.preset) {
+            case 'today': return 1;
+            case 'yesterday': return 0.85;
+            case 'last7days': return 6.5;
+            case 'lastMonth': return 31.5;
+            default: return 5.5;
+        }
+    }, [dateRange.preset]);
+
+    const currentDeviceSummary = useMemo(() => ({
+        totalSessions: Math.floor(DEVICE_SUMMARY.totalSessions * multiplier),
+        mobile: { ...DEVICE_SUMMARY.mobile, sessions: Math.floor(DEVICE_SUMMARY.mobile.sessions * multiplier) },
+        desktop: { ...DEVICE_SUMMARY.desktop, sessions: Math.floor(DEVICE_SUMMARY.desktop.sessions * multiplier) },
+        tablet: { ...DEVICE_SUMMARY.tablet, sessions: Math.floor(DEVICE_SUMMARY.tablet.sessions * multiplier) },
+    }), [multiplier]);
+
+    const currentBrowserData = useMemo(() => {
+        return BROWSER_DATA.map(browser => ({
+            ...browser,
+            sessions: Math.floor(browser.sessions * multiplier)
+        }));
+    }, [multiplier]);
+
+    const currentOsData = useMemo(() => {
+        return OS_DATA.map(os => ({
+            ...os,
+            sessions: Math.floor(os.sessions * multiplier)
+        }));
+    }, [multiplier]);
+
     const tabs: { key: DeviceTab; label: string }[] = [
         { key: 'overview', label: '디바이스 개요' },
         { key: 'browser', label: '브라우저' },
@@ -103,33 +134,33 @@ export function GA4DeviceDetail() {
             <div className="admin-grid">
                 <StatCard
                     title="전체 세션"
-                    value={DEVICE_SUMMARY.totalSessions}
+                    value={currentDeviceSummary.totalSessions}
                     icon={<GlobalOutlined />}
                     color="primary"
                     change={3.2}
                 />
                 <StatCard
                     title="모바일"
-                    value={`${DEVICE_SUMMARY.mobile.percentage}%`}
+                    value={`${currentDeviceSummary.mobile.percentage}%`}
                     icon={<MobileOutlined />}
                     color="info"
-                    subValue={`${DEVICE_SUMMARY.mobile.sessions.toLocaleString()} 세션`}
+                    subValue={`${currentDeviceSummary.mobile.sessions.toLocaleString()} 세션`}
                     change={1.5}
                 />
                 <StatCard
                     title="데스크톱"
-                    value={`${DEVICE_SUMMARY.desktop.percentage}%`}
+                    value={`${currentDeviceSummary.desktop.percentage}%`}
                     icon={<DesktopOutlined />}
                     color="success"
-                    subValue={`${DEVICE_SUMMARY.desktop.sessions.toLocaleString()} 세션`}
+                    subValue={`${currentDeviceSummary.desktop.sessions.toLocaleString()} 세션`}
                     change={-0.8}
                 />
                 <StatCard
                     title="태블릿"
-                    value={`${DEVICE_SUMMARY.tablet.percentage}%`}
+                    value={`${currentDeviceSummary.tablet.percentage}%`}
                     icon={<TabletOutlined />}
                     color="warning"
-                    subValue={`${DEVICE_SUMMARY.tablet.sessions.toLocaleString()} 세션`}
+                    subValue={`${currentDeviceSummary.tablet.sessions.toLocaleString()} 세션`}
                     change={0.2}
                 />
             </div>
@@ -174,9 +205,9 @@ export function GA4DeviceDetail() {
                                     </thead>
                                     <tbody>
                                         {[
-                                            { name: '모바일', icon: <MobileOutlined className="text-info" />, ...DEVICE_SUMMARY.mobile },
-                                            { name: '데스크톱', icon: <DesktopOutlined className="text-success" />, ...DEVICE_SUMMARY.desktop },
-                                            { name: '태블릿', icon: <TabletOutlined className="text-warning" />, ...DEVICE_SUMMARY.tablet },
+                                            { name: '모바일', icon: <MobileOutlined className="text-info" />, ...currentDeviceSummary.mobile },
+                                            { name: '데스크톱', icon: <DesktopOutlined className="text-success" />, ...currentDeviceSummary.desktop },
+                                            { name: '태블릿', icon: <TabletOutlined className="text-warning" />, ...currentDeviceSummary.tablet },
                                         ].map((device) => (
                                             <tr key={device.name}>
                                                 <td>
@@ -275,7 +306,7 @@ export function GA4DeviceDetail() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {BROWSER_DATA.map((browser) => (
+                                    {currentBrowserData.map((browser) => (
                                         <tr key={browser.name}>
                                             <td>
                                                 <div className="flex items-center gap-2">
@@ -314,7 +345,7 @@ export function GA4DeviceDetail() {
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {OS_DATA.map((os) => (
+                            {currentOsData.map((os) => (
                                 <div key={os.name} className="flex items-center gap-4">
                                     <div className="w-28 flex items-center gap-2">
                                         <os.icon className="text-txt-muted" />

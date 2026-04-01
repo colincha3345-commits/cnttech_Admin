@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -19,36 +19,46 @@ export function GA4Statistics() {
         ...getDateRangeFromPreset('today'),
     });
 
+    const multiplier = useMemo(() => {
+        switch (dateRange.preset) {
+            case 'today': return 1;
+            case 'yesterday': return 0.85;
+            case 'last7days': return 6.5;
+            case 'lastMonth': return 31.5;
+            default: return 5.5;
+        }
+    }, [dateRange.preset]);
+
     // Mock data for DAU / MAU
-    const usersData = {
-        dau: 12450,
-        wau: 45200,
-        mau: 185000,
-        dauMauRatio: '6.7',
-    };
+    const usersData = useMemo(() => ({
+        dau: Math.floor(12450 * multiplier),
+        wau: Math.floor(45200 * multiplier),
+        mau: Math.floor(185000 * multiplier),
+        dauMauRatio: (6.7 + (multiplier % 2)).toFixed(1),
+    }), [multiplier]);
 
     // Mock data for Device Info (formatted for InfoCard)
-    const deviceStats = [
-        { label: 'Mobile (모바일)', value: '72%' },
-        { label: 'Desktop (데스크톱)', value: '24%' },
-        { label: 'Tablet (태블릿)', value: '4%' },
-    ];
+    const deviceStats = useMemo(() => [
+        { label: 'Mobile (모바일)', value: `${Math.min(100, 72 + (multiplier % 5))}%` },
+        { label: 'Desktop (데스크톱)', value: `${Math.max(0, 24 - (multiplier % 3))}%` },
+        { label: 'Tablet (태블릿)', value: `${Math.max(0, 4 - (multiplier % 2))}%` },
+    ], [multiplier]);
 
     // Mock data for Customer Journey (Funnel metrics)
-    const journeyStats = [
-        { label: '방문 → 상품 조회 이탈', value: '35%' },
-        { label: '상품 조회 → 장바구니 이탈', value: '61.5%' },
-        { label: '장바구니 → 주문서 이탈', value: '60%' },
-        { label: '주문서 → 결제 완료 이탈', value: '15%' },
-    ];
+    const journeyStats = useMemo(() => [
+        { label: '방문 → 상품 조회 이탈', value: `${(35 + (multiplier % 3)).toFixed(1)}%` },
+        { label: '상품 조회 → 장바구니 이탈', value: `${(61.5 - (multiplier % 2)).toFixed(1)}%` },
+        { label: '장바구니 → 주문서 이탈', value: `${(60 + (multiplier % 4)).toFixed(1)}%` },
+        { label: '주문서 → 결제 완료 이탈', value: `${(15 - (multiplier % 2)).toFixed(1)}%` },
+    ], [multiplier]);
 
-    const journeyData = [
-        { step: '방문 (Visit)', users: 100000, dropRate: '-' },
-        { step: '상품 조회 (View Item)', users: 65000, dropRate: '35%' },
-        { step: '장바구니 (Add to Cart)', users: 25000, dropRate: '61.5%' },
-        { step: '주문서 작성 (Checkout)', users: 10000, dropRate: '60%' },
-        { step: '결제 완료 (Purchase)', users: 8500, dropRate: '15%' },
-    ];
+    const journeyData = useMemo(() => [
+        { step: '방문 (Visit)', users: Math.floor(100000 * multiplier), dropRate: '-' },
+        { step: '상품 조회 (View Item)', users: Math.floor(65000 * multiplier), dropRate: `${(35 + (multiplier % 3)).toFixed(1)}%` },
+        { step: '장바구니 (Add to Cart)', users: Math.floor(25000 * multiplier), dropRate: `${(61.5 - (multiplier % 2)).toFixed(1)}%` },
+        { step: '주문서 작성 (Checkout)', users: Math.floor(10000 * multiplier), dropRate: `${(60 + (multiplier % 4)).toFixed(1)}%` },
+        { step: '결제 완료 (Purchase)', users: Math.floor(8500 * multiplier), dropRate: `${(15 - (multiplier % 2)).toFixed(1)}%` },
+    ], [multiplier]);
 
     return (
         <div className="space-y-6">

@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftOutlined, FunnelPlotOutlined, SwapOutlined, ClockCircleOutlined, DollarOutlined, ShoppingCartOutlined } from '@ant-design/icons';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+
+import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
+import type { DashboardDateRange } from '@/types';
 
 import { Card, CardHeader, CardContent, Badge } from '@/components/ui';
 import { StatCard } from '@/components/ui/StatCard';
@@ -47,6 +50,49 @@ export function GA4FunnelDetail() {
     const navigate = useNavigate();
     const now = new Date();
     const [activeTab, setActiveTab] = useState<FunnelTab>('funnel');
+    const [dateRange, setDateRange] = useState<DashboardDateRange>({
+        preset: 'today',
+        ...getDateRangeFromPreset('today'),
+    });
+
+    const multiplier = useMemo(() => {
+        switch (dateRange.preset) {
+            case 'today': return 1;
+            case 'yesterday': return 0.85;
+            case 'last7days': return 6.5;
+            case 'lastMonth': return 31.5;
+            default: return 5.5;
+        }
+    }, [dateRange.preset]);
+
+    const currentFunnelSteps = useMemo(() => {
+        return FUNNEL_STEPS.map(step => ({
+            ...step,
+            users: Math.floor(step.users * multiplier),
+            sessions: Math.floor(step.sessions * multiplier),
+            revenue: Math.floor(step.revenue * multiplier)
+        }));
+    }, [multiplier]);
+
+    const currentDailyConversion = useMemo(() => {
+        return DAILY_CONVERSION.map(day => ({
+            ...day,
+            visit: Math.floor(day.visit * multiplier),
+            view: Math.floor(day.view * multiplier),
+            cart: Math.floor(day.cart * multiplier),
+            checkout: Math.floor(day.checkout * multiplier),
+            purchase: Math.floor(day.purchase * multiplier)
+        }));
+    }, [multiplier]);
+
+    const currentTopItems = useMemo(() => {
+        return TOP_CONVERTING_ITEMS.map(item => ({
+            ...item,
+            views: Math.floor(item.views * multiplier),
+            purchases: Math.floor(item.purchases * multiplier),
+            revenue: Math.floor(item.revenue * multiplier)
+        }));
+    }, [multiplier]);
 
     const tabs: { key: FunnelTab; label: string }[] = [
         { key: 'funnel', label: '퍼널 상세' },
@@ -55,27 +101,30 @@ export function GA4FunnelDetail() {
         { key: 'topitems', label: '전환율 TOP 상품' },
     ];
 
-    const overallConversion = ((FUNNEL_STEPS[4]?.users ?? 0) / (FUNNEL_STEPS[0]?.users ?? 1)) * 100;
-    const avgOrderValue = (FUNNEL_STEPS[4]?.revenue ?? 0) / (FUNNEL_STEPS[4]?.users ?? 1);
+    const overallConversion = ((currentFunnelSteps[4]?.users ?? 0) / (currentFunnelSteps[0]?.users ?? 1)) * 100;
+    const avgOrderValue = (currentFunnelSteps[4]?.revenue ?? 0) / (currentFunnelSteps[4]?.users ?? 1);
 
     return (
         <div className="space-y-6">
-            {/* 헤더 */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/dashboard/ga4')}
-                        className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
-                    >
-                        <ArrowLeftOutlined />
-                    </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-txt-main">퍼널 상세 분석</h1>
-                        <p className="text-sm text-txt-muted mt-1">
-                            {format(now, 'yyyy-MM-dd eeee', { locale: ko })} 기준
-                        </p>
+            <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={() => navigate('/dashboard/ga4')}
+                            className="p-2 rounded-lg hover:bg-bg-hover transition-colors"
+                        >
+                            <ArrowLeftOutlined />
+                        </button>
+                        <div>
+                            <h1 className="text-2xl font-bold text-txt-main">퍼널 상세 분석</h1>
+                            <p className="text-sm text-txt-muted mt-1">
+                                {format(now, 'yyyy-MM-dd eeee', { locale: ko })} (최종 업데이트 :{' '}
+                                {format(now, 'yyyy년 M월 d일 HH:mm')})
+                            </p>
+                        </div>
                     </div>
                 </div>
+                <DateRangeFilter value={dateRange} onChange={setDateRange} />
             </div>
 
             {/* 상단 요약 카드 */}
@@ -90,7 +139,7 @@ export function GA4FunnelDetail() {
                 />
                 <StatCard
                     title="총 구매 수"
-                    value={FUNNEL_STEPS[4]?.users ?? 0}
+                    value={currentFunnelSteps[4]?.users ?? 0}
                     icon={<ShoppingCartOutlined />}
                     color="success"
                     change={2.1}
@@ -139,10 +188,10 @@ export function GA4FunnelDetail() {
                         </CardHeader>
                         <CardContent>
                             <div className="relative pt-2">
-                                {FUNNEL_STEPS.map((step, index) => {
-                                    const maxUsers = FUNNEL_STEPS[0]?.users || 1;
+                                {currentFunnelSteps.map((step, index) => {
+                                    const maxUsers = currentFunnelSteps[0]?.users || 1;
                                     const widthPerc = (step.users / maxUsers) * 100;
-                                    const prevUsers = index > 0 ? (FUNNEL_STEPS[index - 1]?.users ?? 0) : step.users;
+                                    const prevUsers = index > 0 ? (currentFunnelSteps[index - 1]?.users ?? 0) : step.users;
                                     const stepDropRate = index > 0 ? ((1 - step.users / prevUsers) * 100).toFixed(1) : '-';
 
                                     return (
@@ -171,7 +220,7 @@ export function GA4FunnelDetail() {
                                                     </span>
                                                 </div>
                                             </div>
-                                            {index < FUNNEL_STEPS.length - 1 && (
+                                            {index < currentFunnelSteps.length - 1 && (
                                                 <div className="flex items-center gap-2 ml-4 my-1">
                                                     <div className="h-4 w-px bg-border" />
                                                     <SwapOutlined className="text-txt-muted rotate-90" style={{ fontSize: 10 }} />
@@ -202,7 +251,7 @@ export function GA4FunnelDetail() {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {FUNNEL_STEPS.map((step) => (
+                                        {currentFunnelSteps.map((step) => (
                                             <tr key={step.step}>
                                                 <td className="font-medium">{step.step}</td>
                                                 <td className="text-right font-mono">{step.users.toLocaleString()}</td>
@@ -260,7 +309,7 @@ export function GA4FunnelDetail() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {DAILY_CONVERSION.map((day) => {
+                                    {currentDailyConversion.map((day) => {
                                         const rate = ((day.purchase / day.visit) * 100).toFixed(1);
                                         return (
                                             <tr key={day.date}>
@@ -284,7 +333,7 @@ export function GA4FunnelDetail() {
                         <div className="mt-8">
                             <h3 className="text-sm font-medium text-txt-muted mb-4">일별 전환율 추이</h3>
                             <div className="h-40 flex items-end justify-between gap-3">
-                                {DAILY_CONVERSION.map((day) => {
+                                {currentDailyConversion.map((day) => {
                                     const rate = (day.purchase / day.visit) * 100;
                                     return (
                                         <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
@@ -368,7 +417,7 @@ export function GA4FunnelDetail() {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {TOP_CONVERTING_ITEMS.map((item, idx) => (
+                                    {currentTopItems.map((item, idx) => (
                                         <tr key={item.name}>
                                             <td className="text-center">
                                                 <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
