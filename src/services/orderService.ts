@@ -79,6 +79,53 @@ class OrderService {
     };
   }
 
+  /** 이상주문 조회 (pending 상태 + 8분 이상 경과) */
+  async getAbnormalOrders(
+    params?: OrderSearchFilter
+  ): Promise<{ data: Order[]; pagination: Pagination }> {
+    await this.delay();
+    const THRESHOLD_MS = 8 * 60 * 1000;
+    const now = Date.now();
+    const { keyword = '', page = 1, limit = 20, dateFrom, dateTo, orderType, storeId } = params || {};
+
+    let result = this.orders.filter(
+      (o) => o.status === 'pending' && (now - o.orderDate.getTime()) >= THRESHOLD_MS
+    );
+
+    if (dateFrom) result = result.filter((o) => o.orderDate >= dateFrom);
+    if (dateTo) {
+      const endOfDay = new Date(dateTo);
+      endOfDay.setHours(23, 59, 59, 999);
+      result = result.filter((o) => o.orderDate <= endOfDay);
+    }
+    if (orderType) result = result.filter((o) => o.orderType === orderType);
+    if (storeId) result = result.filter((o) => o.storeId === storeId);
+    if (keyword) {
+      const lower = keyword.toLowerCase();
+      result = result.filter((o) => matchOrderKeyword(o, lower));
+    }
+
+    result.sort((a, b) => a.orderDate.getTime() - b.orderDate.getTime()); // 오래된 순
+
+    const total = result.length;
+    const startIndex = (page - 1) * limit;
+    return {
+      data: result.slice(startIndex, startIndex + limit),
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
+  /** 이상주문 건수 */
+  async getAbnormalCount(): Promise<{ data: number }> {
+    await this.delay(100);
+    const THRESHOLD_MS = 8 * 60 * 1000;
+    const now = Date.now();
+    const count = this.orders.filter(
+      (o) => o.status === 'pending' && (now - o.orderDate.getTime()) >= THRESHOLD_MS
+    ).length;
+    return { data: count };
+  }
+
   /** 주문 상세 조회 */
   async getOrderById(id: string): Promise<{ data: Order }> {
     await this.delay();

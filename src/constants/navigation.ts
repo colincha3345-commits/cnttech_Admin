@@ -36,6 +36,7 @@ import {
   QuestionCircleOutlined,
   CommentOutlined,
   FileProtectOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 
 export interface NavItem {
@@ -88,6 +89,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: '주문관리',
     children: [
       { path: '/orders', icon: UnorderedListOutlined, label: '주문 목록' },
+      { path: '/orders/abnormal', icon: WarningOutlined, label: '이상주문' },
     ],
   },
   {

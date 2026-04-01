@@ -27,6 +27,7 @@ const PushDetail = lazy(() => import('@/pages/Marketing').then(m => ({ default: 
 const EventManagement = lazy(() => import('@/pages/Events').then(m => ({ default: m.EventManagement })));
 const OrderList = lazy(() => import('@/pages/Orders').then(m => ({ default: m.OrderList })));
 const OrderDetail = lazy(() => import('@/pages/Orders').then(m => ({ default: m.OrderDetail })));
+const AbnormalOrderList = lazy(() => import('@/pages/Orders').then(m => ({ default: m.AbnormalOrderList })));
 const AppMemberList = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.AppMemberList })));
 const AppMemberDetail = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.AppMemberDetail })));
 const MemberExtract = lazy(() => import('@/pages/AppMembers').then(m => ({ default: m.MemberExtract })));
@@ -111,6 +112,7 @@ export default function App() {
 
           {/* 주문관리 */}
           <Route path="orders" element={<ProtectedRoute requiredPermissions={[{ resource: 'orders', action: 'read' }]}><OrderList /></ProtectedRoute>} />
+          <Route path="orders/abnormal" element={<ProtectedRoute requiredPermissions={[{ resource: 'orders', action: 'read' }]}><AbnormalOrderList /></ProtectedRoute>} />
           <Route path="orders/:id" element={<ProtectedRoute requiredPermissions={[{ resource: 'orders', action: 'read' }]}><OrderDetail /></ProtectedRoute>} />
 
           {/* 앱회원관리 */}

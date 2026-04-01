@@ -169,6 +169,8 @@ export {
   useAddOrderMemo,
   useCancelDiscountItem,
   useOrdersForExport,
+  useAbnormalOrderList,
+  useAbnormalOrderCount,
 } from './useOrders';
 export {
   useMembershipGrades,

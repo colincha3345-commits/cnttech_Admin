@@ -88,6 +88,22 @@ export function useCancelDiscountItem() {
   });
 }
 
+export function useAbnormalOrderList(params?: OrderSearchFilter, options?: { refetchInterval?: number | false }) {
+  return useQuery({
+    queryKey: ['orders', 'abnormal', params],
+    queryFn: () => orderService.getAbnormalOrders(params),
+    refetchInterval: options?.refetchInterval ?? 30000,
+  });
+}
+
+export function useAbnormalOrderCount() {
+  return useQuery({
+    queryKey: ['orders', 'abnormal', 'count'],
+    queryFn: () => orderService.getAbnormalCount(),
+    refetchInterval: 30000,
+  });
+}
+
 export function useOrdersForExport(params?: Omit<OrderSearchFilter, 'page' | 'limit'>) {
   return useQuery({
     queryKey: ['orders', 'export', params],
