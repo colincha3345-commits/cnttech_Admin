@@ -31,7 +31,8 @@ Thumbs.db
 # Word temp/lock files
 ~$*
 
-# Claude worktrees
+# Claude Code (개인 파일)
+CLAUDE.local.md
 .claude/worktrees/
 
 # Environment
