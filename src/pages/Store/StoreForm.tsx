@@ -516,7 +516,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
                     handleChange('business', 'businessNumber', e.target.value)
                   }
                   placeholder="123-45-67890"
-                  className="flex-1"
+                  className="w-64"
                 />
                 <Button
                   type="button"
