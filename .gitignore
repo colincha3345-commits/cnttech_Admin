@@ -49,3 +49,4 @@ coverage
 .cache
 .eslintcache
 .parcel-cache
+.vercel
