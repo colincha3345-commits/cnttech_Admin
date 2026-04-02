@@ -24,10 +24,10 @@ import type {
 // Mock 데이터 (IS_MOCK_MODE=true 일 때만 사용)
 // ============================================================
 const MOCK_BANNERS: Banner[] = [
-    { id: 'banner-001', title: '봄 시즌 신메뉴 프로모션', imageUrl: '/images/banner-spring.jpg', linkUrl: '/events', position: 'main_top', status: 'active', sortOrder: 1, startDate: '2026-02-01', endDate: '2026-03-31', createdAt: '2026-01-28T10:00:00Z' },
-    { id: 'banner-002', title: 'VIP 전용 할인 이벤트', imageUrl: '/images/banner-vip.jpg', linkUrl: '/marketing/coupons', position: 'main_middle', status: 'active', sortOrder: 2, startDate: '2026-02-15', endDate: null, createdAt: '2026-02-10T09:00:00Z' },
-    { id: 'banner-003', title: '3월 대규모 할인전', imageUrl: '/images/banner-march.jpg', linkUrl: '/marketing/discounts', position: 'main_top', status: 'scheduled', sortOrder: 3, startDate: '2026-03-01', endDate: '2026-03-31', createdAt: '2026-02-20T14:00:00Z' },
-    { id: 'banner-004', title: '작년 연말 프로모션', imageUrl: '/images/banner-year-end.jpg', linkUrl: '/events', position: 'main_bottom', status: 'inactive', sortOrder: 4, startDate: '2025-12-01', endDate: '2025-12-31', createdAt: '2025-11-25T11:00:00Z' },
+    { id: 'banner-001', title: '봄 시즌 신메뉴 프로모션', pcImageUrl: '/images/banner-spring-pc.jpg', mobileImageUrl: '/images/banner-spring-m.jpg', pcLinkUrl: '/events', mobileLinkUrl: 'myapp://events', position: 'main_top', status: 'active', sortOrder: 1, startDate: '2026-02-01', endDate: '2026-03-31', createdAt: '2026-01-28T10:00:00Z' },
+    { id: 'banner-002', title: 'VIP 전용 할인 이벤트', pcImageUrl: '/images/banner-vip-pc.jpg', mobileImageUrl: '/images/banner-vip-m.jpg', pcLinkUrl: '/marketing/coupons', mobileLinkUrl: 'myapp://coupons', position: 'main_middle', status: 'active', sortOrder: 2, startDate: '2026-02-15', endDate: null, createdAt: '2026-02-10T09:00:00Z' },
+    { id: 'banner-003', title: '3월 대규모 할인전', pcImageUrl: '/images/banner-march-pc.jpg', mobileImageUrl: '/images/banner-march-m.jpg', pcLinkUrl: '/marketing/discounts', mobileLinkUrl: 'myapp://discounts', position: 'main_top', status: 'scheduled', sortOrder: 3, startDate: '2026-03-01', endDate: '2026-03-31', createdAt: '2026-02-20T14:00:00Z' },
+    { id: 'banner-004', title: '작년 연말 프로모션', pcImageUrl: '/images/banner-year-end-pc.jpg', mobileImageUrl: '/images/banner-year-end-m.jpg', pcLinkUrl: '/events', mobileLinkUrl: 'myapp://events', position: 'main_bottom', status: 'inactive', sortOrder: 4, startDate: '2025-12-01', endDate: '2025-12-31', createdAt: '2025-11-25T11:00:00Z' },
 ];
 
 const MOCK_POPUPS: Popup[] = [
@@ -77,7 +77,7 @@ class MockDesignService {
     }
     async createBanner(data: BannerFormData): Promise<Banner> {
         await this.delay();
-        const newBanner: Banner = { id: `banner-${Date.now()}`, title: data.title, imageUrl: data.imageUrl, linkUrl: data.linkUrl, position: data.position, status: 'inactive', sortOrder: data.sortOrder, startDate: data.startDate, endDate: data.isAlwaysOn ? null : data.endDate, createdAt: new Date().toISOString() };
+        const newBanner: Banner = { id: `banner-${Date.now()}`, title: data.title, pcImageUrl: data.pcImageUrl, mobileImageUrl: data.mobileImageUrl, pcLinkUrl: data.pcLinkUrl, mobileLinkUrl: data.mobileLinkUrl, position: data.position, status: 'inactive', sortOrder: data.sortOrder, startDate: data.startDate, endDate: data.isAlwaysOn ? null : data.endDate, createdAt: new Date().toISOString() };
         this.banners.push(newBanner);
         return newBanner;
     }

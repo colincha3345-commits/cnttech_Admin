@@ -95,6 +95,7 @@ export const mockStores: Store[] = [
       hasDineIn: true,
       seatCapacity: 30,
       hasWifi: true,
+      hasDriveThru: false,
     },
 
     // 연동 코드 정보
@@ -204,6 +205,7 @@ export const mockStores: Store[] = [
       hasDineIn: true,
       seatCapacity: 24,
       hasWifi: true,
+      hasDriveThru: false,
     },
     integrationCodes: {
       pos: {
@@ -291,6 +293,7 @@ export const mockStores: Store[] = [
       hasDineIn: true,
       seatCapacity: 20,
       hasWifi: true,
+      hasDriveThru: false,
     },
     integrationCodes: {
       pos: {
@@ -379,6 +382,7 @@ export const mockStores: Store[] = [
       hasDineIn: true,
       seatCapacity: 28,
       hasWifi: true,
+      hasDriveThru: false,
     },
     integrationCodes: {
       pos: {
@@ -463,6 +467,7 @@ export const mockStores: Store[] = [
       hasDineIn: true,
       seatCapacity: 40,
       hasWifi: true,
+      hasDriveThru: false,
     },
     integrationCodes: {
       pos: { isConnected: false }, // 오픈예정이라 미연동

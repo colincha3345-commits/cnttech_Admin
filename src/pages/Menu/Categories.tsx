@@ -267,8 +267,8 @@ export function Categories() {
               </div>
             ) : (
               <div className="flex flex-col h-full gap-4">
-                {/* 2depth일 때 상단에 상품 노출 순서 관리 버튼 */}
-                {selectedCategory && categoryMode === '2depth' && !isEditing && (
+                {/* 상품 노출 순서 관리 버튼 (1depth/2depth 공통) */}
+                {selectedCategory && !isEditing && (
                   <div className="flex justify-between items-center bg-bg-card border border-border rounded-lg p-4">
                     <div>
                       <p className="font-semibold text-sm">연결된 상품 순서 설정</p>

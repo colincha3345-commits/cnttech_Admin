@@ -50,8 +50,10 @@ import { useToast } from '@/hooks';
 
 const DEFAULT_BANNER_FORM: BannerFormData = {
   title: '',
-  imageUrl: '',
-  linkUrl: '',
+  pcImageUrl: '',
+  mobileImageUrl: '',
+  pcLinkUrl: '',
+  mobileLinkUrl: '',
   position: 'main_top',
   sortOrder: 0,
   startDate: '',
@@ -211,8 +213,10 @@ export function BannerManagement() {
     setSelectedBanner(banner);
     setFormData({
       title: banner.title,
-      imageUrl: banner.imageUrl,
-      linkUrl: banner.linkUrl,
+      pcImageUrl: banner.pcImageUrl,
+      mobileImageUrl: banner.mobileImageUrl,
+      pcLinkUrl: banner.pcLinkUrl,
+      mobileLinkUrl: banner.mobileLinkUrl,
       position: banner.position,
       sortOrder: banner.sortOrder,
       startDate: banner.startDate,
@@ -225,6 +229,10 @@ export function BannerManagement() {
   const handleSave = async () => {
     if (!formData.title.trim()) {
       toast.error('배너 제목을 입력해주세요.');
+      return;
+    }
+    if (!formData.pcImageUrl && !formData.mobileImageUrl) {
+      toast.error('PC 또는 모바일 배너 이미지를 최소 1개 등록해주세요.');
       return;
     }
 
@@ -356,20 +364,46 @@ export function BannerManagement() {
             <CardContent>
               <div className="space-y-4">
                 <Input label="배너 제목 *" value={formData.title} onChange={(e) => handleFormChange({ title: e.target.value })} placeholder="배너 제목을 입력하세요" />
-                <div>
-                  <label className="block text-sm font-medium text-txt-main mb-1">배너 이미지</label>
-                  <ImageUpload
-                    value={formData.imageUrl}
-                    onChange={(file) => {
-                      if (file) {
-                        handleFormChange({ imageUrl: URL.createObjectURL(file) });
-                      } else {
-                        handleFormChange({ imageUrl: '' });
-                      }
-                    }}
-                  />
+
+                {/* PC 배너 */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-txt-main pb-1 border-b border-border">PC 배너</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-txt-main mb-1">PC 배너 이미지</label>
+                    <ImageUpload
+                      value={formData.pcImageUrl}
+                      onChange={(file) => {
+                        if (file) {
+                          handleFormChange({ pcImageUrl: URL.createObjectURL(file) });
+                        } else {
+                          handleFormChange({ pcImageUrl: '' });
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-txt-muted mt-1">권장 사이즈: 1200 × 586px</p>
+                  </div>
+                  <Input label="PC 랜딩 URL" value={formData.pcLinkUrl} onChange={(e) => handleFormChange({ pcLinkUrl: e.target.value })} placeholder="PC에서 클릭 시 이동할 경로" />
                 </div>
-                <Input label="링크 URL" value={formData.linkUrl} onChange={(e) => handleFormChange({ linkUrl: e.target.value })} placeholder="클릭 시 이동할 경로" />
+
+                {/* 모바일 배너 */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-txt-main pb-1 border-b border-border">모바일 배너</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-txt-main mb-1">모바일 배너 이미지</label>
+                    <ImageUpload
+                      value={formData.mobileImageUrl}
+                      onChange={(file) => {
+                        if (file) {
+                          handleFormChange({ mobileImageUrl: URL.createObjectURL(file) });
+                        } else {
+                          handleFormChange({ mobileImageUrl: '' });
+                        }
+                      }}
+                    />
+                    <p className="text-xs text-txt-muted mt-1">권장 사이즈: 331 × 196px</p>
+                  </div>
+                  <Input label="모바일 랜딩 URL" value={formData.mobileLinkUrl} onChange={(e) => handleFormChange({ mobileLinkUrl: e.target.value })} placeholder="예: myapp://events (딥링크 또는 웹 URL)" />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <Select label="배치 위치" value={formData.position} onChange={(e) => handleFormChange({ position: e.target.value as BannerPosition })}>
                     {Object.entries(BANNER_POSITION_LABELS).map(([val, label]) => (

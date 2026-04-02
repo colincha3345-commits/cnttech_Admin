@@ -16,6 +16,8 @@ const SETTLEMENT_KEYS = {
 interface SettlementListParams {
   keyword?: string;
   status?: SettlementStatus | '';
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   limit?: number;
 }

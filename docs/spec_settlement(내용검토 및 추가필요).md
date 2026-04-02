@@ -18,8 +18,8 @@
 ### 1.1 정산 내역 (`/settlement`)
 
 1. **정산 목록 조회** — 정산 기간, 매장, 상태(정산전/정산완료) 필터를 적용하여 목록을 조회한다. 매장별 총매출, 할인, 수수료, 실정산액을 요약 컬럼으로 노출한다.
-2. **정산 상세** — 행 클릭 시 상세 페이지로 이동한다. 정산 구성 요소(매출, 배달비, 할인, 본사지원금, 포인트, 쿠폰, 교환권, 플랫폼수수료)를 표 형태로 분해하여 보여준다.
-3. **주문별 상세** — 정산에 포함된 개별 주문 내역을 하단 테이블에 나열한다. 주문번호, 일시, 메뉴, 금액, 결제수단, 실정산액을 표기한다.
+2. **정산 상세** — 행 클릭 시 상세 페이지로 이동한다. 상단에 정산 계산 내역(카드형 요약)을 고정 배치한다. 항목: 정상가합계, 이벤트할인(브랜드/가맹점), 배달비(브랜드/가맹점), 쿠폰(브랜드/가맹점), 포인트, 교환권(금액권/교환권), 총결제금액, PG수수료(PG/간편결제), 주문중개수수료, 최종정산액.
+3. **주문별 상세** — 하단에 2단 멀티헤더 테이블로 나열한다. 컬럼: 주문정보, 고객, 정상가합계, 이벤트할인(브랜드/가맹점/합), 배달비(브랜드/가맹점/합), 쿠폰(브랜드/가맹점/합), 포인트, 교환권(금액권/교환권), 총결제금액, PG수수료(PG/간편결제/합/CNT), 주문중개수수료(브랜드/합), 정산금액. 하단 tfoot에 합계행 표시. 엑셀 다운로드 기능 연동.
 4. **상태 확인** — 정산전(pending) 상태의 건은 정산 배치 실행 후 자동으로 정산완료(completed)로 전환된다.
 
 ### 1.2 통계/조회 (`/settlement/stats`)
@@ -46,13 +46,14 @@
 | **정산 기간 (period)** | Text | Y | - | "YYYY-MM-DD ~ YYYY-MM-DD" 형식이다. |
 | **총매출 (totalSales)** | Number (ReadOnly) | Y | 천 단위 콤마 | 기간 내 총 매출액이다. |
 | **배달비 (deliveryFee)** | Number (ReadOnly) | Y | 천 단위 콤마 | 배달비 합계다. |
-| **할인 합계 (promotionDiscount)** | Number (ReadOnly) | Y | 천 단위 콤마 | 프로모션·이벤트 등 전체 할인 총액이다. 쿠폰 할인(couponAmount), 포인트 할인(pointUsed), 기타 프로모션 할인(discountAmount)의 합계이다. |
-| **본사 지원금 (hqSupport)** | Number (ReadOnly) | Y | 천 단위 콤마 | 본사가 부담하는 할인금이다. 예: 할인 10,000원 중 본사 70% 부담 → 7,000원. 가맹점 입장에서는 수입으로 합산된다. |
-| **포인트 사용 (pointsUsed)** | Number (ReadOnly) | Y | 천 단위 콤마 | 고객이 적립 포인트로 결제한 금액 합계다. 본사/가맹 부담 비율에 따라 정산 시 차감 또는 보전된다. |
-| **쿠폰 사용 (couponsUsed)** | Number (ReadOnly) | Y | 천 단위 콤마 | 고객이 쿠폰으로 할인받은 금액 합계다. 본사 발행 쿠폰은 본사 부담, 가맹점 발행 쿠폰은 가맹점 부담이다. |
-| **E쿠폰 사용 (vouchersUsed)** | Number (ReadOnly) | Y | 천 단위 콤마 | 교환권·상품권 결제 금액 합계다. 정산 산출 내역과 **별도 영역에 분리 표시**한다. 정산주체=외부 쿠폰사이므로 가맹점 정산 공식에 미포함. "정산주체: 외부 쿠폰사" 안내 문구를 병기한다. |
-| **수수료 (platformFee)** | Number (ReadOnly) | Y | 천 단위 콤마 | 플랫폼 이용 수수료다. 매출액 × 수수료율(super-admin FeePolicy.baseRate)로 산출된다. |
-| **PG 수수료 (pgFee)** | Number (ReadOnly) | Y | 천 단위 콤마 | PG사 결제 수수료다. 매출액 × PG 수수료율(super-admin FeePolicy.pgFeeRate)로 산출된다. |
+| **이벤트 할인 (eventDiscount)** | Number (ReadOnly) | Y | 천 단위 콤마 | 이벤트 할인 합계. 브랜드/가맹점 부담(BurdenSplit)으로 분리 표시. |
+| **배달비 부담 (deliveryFeeBurden)** | BurdenSplit | Y | 천 단위 콤마 | 배달비를 브랜드/가맹점으로 분리. 합계는 deliveryFee와 동일. |
+| **쿠폰 (couponUsed)** | Number (ReadOnly) | Y | 천 단위 콤마 | 쿠폰 할인 합계. 브랜드/가맹점 부담(BurdenSplit)으로 분리 표시. |
+| **포인트 사용 (pointsUsed)** | Number (ReadOnly) | Y | 천 단위 콤마 | 고객이 적립 포인트로 결제한 금액 합계다. |
+| **교환권 (voucherSettlement)** | VoucherSettlement | Y | 천 단위 콤마 | 금액권(giftCard)/교환권(exchange)으로 분리. 정산주체=외부 쿠폰사. 별도 정산. |
+| **총결제금액 (totalPaymentAmount)** | Number (ReadOnly) | Y | 천 단위 콤마, 볼드 | 정상가 - 할인 + 배달비 등 실제 결제된 총액. |
+| **PG 수수료 (pgFeeDetail)** | PgFeeDetail | Y | 천 단위 콤마 | PG/간편결제/합계/건수로 분리. |
+| **주문중개수수료 (orderBrokerFee)** | OrderBrokerFee | Y | 천 단위 콤마 | 브랜드/합계로 분리. |
 | **실정산액 (netAmount)** | Number (ReadOnly) | Y | 천 단위 콤마, 볼드 | 가맹점에 실제 지급되는 최종 정산 금액이다. 정률 수수료 구조상 통상 음수 불가. 단, 전기 취소/환불 차감 초과 시 예외적 음수 가능→빨간색 강조. |
 | **주문 건수 (orderCount)** | Number (ReadOnly) | Y | - | 기간 내 총 주문수다. |
 | **지급일 (paymentDate)** | Text | N | YYYY-MM-DD | completed 상태 시 노출한다. |

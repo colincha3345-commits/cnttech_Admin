@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import {
     DownloadOutlined,
-    SearchOutlined,
     BarChartOutlined,
     DollarOutlined,
     ShopOutlined,
@@ -12,8 +11,12 @@ import {
     Button,
     SearchInput,
 } from '@/components/ui';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
+import type { DashboardDateRange } from '@/types';
+import { SettlementBarChart } from './SettlementBarChart';
 
-type TimeUnit = 'daily' | 'monthly' | 'yearly';
 
 interface StoreSettlementStat {
     id: string;
@@ -81,15 +84,45 @@ const MOCK_STATS_DATA: StoreSettlementStat[] = [
 
 export function SettlementStats() {
     const [keyword, setKeyword] = useState('');
-    const [timeUnit, setTimeUnit] = useState<TimeUnit>('daily');
-    const [dateRange, setDateRange] = useState('');
+    const [dateRange, setDateRange] = useState<DashboardDateRange>({
+        preset: 'last7days',
+        ...getDateRangeFromPreset('last7days'),
+    });
+
+    const handleStatsExcel = () => {
+        const rows = MOCK_STATS_DATA.map((s) => ({
+            '날짜': s.dateString,
+            '가맹점': s.storeName,
+            '총매출': s.totalSales,
+            '배달비': s.deliveryFee,
+            '본사할인': s.hqDiscount,
+            '가맹할인': s.storeDiscount,
+            '포인트': s.pointsUsed,
+            '쿠폰': s.couponsUsed,
+            '교환권': s.vouchersUsed,
+            '플랫폼수수료': s.platformFee,
+            '정산액': s.netAmount,
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = Array(11).fill({ wch: 14 });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '정산통계');
+        const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        saveAs(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `정산통계_${new Date().toISOString().split('T')[0]}.xlsx`);
+    };
 
     const filteredData = useMemo(() => {
         return MOCK_STATS_DATA.filter(item => {
             const matchKeyword = item.storeName.includes(keyword) || item.storeId.includes(keyword);
-            return matchKeyword;
+            
+            // Check date range safely
+            const itemDate = new Date(item.dateString);
+            const inRange = (!dateRange || !dateRange.from || itemDate >= dateRange.from) && 
+                            (!dateRange || !dateRange.to || itemDate <= dateRange.to);
+
+            return matchKeyword && inRange;
         });
-    }, [keyword, timeUnit]);
+    }, [keyword, dateRange]);
 
     const summary = useMemo(() => {
         return filteredData.reduce(
@@ -104,15 +137,39 @@ export function SettlementStats() {
         );
     }, [filteredData]);
 
+    const chartData = useMemo(() => {
+        // 일별, 가맹점별 합산
+        const grouped = filteredData.reduce((acc, curr) => {
+            if (!acc[curr.dateString]) {
+                acc[curr.dateString] = { totalSales: 0, netAmount: 0 };
+            }
+            acc[curr.dateString]!.totalSales += curr.totalSales;
+            acc[curr.dateString]!.netAmount += curr.netAmount;
+            return acc;
+        }, {} as Record<string, { totalSales: number, netAmount: number }>);
+
+        return Object.entries(grouped)
+            .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+            .map(([date, data]) => ({
+                label: date.slice(5), // MM-DD
+                totalSales: data.totalSales,
+                netAmount: data.netAmount
+            }));
+    }, [filteredData]);
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-txt-main">가맹점별 정산 통계조회</h1>
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleStatsExcel}>
                     <span className="flex items-center gap-2">
                         <DownloadOutlined /> 통계 엑셀 다운로드
                     </span>
                 </Button>
+            </div>
+            
+            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                <DateRangeFilter value={dateRange} onChange={setDateRange} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -179,34 +236,10 @@ export function SettlementStats() {
                             onChange={(val) => setKeyword(val)}
                         />
                     </div>
-                    <div className="w-full md:w-32 text-left">
-                        <label className="block text-xs font-medium text-txt-muted mb-1">조회 단위</label>
-                        <select
-                            className="w-full border border-border rounded-lg p-2 text-sm h-10 bg-bg-main text-txt-main"
-                            value={timeUnit}
-                            onChange={(e) => setTimeUnit(e.target.value as TimeUnit)}
-                        >
-                            <option value="daily">일별</option>
-                            <option value="monthly">월별</option>
-                            <option value="yearly">연별</option>
-                        </select>
-                    </div>
-                    <div className="w-full md:w-48 text-left">
-                        <label className="block text-xs font-medium text-txt-muted mb-1">조회 일자(기간)</label>
-                        <input
-                            type="date"
-                            className="w-full border border-border rounded-lg p-2 text-sm h-10 bg-bg-main text-txt-main"
-                            value={dateRange}
-                            onChange={(e) => setDateRange(e.target.value)}
-                        />
-                    </div>
-                    <Button variant="secondary">
-                        <span className="flex items-center gap-2">
-                            <SearchOutlined /> 검색
-                        </span>
-                    </Button>
                 </CardContent>
             </Card>
+
+            <SettlementBarChart data={chartData} />
 
             <Card className="overflow-hidden">
                 <div className="overflow-x-auto">
@@ -258,7 +291,7 @@ export function SettlementStats() {
                                     <td className="p-4 text-right whitespace-nowrap text-sm text-txt-muted">
                                         -₩{item.platformFee.toLocaleString()}
                                     </td>
-                                    <td className="p-4 text-right whitespace-nowrap text-sm text-blue-600 font-bold bg-blue-50/20">
+                                    <td className={`p-4 text-right whitespace-nowrap text-sm font-bold bg-blue-50/20 ${item.netAmount < 0 ? 'text-red-500' : 'text-blue-600'}`}>
                                         ₩{item.netAmount.toLocaleString()}
                                     </td>
                                 </tr>

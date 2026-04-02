@@ -4,8 +4,10 @@ export type BannerPosition = 'main_top' | 'main_middle' | 'main_bottom' | 'sub_t
 export interface Banner {
     id: string;
     title: string;
-    imageUrl: string;
-    linkUrl: string;
+    pcImageUrl: string;
+    mobileImageUrl: string;
+    pcLinkUrl: string;
+    mobileLinkUrl: string;
     position: BannerPosition;
     status: BannerStatus;
     sortOrder: number;
@@ -16,8 +18,10 @@ export interface Banner {
 
 export interface BannerFormData {
     title: string;
-    imageUrl: string;
-    linkUrl: string;
+    pcImageUrl: string;
+    mobileImageUrl: string;
+    pcLinkUrl: string;
+    mobileLinkUrl: string;
     position: BannerPosition;
     sortOrder: number;
     startDate: string;

@@ -1,5 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 import {
     DownloadOutlined,
     DollarOutlined,
@@ -15,7 +17,9 @@ import {
     DataTable,
     Pagination,
 } from '@/components/ui';
+import { DateRangeFilter, getDateRangeFromPreset } from '@/components/ui/DateRangeFilter';
 import { useSettlements, useRunSettlement } from '@/hooks/useSettlement';
+import type { DashboardDateRange } from '@/types';
 
 import type { Settlement, SettlementStatus } from '@/types/settlement';
 
@@ -32,6 +36,10 @@ export function SettlementList() {
     const [limit, setLimit] = useState(20);
     const [sortKey, setSortKey] = useState<string>('');
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+    const [dateRange, setDateRange] = useState<DashboardDateRange>({
+        preset: 'today',
+        ...getDateRangeFromPreset('today'),
+    });
 
     const handleSort = (key: string, order: 'asc' | 'desc') => {
         setSortKey(key);
@@ -58,12 +66,42 @@ export function SettlementList() {
         fetchSettlements({ keyword, status: newStatus, page: 1, limit });
     };
 
+    // Update fetch when dateRange changes
+    useEffect(() => {
+        setPage(1);
+        fetchSettlements({ keyword, status, page: 1, limit, dateFrom: dateRange.from.toISOString(), dateTo: dateRange.to.toISOString() });
+    }, [dateRange]);
+
     const handleRunSettlement = () => {
         if (!window.confirm('현재 대상에 대한 정산을 실행하시겠습니까?')) return;
         runSettlement.mutate(undefined, {
             onSuccess: () => fetchSettlements({ keyword, status, page, limit }),
         });
     };
+
+    const handleListExcel = useCallback(() => {
+        if (!settlements.length) return;
+        const rows = settlements.map((s) => ({
+            '정산ID': s.id,
+            '가맹점': s.storeName,
+            '정산기간': s.period,
+            '정상가합계': s.totalSales,
+            '배달비': s.deliveryFee,
+            '쿠폰': s.couponUsed,
+            '포인트': s.pointsUsed,
+            '이벤트할인': s.eventDiscount,
+            'PG수수료': s.pgFeeDetail.pgTotal,
+            '주문중개수수료': s.orderBrokerFee.orderTotal,
+            '정산액': s.netAmount,
+            '상태': s.status === 'completed' ? '정산완료' : '정산전',
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws['!cols'] = Array(12).fill({ wch: 16 });
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '정산목록');
+        const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        saveAs(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `정산목록_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }, [settlements]);
 
     const totalNet = useMemo(() =>
         settlements.reduce((acc, curr) => acc + curr.netAmount, 0),
@@ -73,7 +111,7 @@ export function SettlementList() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold text-txt-main">가맹점 정산 관리</h1>
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleListExcel}>
                     <span className="flex items-center gap-2">
                         <DownloadOutlined /> 내역 다운로드
                     </span>
@@ -81,6 +119,10 @@ export function SettlementList() {
             </div>
 
             {/* 요약 카드 */}
+            <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+                 <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="bg-blue-50 border-blue-100">
                     <CardContent className="p-6">
@@ -215,48 +257,30 @@ export function SettlementList() {
                             ),
                         },
                         {
-                            key: 'couponsUsed',
+                            key: 'couponUsed',
                             header: '쿠폰',
                             sortable: true,
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-purple-600 whitespace-nowrap">₩{item.couponsUsed.toLocaleString()}</span>
+                                <span className="text-sm text-purple-600 whitespace-nowrap">₩{item.couponUsed.toLocaleString()}</span>
                             ),
                         },
                         {
-                            key: 'vouchersUsed',
+                            key: 'voucher',
                             header: '교환권',
-                            sortable: true,
+                            sortable: false,
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-txt-sub whitespace-nowrap">₩{item.vouchersUsed.toLocaleString()}</span>
+                                <span className="text-sm text-txt-sub whitespace-nowrap">₩{(item.voucherSettlement.giftCard + item.voucherSettlement.exchange).toLocaleString()}</span>
                             ),
                         },
                         {
-                            key: 'hqDiscount',
-                            header: '할인액(본사)',
+                            key: 'eventDiscount',
+                            header: '이벤트 할인',
                             sortable: true,
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-red-500 font-bold whitespace-nowrap">₩{item.hqSupport.toLocaleString()}</span>
-                            ),
-                        },
-                        {
-                            key: 'storeDiscount',
-                            header: '할인액(가맹)',
-                            sortable: true,
-                            className: 'text-right',
-                            render: (item) => (
-                                <span className="text-sm text-red-500 font-bold whitespace-nowrap">₩{(item.promotionDiscount - item.hqSupport).toLocaleString()}</span>
-                            ),
-                        },
-                        {
-                            key: 'platformFee',
-                            header: '플랫폼 수수료',
-                            sortable: true,
-                            className: 'text-right',
-                            render: (item) => (
-                                <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.platformFee.toLocaleString()}</span>
+                                <span className="text-sm text-red-500 font-bold whitespace-nowrap">-₩{item.eventDiscount.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -265,7 +289,16 @@ export function SettlementList() {
                             sortable: true,
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.pgFee.toLocaleString()}</span>
+                                <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.pgFeeDetail.pgTotal.toLocaleString()}</span>
+                            ),
+                        },
+                        {
+                            key: 'orderBrokerFee',
+                            header: '주문중개수수료',
+                            sortable: true,
+                            className: 'text-right',
+                            render: (item) => (
+                                <span className="text-sm text-txt-muted whitespace-nowrap">-₩{item.orderBrokerFee.orderTotal.toLocaleString()}</span>
                             ),
                         },
                         {
@@ -274,7 +307,9 @@ export function SettlementList() {
                             sortable: true,
                             className: 'text-right',
                             render: (item) => (
-                                <span className="text-sm font-bold text-blue-600 whitespace-nowrap">₩{item.netAmount.toLocaleString()}</span>
+                                <span className={`text-sm font-bold whitespace-nowrap ${item.netAmount < 0 ? 'text-red-500' : 'text-blue-600'}`}>
+                                    ₩{item.netAmount.toLocaleString()}
+                                </span>
                             ),
                         },
                     ]}

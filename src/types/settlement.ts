@@ -1,38 +1,94 @@
-import type { OrderMenuItem, OrderDiscount, PaymentMethod } from './order';
+import type { OrderMenuItem, OrderDiscount, PaymentMethod, OrderDeliveryType } from './order';
 
-// 정산 상태: 정산일 기준으로 정산전 / 정산완료로 구분
 export type SettlementStatus = 'pending' | 'completed';
+
+// ============================================
+// 정산 상세 분류 타입
+// ============================================
+
+/** 브랜드/가맹점 부담 분리 */
+export interface BurdenSplit {
+    brand: number;
+    franchise: number;
+    total: number;
+}
+
+/** 교환권 정산 (금액권/교환권 분리) */
+export interface VoucherSettlement {
+    giftCard: number;    // 금액권
+    exchange: number;    // 교환권
+}
+
+/** PG수수료 상세 */
+export interface PgFeeDetail {
+    pg: number;
+    easyPay: number;
+    pgTotal: number;
+    cnt: number;
+}
+
+/** 주문중개수수료 */
+export interface OrderBrokerFee {
+    brand: number;
+    orderTotal: number;
+}
+
+// ============================================
+// 정산 요약
+// ============================================
 
 export interface Settlement {
     id: string;
     storeId: string;
     storeName: string;
-    period: string; // "2024-02-01 ~ 2024-02-15"
-    totalSales: number;
-    deliveryFee: number;
-    promotionDiscount: number; // 총 할인액
-    hqSupport: number; // 본사 지원 할인금 (정산시 수입으로 합산)
-    pointsUsed: number; // 포인트 사용액
-    couponsUsed: number; // 쿠폰 사용액
-    vouchersUsed: number; // 교환권/상품권 사용액
-    platformFee: number; // 플랫폼 수수료
-    pgFee: number; // PG사 결제 수수료 (super-admin FeePolicy.pgFeeRate 기준)
-    netAmount: number; // 최종 실 정산액
+    period: string;
+    totalSales: number;          // 정상가합계
+    deliveryFee: number;         // 배달비 합계
+    deliveryFeeBurden: BurdenSplit; // 배달비 부담 (브랜드/가맹점)
+    couponUsed: number;          // 쿠폰 사용 합계
+    couponBurden: BurdenSplit;   // 쿠폰 부담 (브랜드/가맹점)
+    pointsUsed: number;
+    eventDiscount: number;       // 이벤트 할인 합계
+    eventDiscountBurden: BurdenSplit; // 이벤트 할인 부담
+    voucherSettlement: VoucherSettlement; // 금액권/교환권
+    totalPaymentAmount: number;  // 총결제금액
+    pgFeeDetail: PgFeeDetail;
+    orderBrokerFee: OrderBrokerFee;
+    netAmount: number;           // 최종 정산액
     status: SettlementStatus;
     paymentDate?: string;
     orderCount: number;
     createdAt: string;
 }
 
+// ============================================
+// 주문별 정산 항목
+// ============================================
+
 export interface SettlementOrderItem {
     orderId: string;
     orderNumber: string;
     orderDate: string;
     menus: OrderMenuItem[];
-    totalAmount: number;
     discount: OrderDiscount;
     paymentMethod: PaymentMethod;
-    netAmount: number; // 실제 정산 대상액 (쿠폰/포인트 정산 규정에 따름)
+    customerName: string;
+    customerPhone: string;
+    orderType: OrderDeliveryType;
+    deliveryAddress?: string;
+    // 정산 컬럼
+    regularPriceTotal: number;       // 정상가합계
+    eventDiscountBurden: BurdenSplit; // 이벤트 할인부담
+    deliveryFee: number;
+    deliveryFeeBurden: BurdenSplit;   // 배달비 부담
+    couponAmount: number;
+    couponBurden: BurdenSplit;       // 쿠폰 부담
+    pointUsed: number;
+    voucherSettlement: VoucherSettlement; // 금액권/교환권
+    totalPaymentAmount: number;      // 총결제금액
+    pgFeeDetail: PgFeeDetail;
+    orderBrokerFee: OrderBrokerFee;
+    netAmount: number;               // 정산금액
 }
 
 export interface SettlementDetailData extends Settlement {

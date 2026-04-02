@@ -599,6 +599,7 @@ class StoreService {
       hasDineIn: data.hasDineIn,
       seatCapacity: data.seatCapacity,
       hasWifi: data.hasWifi,
+      hasDriveThru: data.hasDriveThru,
     };
 
     store.amenities = amenities;

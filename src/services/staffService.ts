@@ -7,6 +7,7 @@ import {
   mockHeadquartersStaff,
   mockFranchiseStaff,
 } from '@/lib/api/mockStaffData';
+import { mockStoreStaffLinks } from '@/lib/api/mockStoreData';
 import { emailService } from './emailService';
 import { authService } from './authService';
 import { auditService } from './auditService';
@@ -618,6 +619,16 @@ class StaffService {
       throw new Error('소속 가맹점을 선택해주세요.');
     }
 
+    // 해당 매장에 이미 등록된 가맹점주가 있는지 체크
+    const existingOwner = this.franchise.find(
+      (s) => s.storeId === data.storeId && s.status !== 'inactive'
+    );
+    if (existingOwner) {
+      throw new Error(
+        `이 매장에는 이미 가맹점주 계정(${existingOwner.name})이 등록되어 있습니다. 기존 계정을 삭제한 후 초대해주세요.`
+      );
+    }
+
     const invitationToken = generateUUID();
     const invitationExpiresAt = new Date(Date.now() + INVITATION_EXPIRY_HOURS * 60 * 60 * 1000);
 
@@ -1077,6 +1088,27 @@ class StaffService {
       userId: approverId,
       details: { targetStaffId: staff.id, oldStatus: 'pending_approval', newStatus: 'active' },
     });
+
+    // 가맹점 직원 승인 시 자동으로 매장-직원 연결
+    if (staff.staffType === 'franchise' && staff.storeId) {
+      // 기존 연결 제거 (1:1 제약)
+      const existingIdx = mockStoreStaffLinks.findIndex(
+        (link) => link.storeId === staff.storeId
+      );
+      if (existingIdx !== -1) {
+        mockStoreStaffLinks.splice(existingIdx, 1);
+      }
+      // 새 연결 생성
+      mockStoreStaffLinks.push({
+        id: `link-${Date.now()}`,
+        storeId: staff.storeId,
+        staffId: staff.id,
+        role: 'owner',
+        isPrimary: true,
+        createdAt: new Date(),
+        createdBy: approverId,
+      });
+    }
 
     // 승인 완료 메일 발송
     emailService.sendApprovalEmail({

@@ -140,6 +140,9 @@ export interface StoreAmenities {
 
   // 와이파이
   hasWifi: boolean;
+
+  // 드라이브스루
+  hasDriveThru: boolean;
 }
 
 // 비정기 휴무
@@ -506,6 +509,7 @@ export interface AmenitiesFormData {
   hasDineIn: boolean;
   seatCapacity?: number;
   hasWifi: boolean;
+  hasDriveThru: boolean;
 }
 
 // ============================================
