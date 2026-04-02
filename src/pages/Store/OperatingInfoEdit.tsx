@@ -380,6 +380,24 @@ export const OperatingInfoEdit: React.FC = () => {
               </div>
             );
           })}
+          {/* 공휴일 휴무 (요일별 설정에서도 표시) */}
+          <div className="p-4 border rounded-xl bg-bg-card border-border">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-base font-semibold text-txt-main">공휴일 휴무</span>
+                <p className="text-xs text-txt-muted mt-0.5">공휴일에 매장을 휴무 처리합니다.</p>
+              </div>
+              <Switch
+                checked={formData.holidayHours?.isOpen === false}
+                onCheckedChange={(v) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    holidayHours: { isOpen: !v, openTime: '', closeTime: '' },
+                  }))
+                }
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

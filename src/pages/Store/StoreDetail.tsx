@@ -486,80 +486,64 @@ export const StoreDetail: React.FC = () => {
                 </Card>
 
                 {/* 배달 설정 카드 */}
-                {store.operatingInfo.deliverySettings && (
-                  <Card className="p-5">
-                    <h3 className="text-base font-semibold mb-4">배달 설정</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div>
-                        <label className="text-sm text-txt-muted">배달 가능</label>
-                        <div className="mt-1">
-                          <Badge variant={store.operatingInfo.deliverySettings.isAvailable ? 'success' : 'secondary'}>
-                            {store.operatingInfo.deliverySettings.isAvailable ? '가능' : '불가'}
-                          </Badge>
-                        </div>
-                      </div>
-                      {store.operatingInfo.deliverySettings.isAvailable && (
-                        <>
-                          <div>
-                            <label className="text-sm text-txt-muted">배달 주문 가능 시간</label>
-                            <p className="mt-1 text-sm text-txt-secondary">영업 시작 ~ 마감 전 라스트오더 시간까지 자동 적용</p>
-                          </div>
-                          {store.operatingInfo.deliverySettings.minOrderAmount != null && (
-                            <div>
-                              <label className="text-sm text-txt-muted">최소 주문금액</label>
-                              <div className="mt-1 flex items-center gap-2">
-                                <span className="font-medium">{store.operatingInfo.deliverySettings.minOrderAmount.toLocaleString()}원</span>
-                                <button
-                                  onClick={() => navigate('/delivery-zones')}
-                                  className="text-xs text-blue-600 hover:text-blue-800 underline"
-                                >
-                                  상권관리에서 설정
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
+                <Card className="p-5">
+                  <h3 className="text-base font-semibold mb-4">배달 설정</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <label className="text-sm text-txt-muted w-28">배달 가능</label>
+                      <Badge variant={store.operatingInfo.deliverySettings?.isAvailable ? 'success' : 'secondary'}>
+                        {store.operatingInfo.deliverySettings?.isAvailable ? '가능' : '불가'}
+                      </Badge>
                     </div>
-                    <div className="p-3 bg-bg-hover rounded-lg flex items-center justify-between mt-3">
+                    {store.operatingInfo.deliverySettings?.isAvailable && (
+                      <>
+                        <div className="flex items-center gap-4">
+                          <label className="text-sm text-txt-muted w-28">최소 주문금액</label>
+                          <span className="font-medium">{(store.operatingInfo.deliverySettings.minOrderAmount ?? 0).toLocaleString()}원</span>
+                        </div>
+                        {store.operatingInfo.deliverySettings.estimatedMinutes && (
+                          <div className="flex items-center gap-4">
+                            <label className="text-sm text-txt-muted w-28">예상 배달시간</label>
+                            <span className="font-medium">약 {store.operatingInfo.deliverySettings.estimatedMinutes}분</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    <div className="p-3 bg-bg-hover rounded-lg flex items-center justify-between">
                       <span className="text-sm text-txt-secondary">배달비는 상권관리에서 설정합니다.</span>
                       <button onClick={() => navigate('/delivery-zones')} className="text-sm text-blue-600 hover:text-blue-800 underline font-medium">
                         상권관리로 이동 →
                       </button>
                     </div>
-                  </Card>
-                )}
+                  </div>
+                </Card>
 
                 {/* 포장 설정 카드 */}
-                {store.operatingInfo.pickupSettings && (
-                  <Card className="p-5">
-                    <h3 className="text-base font-semibold mb-4">포장 설정</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div>
-                        <label className="text-sm text-txt-muted">포장 가능</label>
-                        <div className="mt-1">
-                          <Badge variant={store.operatingInfo.pickupSettings.isAvailable ? 'success' : 'secondary'}>
-                            {store.operatingInfo.pickupSettings.isAvailable ? '가능' : '불가'}
-                          </Badge>
-                        </div>
-                      </div>
-                      {store.operatingInfo.pickupSettings.isAvailable && (
-                        <>
-                          <div>
-                            <label className="text-sm text-txt-muted">포장 주문 가능 시간</label>
-                            <p className="mt-1 text-sm text-txt-secondary">영업 시작 ~ 마감 전 라스트오더 시간까지 자동 적용</p>
-                          </div>
-                          {store.operatingInfo.pickupSettings.minOrderAmount != null && (
-                            <div>
-                              <label className="text-sm text-txt-muted">최소 주문금액</label>
-                              <p className="mt-1 font-medium">{store.operatingInfo.pickupSettings.minOrderAmount.toLocaleString()}원</p>
-                            </div>
-                          )}
-                        </>
-                      )}
+                <Card className="p-5">
+                  <h3 className="text-base font-semibold mb-4">포장 설정</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-4">
+                      <label className="text-sm text-txt-muted w-28">포장 가능</label>
+                      <Badge variant={store.operatingInfo.pickupSettings?.isAvailable ? 'success' : 'secondary'}>
+                        {store.operatingInfo.pickupSettings?.isAvailable ? '가능' : '불가'}
+                      </Badge>
                     </div>
-                  </Card>
-                )}
+                    {store.operatingInfo.pickupSettings?.isAvailable && (
+                      <>
+                        <div className="flex items-center gap-4">
+                          <label className="text-sm text-txt-muted w-28">최소 주문금액</label>
+                          <span className="font-medium">{(store.operatingInfo.pickupSettings.minOrderAmount ?? 0).toLocaleString()}원</span>
+                        </div>
+                        {store.operatingInfo.pickupSettings.estimatedMinutes && (
+                          <div className="flex items-center gap-4">
+                            <label className="text-sm text-txt-muted w-28">예상 준비시간</label>
+                            <span className="font-medium">약 {store.operatingInfo.pickupSettings.estimatedMinutes}분</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </Card>
 
                 {/* 예약 설정 카드 */}
                 <Card className="p-5">
