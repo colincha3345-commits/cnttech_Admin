@@ -13,6 +13,7 @@ const DEFAULT_FORM_DATA: AmenitiesFormData = {
     seatCapacity: undefined,
     hasWifi: false,
     hasDriveThru: false,
+    hasRestroom: false,
 };
 
 export const AmenitiesEdit: React.FC = () => {
@@ -36,6 +37,7 @@ export const AmenitiesEdit: React.FC = () => {
                 seatCapacity: currentData.seatCapacity,
                 hasWifi: currentData.hasWifi,
                 hasDriveThru: currentData.hasDriveThru ?? false,
+                hasRestroom: currentData.hasRestroom ?? false,
             };
             setFormData(data);
             initialDataRef.current = JSON.stringify(data);
@@ -200,6 +202,21 @@ export const AmenitiesEdit: React.FC = () => {
                                 className="w-4 h-4 rounded border-border"
                             />
                             <span className="font-medium">드라이브스루</span>
+                        </label>
+                    </div>
+
+                    {/* 화장실 */}
+                    <div className="p-4 border border-border rounded-lg space-y-4">
+                        <label className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                checked={formData.hasRestroom}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({ ...prev, hasRestroom: e.target.checked }))
+                                }
+                                className="w-4 h-4 rounded border-border"
+                            />
+                            <span className="font-medium">화장실</span>
                         </label>
                     </div>
 

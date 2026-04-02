@@ -342,16 +342,24 @@ export const OperatingInfoEdit: React.FC = () => {
             (v) => handleSimpleHoursChange('weekendHours', 'breakStart', v),
             (v) => handleSimpleHoursChange('weekendHours', 'breakEnd', v),
           )}
-          {renderTimeRow(
-            '공휴일',
-            formData.holidayHours || { isOpen: false },
-            (v) => handleSimpleHoursChange('holidayHours', 'isOpen', v),
-            (v) => handleSimpleHoursChange('holidayHours', 'openTime', v),
-            (v) => handleSimpleHoursChange('holidayHours', 'closeTime', v),
-            (v) => handleSimpleHoursChange('holidayHours', 'lastOrderMinutes', v),
-            (v) => handleSimpleHoursChange('holidayHours', 'breakStart', v),
-            (v) => handleSimpleHoursChange('holidayHours', 'breakEnd', v),
-          )}
+          {/* 공휴일 휴무 안내 (on/off만) */}
+          <div className="p-4 border rounded-xl bg-bg-card border-border">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-base font-semibold text-txt-main">공휴일 휴무</span>
+                <p className="text-xs text-txt-muted mt-0.5">공휴일에 매장을 휴무 처리합니다. 고객 앱에 "공휴일 휴무" 안내가 표시됩니다.</p>
+              </div>
+              <Switch
+                checked={formData.holidayHours?.isOpen === false}
+                onCheckedChange={(v) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    holidayHours: { isOpen: !v, openTime: '', closeTime: '' },
+                  }))
+                }
+              />
+            </div>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

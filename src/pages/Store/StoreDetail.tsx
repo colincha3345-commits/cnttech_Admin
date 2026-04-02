@@ -447,14 +447,9 @@ export const StoreDetail: React.FC = () => {
                     {store.operatingInfo.holidayHours && (
                       <div className="p-4 bg-bg-hover rounded-lg">
                         <label className="text-sm text-txt-muted">공휴일</label>
-                        {store.operatingInfo.holidayHours.isOpen ? (
-                          <p className="mt-1 font-medium">
-                            {store.operatingInfo.holidayHours.openTime} ~ {store.operatingInfo.holidayHours.closeTime}
-                            <span className="block text-xs text-txt-muted mt-1">라스트오더 마감 {store.operatingInfo.holidayHours.lastOrderMinutes ?? 30}분 전</span>
-                          </p>
-                        ) : (
-                          <p className="mt-1 text-txt-muted">휴무</p>
-                        )}
+                        <p className="mt-1 font-medium">
+                          {store.operatingInfo.holidayHours.isOpen ? '정상영업' : '휴무'}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -695,6 +690,16 @@ export const StoreDetail: React.FC = () => {
                           <label className="text-sm text-txt-muted">드라이브스루</label>
                           <Badge variant={store.amenities.hasDriveThru ? 'success' : 'secondary'}>
                             {store.amenities.hasDriveThru ? '지원' : '미지원'}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* 화장실 */}
+                      <div className="p-4 border border-border rounded-lg">
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm text-txt-muted">화장실</label>
+                          <Badge variant={store.amenities.hasRestroom ? 'success' : 'secondary'}>
+                            {store.amenities.hasRestroom ? '있음' : '없음'}
                           </Badge>
                         </div>
                       </div>

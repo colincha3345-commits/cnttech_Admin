@@ -600,6 +600,7 @@ class StoreService {
       seatCapacity: data.seatCapacity,
       hasWifi: data.hasWifi,
       hasDriveThru: data.hasDriveThru,
+      hasRestroom: data.hasRestroom,
     };
 
     store.amenities = amenities;

@@ -143,6 +143,9 @@ export interface StoreAmenities {
 
   // 드라이브스루
   hasDriveThru: boolean;
+
+  // 화장실
+  hasRestroom: boolean;
 }
 
 // 비정기 휴무
@@ -510,6 +513,7 @@ export interface AmenitiesFormData {
   seatCapacity?: number;
   hasWifi: boolean;
   hasDriveThru: boolean;
+  hasRestroom: boolean;
 }
 
 // ============================================
