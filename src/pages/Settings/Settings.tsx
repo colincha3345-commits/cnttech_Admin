@@ -35,7 +35,7 @@ export function Settings() {
     );
   }
 
-  const isStoreAutonomy = config.menuControl.type === 'STORE';
+  const hasStorePermission = config.menuControl.type === 'STORE_ONLY' || config.menuControl.type === 'HQ_AND_STORE';
 
   return (
     <div className="space-y-6">
@@ -100,20 +100,32 @@ export function Settings() {
           <InfoRow
             label="설정 주체"
             value={
-              <Badge variant={isStoreAutonomy ? 'info' : 'success'}>
+              <Badge variant={hasStorePermission ? 'info' : 'success'}>
                 {MENU_CONTROL_TYPE_LABELS[config.menuControl.type]}
               </Badge>
             }
           />
-          {isStoreAutonomy && (
+          {hasStorePermission && (
             <>
               <InfoRow
                 label="본사 기본 메뉴 동기화"
                 value={config.menuControl.syncBaseMenu ? '사용' : '미사용'}
               />
               <InfoRow
-                label="가격 변경 허용"
-                value={config.menuControl.allowPriceChange ? '허용' : '불가'}
+                label="가격 수정 허용"
+                value={config.menuControl.allowPriceEdit ? '허용' : '불가'}
+              />
+              <InfoRow
+                label="옵션 수정 허용"
+                value={config.menuControl.allowOptionEdit ? '허용' : '불가'}
+              />
+              <InfoRow
+                label="품절 처리 허용"
+                value={config.menuControl.allowSoldOut ? '허용' : '불가'}
+              />
+              <InfoRow
+                label="카테고리 수정 허용"
+                value={config.menuControl.allowCategoryEdit ? '허용' : '불가'}
               />
               <InfoRow
                 label="신규 메뉴 추가 허용"
@@ -125,7 +137,7 @@ export function Settings() {
               />
             </>
           )}
-          {!isStoreAutonomy && (
+          {!hasStorePermission && (
             <div className="mt-3 p-3 bg-bg-hover rounded-lg text-sm text-txt-secondary">
               본사에서 메뉴를 통합 관리합니다. 가맹점에서는 메뉴를 수정할 수 없습니다.
             </div>

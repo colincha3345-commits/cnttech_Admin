@@ -55,24 +55,31 @@ export interface SettingsContractInfo {
 }
 
 /** 메뉴 설정 권한 */
-export type MenuControlType = 'HQ' | 'STORE';
+export type MenuControlType = 'HQ_ONLY' | 'HQ_AND_STORE' | 'STORE_ONLY';
 
 export const MENU_CONTROL_TYPE_LABELS: Record<MenuControlType, string> = {
-  HQ: '본사 설정',
-  STORE: '가맹점 자율',
+  HQ_ONLY: '본사 설정',
+  HQ_AND_STORE: '본사+가맹점 협업',
+  STORE_ONLY: '가맹점 자율',
 };
 
 /** 메뉴 설정 권한 상세 */
 export interface MenuControlSettings {
   type: MenuControlType;
-  /** 가맹점 자율 시 — 본사 기본 메뉴 동기화 여부 */
+  /** 본사 기본 메뉴 동기화 여부 */
   syncBaseMenu: boolean;
-  /** 가맹점 자율 시 — 가격 변경 허용 여부 */
-  allowPriceChange: boolean;
-  /** 가맹점 자율 시 — 신규 메뉴 추가 허용 여부 */
+  /** 가격 수정 허용 여부 */
+  allowPriceEdit: boolean;
+  /** 신규 메뉴 추가 허용 여부 */
   allowAddMenu: boolean;
-  /** 가맹점 자율 시 — 메뉴 삭제 허용 여부 */
+  /** 메뉴 삭제 허용 여부 */
   allowDeleteMenu: boolean;
+  /** 옵션 수정 허용 여부 */
+  allowOptionEdit: boolean;
+  /** 품절 처리 허용 여부 */
+  allowSoldOut: boolean;
+  /** 카테고리 수정 허용 여부 */
+  allowCategoryEdit: boolean;
 }
 
 /** 지원 링크 */

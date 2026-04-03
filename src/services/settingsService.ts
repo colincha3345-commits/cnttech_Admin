@@ -32,11 +32,14 @@ const mockBrandConfig: BrandConfig = {
     managerContact: '02-1234-5678 (내선 123)',
   },
   menuControl: {
-    type: 'HQ',
+    type: 'HQ_ONLY',
     syncBaseMenu: true,
-    allowPriceChange: false,
+    allowPriceEdit: false,
     allowAddMenu: false,
     allowDeleteMenu: false,
+    allowOptionEdit: false,
+    allowSoldOut: false,
+    allowCategoryEdit: false,
   },
   supportLinks: {
     guideUrl: 'https://notion.so/guide',
