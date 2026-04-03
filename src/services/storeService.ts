@@ -500,12 +500,6 @@ class StoreService {
       isTemporarilyClosed: data.isTemporarilyClosed,
       temporaryCloseReason: data.temporaryCloseReason,
       temporaryCloseReasonDetail: data.temporaryCloseReasonDetail,
-      temporaryCloseStartDate: data.temporaryCloseStartDate
-        ? new Date(data.temporaryCloseStartDate)
-        : undefined,
-      temporaryCloseEndDate: data.temporaryCloseEndDate
-        ? new Date(data.temporaryCloseEndDate)
-        : undefined,
       isDeliveryAvailable: data.deliverySettings?.isAvailable ?? data.isDeliveryAvailable,
       isPickupAvailable: data.pickupSettings?.isAvailable ?? data.isPickupAvailable,
       deliverySettings: data.deliverySettings,

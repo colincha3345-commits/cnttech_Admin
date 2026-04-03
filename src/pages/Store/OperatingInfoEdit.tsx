@@ -66,12 +66,6 @@ export const OperatingInfoEdit: React.FC = () => {
         isTemporarilyClosed: currentData.isTemporarilyClosed || false,
         temporaryCloseReason: currentData.temporaryCloseReason,
         temporaryCloseReasonDetail: currentData.temporaryCloseReasonDetail,
-        temporaryCloseStartDate: currentData.temporaryCloseStartDate
-          ? new Date(currentData.temporaryCloseStartDate).toISOString().split('T')[0]
-          : undefined,
-        temporaryCloseEndDate: currentData.temporaryCloseEndDate
-          ? new Date(currentData.temporaryCloseEndDate).toISOString().split('T')[0]
-          : undefined,
         isDeliveryAvailable: currentData.isDeliveryAvailable ?? true,
         isPickupAvailable: currentData.isPickupAvailable ?? true,
         deliverySettings: currentData.deliverySettings || { isAvailable: currentData.isDeliveryAvailable ?? true },
@@ -208,90 +202,70 @@ export const OperatingInfoEdit: React.FC = () => {
   const renderTimeRow = (
     label: string,
     hours: DayOperatingHours,
-    onIsOpenChange: (v: boolean) => void,
     onOpenTimeChange: (v: string) => void,
     onCloseTimeChange: (v: string) => void,
     onLastOrderChange: (v: number) => void,
     onBreakStartChange?: (v: string) => void,
     onBreakEndChange?: (v: string) => void,
   ) => (
-    <div className={`p-4 border rounded-xl transition-colors ${hours.isOpen ? 'bg-bg-card border-border' : 'bg-bg-secondary border-border/50 opacity-60'}`}>
-      {/* 1행: 요일 + 영업 토글 */}
-      <div className="flex items-center justify-between">
-        <span className="text-base font-semibold text-txt-main">{label}</span>
-        <div className="flex items-center gap-2">
-          <span className={`text-sm ${hours.isOpen ? 'text-success font-medium' : 'text-txt-muted'}`}>
-            {hours.isOpen ? '영업' : '휴무'}
-          </span>
-          <Switch
-            checked={hours.isOpen}
-            onCheckedChange={onIsOpenChange}
-          />
+    <div className="p-4 border rounded-xl bg-bg-card border-border">
+      <span className="text-base font-semibold text-txt-main">{label}</span>
+      <div className="mt-4 space-y-3">
+        <div>
+          <span className="text-sm font-medium text-txt-secondary mb-2 block">영업시간</span>
+          <div className="flex items-center gap-2">
+            <Input
+              type="time"
+              value={hours.openTime || ''}
+              onChange={(e) => onOpenTimeChange(e.target.value)}
+              className="w-36 text-base h-12"
+            />
+            <span className="text-txt-muted font-medium">~</span>
+            <Input
+              type="time"
+              value={hours.closeTime || ''}
+              onChange={(e) => onCloseTimeChange(e.target.value)}
+              className="w-36 text-base h-12"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-end gap-4">
+          <div>
+            <span className="text-sm font-medium text-txt-secondary mb-2 block">라스트오더</span>
+            <select
+              value={hours.lastOrderMinutes ?? 30}
+              onChange={(e) => onLastOrderChange(Number(e.target.value))}
+              className="h-12 px-4 text-sm bg-bg-card border border-border rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            >
+              {[10, 20, 30, 40, 50, 60].map((min) => (
+                <option key={min} value={min}>
+                  마감 {min}분 전
+                </option>
+              ))}
+            </select>
+          </div>
+          {onBreakStartChange && onBreakEndChange && (
+            <div>
+              <span className="text-sm font-medium text-txt-secondary mb-2 block">휴게시간 <span className="text-txt-muted font-normal">(선택)</span></span>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  value={hours.breakStart || ''}
+                  onChange={(e) => onBreakStartChange(e.target.value)}
+                  className="w-36 text-base h-12"
+                />
+                <span className="text-txt-muted font-medium">~</span>
+                <Input
+                  type="time"
+                  value={hours.breakEnd || ''}
+                  onChange={(e) => onBreakEndChange(e.target.value)}
+                  className="w-36 text-base h-12"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-      {hours.isOpen && (
-        <div className="mt-4 space-y-3">
-          {/* 2행: 영업시간 */}
-          <div>
-            <span className="text-sm font-medium text-txt-secondary mb-2 block">영업시간</span>
-            <div className="flex items-center gap-2">
-              <Input
-                type="time"
-                value={hours.openTime || ''}
-                onChange={(e) => onOpenTimeChange(e.target.value)}
-                className="w-36 text-base h-12"
-              />
-              <span className="text-txt-muted font-medium">~</span>
-              <Input
-                type="time"
-                value={hours.closeTime || ''}
-                onChange={(e) => onCloseTimeChange(e.target.value)}
-                className="w-36 text-base h-12"
-              />
-            </div>
-          </div>
-
-          {/* 3행: 라스트오더 + 휴게시간 */}
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
-              <span className="text-sm font-medium text-txt-secondary mb-2 block">라스트오더</span>
-              <select
-                value={hours.lastOrderMinutes ?? 30}
-                onChange={(e) => onLastOrderChange(Number(e.target.value))}
-                className="h-12 px-4 text-sm bg-bg-card border border-border rounded-lg outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              >
-                {[10, 20, 30, 40, 50, 60].map((min) => (
-                  <option key={min} value={min}>
-                    마감 {min}분 전
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {onBreakStartChange && onBreakEndChange && (
-              <div>
-                <span className="text-sm font-medium text-txt-secondary mb-2 block">휴게시간 <span className="text-txt-muted font-normal">(선택)</span></span>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="time"
-                    value={hours.breakStart || ''}
-                    onChange={(e) => onBreakStartChange(e.target.value)}
-                    className="w-36 text-base h-12"
-                  />
-                  <span className="text-txt-muted font-medium">~</span>
-                  <Input
-                    type="time"
-                    value={hours.breakEnd || ''}
-                    onChange={(e) => onBreakEndChange(e.target.value)}
-                    className="w-36 text-base h-12"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -325,7 +299,6 @@ export const OperatingInfoEdit: React.FC = () => {
           {renderTimeRow(
             '평일',
             formData.weekdayHours,
-            (v) => handleSimpleHoursChange('weekdayHours', 'isOpen', v),
             (v) => handleSimpleHoursChange('weekdayHours', 'openTime', v),
             (v) => handleSimpleHoursChange('weekdayHours', 'closeTime', v),
             (v) => handleSimpleHoursChange('weekdayHours', 'lastOrderMinutes', v),
@@ -335,31 +308,12 @@ export const OperatingInfoEdit: React.FC = () => {
           {renderTimeRow(
             '주말',
             formData.weekendHours,
-            (v) => handleSimpleHoursChange('weekendHours', 'isOpen', v),
             (v) => handleSimpleHoursChange('weekendHours', 'openTime', v),
             (v) => handleSimpleHoursChange('weekendHours', 'closeTime', v),
             (v) => handleSimpleHoursChange('weekendHours', 'lastOrderMinutes', v),
             (v) => handleSimpleHoursChange('weekendHours', 'breakStart', v),
             (v) => handleSimpleHoursChange('weekendHours', 'breakEnd', v),
           )}
-          {/* 공휴일 휴무 안내 (on/off만) */}
-          <div className="p-4 border rounded-xl bg-bg-card border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-base font-semibold text-txt-main">공휴일 휴무</span>
-                <p className="text-xs text-txt-muted mt-0.5">공휴일에 매장을 휴무 처리합니다. 고객 앱에 "공휴일 휴무" 안내가 표시됩니다.</p>
-              </div>
-              <Switch
-                checked={formData.holidayHours?.isOpen === false}
-                onCheckedChange={(v) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    holidayHours: { isOpen: !v, openTime: '', closeTime: '' },
-                  }))
-                }
-              />
-            </div>
-          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -370,7 +324,6 @@ export const OperatingInfoEdit: React.FC = () => {
                 {renderTimeRow(
                   WEEK_DAY_LABELS[day],
                   dayHours,
-                  (v) => handleDailyHoursChange(day, 'isOpen', v),
                   (v) => handleDailyHoursChange(day, 'openTime', v),
                   (v) => handleDailyHoursChange(day, 'closeTime', v),
                   (v) => handleDailyHoursChange(day, 'lastOrderMinutes', v),
@@ -380,24 +333,6 @@ export const OperatingInfoEdit: React.FC = () => {
               </div>
             );
           })}
-          {/* 공휴일 휴무 (요일별 설정에서도 표시) */}
-          <div className="p-4 border rounded-xl bg-bg-card border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-base font-semibold text-txt-main">공휴일 휴무</span>
-                <p className="text-xs text-txt-muted mt-0.5">공휴일에 매장을 휴무 처리합니다.</p>
-              </div>
-              <Switch
-                checked={formData.holidayHours?.isOpen === false}
-                onCheckedChange={(v) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    holidayHours: { isOpen: !v, openTime: '', closeTime: '' },
-                  }))
-                }
-              />
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -578,81 +513,53 @@ export const OperatingInfoEdit: React.FC = () => {
   const closureContent = (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-critical">임시 휴업</span>
+        <div>
+          <span className="text-sm font-medium text-critical">임시 휴업</span>
+          <p className="text-xs text-txt-muted mt-0.5">활성화하면 당일 임시 휴업 처리되며, 다음날 자동으로 해제됩니다.</p>
+        </div>
         <Switch
           checked={formData.isTemporarilyClosed}
           onCheckedChange={(v) =>
-            setFormData((prev) => ({ ...prev, isTemporarilyClosed: v }))
+            setFormData((prev) => ({
+              ...prev,
+              isTemporarilyClosed: v,
+              temporaryCloseReason: v ? prev.temporaryCloseReason : undefined,
+              temporaryCloseReasonDetail: v ? prev.temporaryCloseReasonDetail : undefined,
+            }))
           }
         />
       </div>
 
       {formData.isTemporarilyClosed && (
-        <div className="space-y-4 pl-1">
-          {/* 휴업 사유 — 버튼 선택 */}
-          <div>
-            <label className="block text-sm font-medium text-txt-secondary mb-2">휴업 사유</label>
-            <div className="flex flex-wrap gap-2">
-              {CLOSE_REASONS.map((reason) => {
-                const isSelected = formData.temporaryCloseReason === reason;
-                return (
-                  <button
-                    key={reason}
-                    type="button"
-                    onClick={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        temporaryCloseReason: reason,
-                        ...(reason !== '기타' ? {} : { temporaryCloseReason: '기타' }),
-                      }))
-                    }
-                    className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors ${
-                      isSelected
-                        ? 'bg-primary text-white border-primary'
-                        : 'bg-bg-card text-txt-secondary border-border hover:border-primary/50'
-                    }`}
-                  >
-                    {reason}
-                  </button>
-                );
-              })}
-            </div>
-            {/* 기타 선택 시 직접 입력 */}
-            {formData.temporaryCloseReason === '기타' && (
-              <Input
-                value={formData.temporaryCloseReasonDetail || ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, temporaryCloseReasonDetail: e.target.value }))
+        <div className="p-4 border border-critical/30 rounded-lg space-y-3 bg-critical/5">
+          <span className="text-sm font-medium">휴업 사유</span>
+          <div className="flex flex-wrap gap-2">
+            {CLOSE_REASONS.map((reason) => (
+              <button
+                key={reason}
+                type="button"
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, temporaryCloseReason: reason }))
                 }
-                placeholder="휴업 사유를 직접 입력하세요"
-                className="mt-2"
-              />
-            )}
+                className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                  formData.temporaryCloseReason === reason
+                    ? 'bg-primary text-white border-primary'
+                    : 'bg-bg-card text-txt-secondary border-border hover:border-primary/50'
+                }`}
+              >
+                {reason}
+              </button>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-txt-secondary mb-2">시작일</label>
-              <Input
-                type="date"
-                value={formData.temporaryCloseStartDate || ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, temporaryCloseStartDate: e.target.value || undefined }))
-                }
-                className="h-12 text-base"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-txt-secondary mb-2">종료일</label>
-              <Input
-                type="date"
-                value={formData.temporaryCloseEndDate || ''}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, temporaryCloseEndDate: e.target.value || undefined }))
-                }
-                className="h-12 text-base"
-              />
-            </div>
-          </div>
+          {formData.temporaryCloseReason === '기타' && (
+            <Input
+              value={formData.temporaryCloseReasonDetail || ''}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, temporaryCloseReasonDetail: e.target.value }))
+              }
+              placeholder="휴업 사유를 직접 입력하세요"
+            />
+          )}
         </div>
       )}
     </div>
@@ -685,7 +592,7 @@ export const OperatingInfoEdit: React.FC = () => {
         <div className="border-t border-border pt-4">{closureContent}</div>
       </div>
     )},
-    { id: 'hours', title: '영업시간', description: '평일/주말/공휴일 또는 요일별 영업시간을 설정합니다.', content: hoursContent },
+    { id: 'hours', title: '영업시간', description: '평일/주말 또는 요일별 영업시간을 설정합니다. 휴무는 정기휴무/비정기휴무/임시휴업으로 관리됩니다.', content: hoursContent },
     { id: 'delivery', title: '배달 설정', description: '배달 가능 여부, 최소주문금액, 예상 배달시간을 설정합니다.', content: deliveryContent },
     { id: 'pickup', title: '포장 설정', description: '포장 가능 여부, 최소주문금액, 예상 준비시간을 설정합니다.', content: pickupContent },
     { id: 'reservation', title: '예약 설정', description: '예약 주문 가능 여부와 예약 가능 시간을 설정합니다.', content: reservationContent },

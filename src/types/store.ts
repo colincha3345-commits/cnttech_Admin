@@ -92,7 +92,7 @@ export interface BankAccountInfo {
 // 영업 정보 (확장)
 // ============================================
 
-// 앱 운영 상태 (실시간 상태)
+// 앱 운영 상태 (자동 계산 — 영업시간/휴무일 룰 기반)
 export type AppOperatingStatus =
   | 'open' // 영업중
   | 'preparing' // 준비중
@@ -194,12 +194,10 @@ export interface OperatingInfo {
   // → DeliveryZone.deliveryFee (메인상권 기본 배달비)
   // → 추가상권: 메인상권 배달비 + 추가상권 deliveryFee
 
-  // 영업 상태
-  isTemporarilyClosed: boolean; // 임시휴업
+  // 임시휴업 (단일 토글 — 다음날 자동 해제)
+  isTemporarilyClosed: boolean;
   temporaryCloseReason?: string;
-  temporaryCloseReasonDetail?: string; // "기타" 선택 시 직접 입력
-  temporaryCloseStartDate?: Date;
-  temporaryCloseEndDate?: Date;
+  temporaryCloseReasonDetail?: string;
 
   // 배달/포장 가능 여부 (하위 호환)
   isDeliveryAvailable: boolean;
@@ -459,9 +457,7 @@ export interface OperatingInfoFormData {
   irregularClosedDays?: IrregularClosedDay[];
   isTemporarilyClosed: boolean;
   temporaryCloseReason?: string;
-  temporaryCloseReasonDetail?: string; // "기타" 선택 시 직접 입력
-  temporaryCloseStartDate?: string;
-  temporaryCloseEndDate?: string;
+  temporaryCloseReasonDetail?: string;
   isDeliveryAvailable: boolean;
   isPickupAvailable: boolean;
   deliverySettings?: DeliverySettings;

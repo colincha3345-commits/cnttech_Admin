@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PlusOutlined, DeleteOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 
-import { Card, Button, Input, Spinner } from '@/components/ui';
+import { Card, Button, Input, Spinner, Switch } from '@/components/ui';
 import { useStore, useUpdateOperatingInfo, useToast } from '@/hooks';
 import type {
     OperatingInfoFormData,
@@ -46,6 +46,7 @@ export const ClosedDayEdit: React.FC = () => {
 
     const [regularDays, setRegularDays] = useState<RegularClosedDay[]>([]);
     const [irregularDays, setIrregularDays] = useState<IrregularClosedDay[]>([]);
+    const [isHolidayClosed, setIsHolidayClosed] = useState(false);
     const initialDataRef = useRef<string>('');
 
     useEffect(() => {
@@ -58,13 +59,16 @@ export const ClosedDayEdit: React.FC = () => {
             const irregular = currentIrregularClosedDays?.length
                 ? currentIrregularClosedDays.map((d) => ({ ...d }))
                 : [];
+            const holidayClosed = store.operatingInfo.holidayHours?.isOpen === false;
             setRegularDays(regular);
             setIrregularDays(irregular);
-            initialDataRef.current = JSON.stringify({ regular, irregular });
+            setIsHolidayClosed(holidayClosed);
+            initialDataRef.current = JSON.stringify({ regular, irregular, holidayClosed });
         } else if (store) {
             setRegularDays([]);
             setIrregularDays([]);
-            initialDataRef.current = JSON.stringify({ regular: [], irregular: [] });
+            setIsHolidayClosed(false);
+            initialDataRef.current = JSON.stringify({ regular: [], irregular: [], holidayClosed: false });
         }
     }, [store]);
 
@@ -142,7 +146,7 @@ export const ClosedDayEdit: React.FC = () => {
         e.preventDefault();
         if (!id || !store) return;
 
-        if (JSON.stringify({ regular: regularDays, irregular: irregularDays }) === initialDataRef.current) {
+        if (JSON.stringify({ regular: regularDays, irregular: irregularDays, holidayClosed: isHolidayClosed }) === initialDataRef.current) {
             toast.info('변경사항이 없습니다.');
             navigate(`/staff/stores/${id}`);
             return;
@@ -153,16 +157,11 @@ export const ClosedDayEdit: React.FC = () => {
             const submitData: OperatingInfoFormData = {
                 weekdayHours: currentOperatingInfo?.weekdayHours || { isOpen: true, openTime: '09:00', closeTime: '22:00' },
                 weekendHours: currentOperatingInfo?.weekendHours || { isOpen: true, openTime: '09:00', closeTime: '22:00' },
-                holidayHours: currentOperatingInfo?.holidayHours,
+                holidayHours: { isOpen: !isHolidayClosed, openTime: '', closeTime: '' },
                 dailyHours: currentOperatingInfo?.dailyHours,
                 isTemporarilyClosed: currentOperatingInfo?.isTemporarilyClosed ?? false,
                 temporaryCloseReason: currentOperatingInfo?.temporaryCloseReason,
-                temporaryCloseStartDate: currentOperatingInfo?.temporaryCloseStartDate
-                    ? new Date(currentOperatingInfo.temporaryCloseStartDate).toISOString().split('T')[0]
-                    : undefined,
-                temporaryCloseEndDate: currentOperatingInfo?.temporaryCloseEndDate
-                    ? new Date(currentOperatingInfo.temporaryCloseEndDate).toISOString().split('T')[0]
-                    : undefined,
+                temporaryCloseReasonDetail: currentOperatingInfo?.temporaryCloseReasonDetail,
                 isDeliveryAvailable: currentOperatingInfo?.isDeliveryAvailable ?? true,
                 isPickupAvailable: currentOperatingInfo?.isPickupAvailable ?? true,
                 deliverySettings: currentOperatingInfo?.deliverySettings,
@@ -274,6 +273,20 @@ export const ClosedDayEdit: React.FC = () => {
                     <div className="mb-4 text-txt-muted">
                         매장명: {store?.name}
                     </div>
+                    {/* ── 공휴일 휴무 ── */}
+                    <div className="p-4 border rounded-xl bg-bg-card border-border">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <span className="text-base font-semibold text-txt-main">공휴일 휴무</span>
+                                <p className="text-xs text-txt-muted mt-0.5">공휴일에 매장을 휴무 처리합니다. 고객 앱에 "공휴일 휴무" 안내가 표시됩니다.</p>
+                            </div>
+                            <Switch
+                                checked={isHolidayClosed}
+                                onCheckedChange={setIsHolidayClosed}
+                            />
+                        </div>
+                    </div>
+
                     {/* ── 정기 휴무 섹션 ── */}
                     <div>
                         <div className="flex items-center justify-between mb-3">

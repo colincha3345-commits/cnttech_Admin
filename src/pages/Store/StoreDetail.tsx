@@ -14,7 +14,6 @@ import {
   Button,
   Badge,
   Spinner,
-  MaskedData,
   ConfirmDialog,
 } from '@/components/ui';
 import {
@@ -25,22 +24,19 @@ import {
 } from '@/hooks';
 import {
   STORE_STATUS_LABELS,
-  CONTRACT_STATUS_LABELS,
-  CONTRACT_TYPE_LABELS,
-  STORE_STAFF_ROLE_LABELS,
-  POS_VENDORS,
-  PG_VENDORS,
-  APP_OPERATING_STATUS_LABELS,
-  WEEK_DAY_LABELS,
-  REGULAR_CLOSED_TYPE_LABELS,
-  WEEK_DAY_SHORT_LABELS,
-  WEEK_DAYS,
-  SIMPLE_PAYMENT_LABELS,
   type StoreStatus,
   type ContractStatus,
   type StoreStaffRole,
 } from '@/types/store';
-import { STAFF_STATUS_LABELS, type StaffStatus } from '@/types/staff';
+import { type StaffStatus } from '@/types/staff';
+
+// 탭 컴포넌트 임포트
+import { StoreBasicTab } from './components/tabs/StoreBasicTab';
+import { StoreBusinessTab } from './components/tabs/StoreBusinessTab';
+import { StoreOperatingTab } from './components/tabs/StoreOperatingTab';
+import { StoreIntegrationTab } from './components/tabs/StoreIntegrationTab';
+import { StorePaymentTab } from './components/tabs/StorePaymentTab';
+import { StoreStaffTab } from './components/tabs/StoreStaffTab';
 
 type TabKey = 'basic' | 'business' | 'operating' | 'integration' | 'payment' | 'staff';
 
@@ -62,6 +58,7 @@ export const StoreDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const toast = useToast();
+  
   const [activeTab, setActiveTab] = useState<TabKey>('basic');
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [unlinkTarget, setUnlinkTarget] = useState<{ linkId: string; staffName: string } | null>(null);
@@ -95,29 +92,20 @@ export const StoreDetail: React.FC = () => {
 
   const getStatusBadgeVariant = (status: StoreStatus) => {
     switch (status) {
-      case 'active':
-        return 'success';
-      case 'inactive':
-        return 'warning';
-      case 'pending':
-        return 'info';
-      case 'terminated':
-        return 'critical';
-      default:
-        return 'secondary';
+      case 'active': return 'success';
+      case 'inactive': return 'warning';
+      case 'pending': return 'info';
+      case 'terminated': return 'critical';
+      default: return 'secondary';
     }
   };
 
   const getContractBadgeVariant = (status: ContractStatus) => {
     switch (status) {
-      case 'active':
-        return 'success';
-      case 'expired':
-        return 'critical';
-      case 'pending_renewal':
-        return 'warning';
-      default:
-        return 'secondary';
+      case 'active': return 'success';
+      case 'expired': return 'critical';
+      case 'pending_renewal': return 'warning';
+      default: return 'secondary';
     }
   };
 
@@ -127,12 +115,9 @@ export const StoreDetail: React.FC = () => {
 
   const getStaffStatusBadgeVariant = (status: StaffStatus) => {
     switch (status) {
-      case 'active':
-        return 'success';
-      case 'inactive':
-        return 'warning';
-      default:
-        return 'secondary';
+      case 'active': return 'success';
+      case 'inactive': return 'warning';
+      default: return 'secondary';
     }
   };
 
@@ -182,14 +167,14 @@ export const StoreDetail: React.FC = () => {
               </Badge>
             </div>
             <p className="text-sm text-txt-muted mt-1">
-              {store.address.address} {store.address.addressDetail}
+              ({store.address.zipCode}) {store.address.address} {store.address.addressDetail}
             </p>
           </div>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit`)}>
             <EditOutlined className="mr-1" />
-            수정
+            기본정보 수정
           </Button>
           <Button variant="danger" onClick={() => setIsDeleteOpen(true)}>
             <DeleteOutlined className="mr-1" />
@@ -198,23 +183,19 @@ export const StoreDetail: React.FC = () => {
         </div>
       </div>
 
-      {/* 탭 */}
+      {/* 탭 네비게이션 */}
       <div className="flex gap-2 border-b border-border">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.key
-              ? 'border-primary text-primary'
-              : 'border-transparent text-txt-muted hover:text-txt-main'
-              }`}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === tab.key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-txt-muted hover:text-txt-main'
+            }`}
           >
             {tab.label}
-            {tab.key === 'staff' && store.staffLinks.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                {store.staffLinks.length}
-              </span>
-            )}
           </button>
         ))}
       </div>
@@ -222,742 +203,40 @@ export const StoreDetail: React.FC = () => {
       {/* 탭 컨텐츠 */}
       <Card className="p-6">
         {activeTab === 'basic' && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">기본 정보</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="text-sm text-txt-muted">매장명</label>
-                <p className="mt-1 font-medium">{store.name}</p>
-              </div>
-              <div>
-                <label className="text-sm text-txt-muted">매장 코드</label>
-                <p className="mt-1 font-mono">{store.code || '-'}</p>
-              </div>
-              <div>
-                <label className="text-sm text-txt-muted">상태</label>
-                <div className="mt-1">
-                  <Badge variant={getStatusBadgeVariant(store.status)}>
-                    {STORE_STATUS_LABELS[store.status]}
-                  </Badge>
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-txt-muted">오픈일</label>
-                <p className="mt-1">{store.openingDate ? formatDate(store.openingDate) : '-'}</p>
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-sm text-txt-muted">주소</label>
-                <p className="mt-1">
-                  ({store.address.zipCode}) {store.address.address} {store.address.addressDetail}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm text-txt-muted">지역</label>
-                <p className="mt-1">{store.address.region}</p>
-              </div>
-            </div>
-          </div>
+          <StoreBasicTab
+            store={store}
+            getStatusBadgeVariant={getStatusBadgeVariant}
+            formatDate={formatDate}
+          />
         )}
-
+        
         {activeTab === 'business' && (
-          <div className="space-y-10">
-            {/* 가맹점주 정보 */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold border-b border-border pb-2">가맹점주 정보</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm text-txt-muted">점주명</label>
-                  <p className="mt-1 font-medium">{store.owner.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">연락처</label>
-                  <div className="mt-1">
-                    <MaskedData value={store.owner.phone} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">이메일</label>
-                  <p className="mt-1">{store.owner.email || '-'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 사업자 정보 */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold border-b border-border pb-2">사업자 정보</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm text-txt-muted">사업자등록번호</label>
-                  <p className="mt-1 font-mono">{store.business.businessNumber}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">상호명</label>
-                  <p className="mt-1 font-medium">{store.business.businessName}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">대표자명</label>
-                  <p className="mt-1">{store.business.representativeName}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">업종</label>
-                  <p className="mt-1">{store.business.businessType || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">업태</label>
-                  <p className="mt-1">{store.business.businessCategory || '-'}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* 계약 정보 — 본사↔매장 가맹 계약 */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold border-b border-border pb-2">계약 정보</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {store.contract.contractType && (
-                  <div>
-                    <label className="text-sm text-txt-muted">계약 유형</label>
-                    <p className="mt-1">{CONTRACT_TYPE_LABELS[store.contract.contractType]}</p>
-                  </div>
-                )}
-                <div>
-                  <label className="text-sm text-txt-muted">계약 상태</label>
-                  <div className="mt-1">
-                    <Badge variant={getContractBadgeVariant(store.contract.contractStatus)}>
-                      {CONTRACT_STATUS_LABELS[store.contract.contractStatus]}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">계약일</label>
-                  <p className="mt-1">{formatDate(store.contract.contractDate)}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">만료일</label>
-                  <p className="mt-1">{formatDate(store.contract.expirationDate)}</p>
-                </div>
-                {store.contract.notes && (
-                  <div className="md:col-span-2">
-                    <label className="text-sm text-txt-muted">비고</label>
-                    <p className="mt-1">{store.contract.notes}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 계좌 정보 */}
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold border-b border-border pb-2">계좌 정보</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm text-txt-muted">은행</label>
-                  <p className="mt-1">{store.bankAccount.bankName}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">계좌번호</label>
-                  <div className="mt-1">
-                    <MaskedData value={store.bankAccount.accountNumber} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm text-txt-muted">예금주</label>
-                  <p className="mt-1">{store.bankAccount.accountHolder}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <StoreBusinessTab
+            store={store}
+            getContractBadgeVariant={getContractBadgeVariant}
+            formatDate={formatDate}
+          />
         )}
 
-        {activeTab === 'operating' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">영업 정보</h2>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit/operating`)}>
-                <EditOutlined className="mr-1" />
-                수정
-              </Button>
-            </div>
-
-            {store.operatingInfo ? (
-              <div className="space-y-4">
-                {/* 운영 상태 카드 */}
-                <Card className="p-5">
-                  <h3 className="text-base font-semibold mb-4">운영 상태</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-txt-muted w-24">매장 노출</label>
-                      <Badge variant={store.operatingInfo.isVisible !== false ? 'success' : 'critical'}>
-                        {store.operatingInfo.isVisible !== false ? '노출' : '비노출'}
-                      </Badge>
-                    </div>
-                    {store.operatingInfo.appOperatingStatus && (
-                      <div className="flex items-center gap-4">
-                        <label className="text-sm text-txt-muted w-24">앱 운영상태</label>
-                        <Badge
-                          variant={
-                            store.operatingInfo.appOperatingStatus === 'open' ? 'success'
-                              : store.operatingInfo.appOperatingStatus === 'preparing' ? 'warning'
-                              : store.operatingInfo.appOperatingStatus === 'break_time' ? 'info'
-                              : 'critical'
-                          }
-                        >
-                          {APP_OPERATING_STATUS_LABELS[store.operatingInfo.appOperatingStatus]}
-                        </Badge>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-txt-muted w-24">임시 휴업</label>
-                      <Badge variant={store.operatingInfo.isTemporarilyClosed ? 'critical' : 'success'}>
-                        {store.operatingInfo.isTemporarilyClosed ? '휴업중' : '정상영업'}
-                      </Badge>
-                    </div>
-                    {store.operatingInfo.isTemporarilyClosed && store.operatingInfo.temporaryCloseReason && (
-                      <div className="p-3 bg-critical/10 rounded-lg ml-28">
-                        <p className="text-sm">{store.operatingInfo.temporaryCloseReason}</p>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-
-                {/* 영업시간 카드 */}
-                <Card className="p-5">
-                  <h3 className="text-base font-semibold mb-4">영업시간</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-4 bg-bg-hover rounded-lg">
-                      <label className="text-sm text-txt-muted">평일</label>
-                      {store.operatingInfo.weekdayHours.isOpen ? (
-                        <p className="mt-1 font-medium">
-                          {store.operatingInfo.weekdayHours.openTime} ~ {store.operatingInfo.weekdayHours.closeTime}
-                          <span className="block text-xs text-txt-muted mt-1">라스트오더 마감 {store.operatingInfo.weekdayHours.lastOrderMinutes ?? 30}분 전</span>
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-txt-muted">휴무</p>
-                      )}
-                    </div>
-                    <div className="p-4 bg-bg-hover rounded-lg">
-                      <label className="text-sm text-txt-muted">주말</label>
-                      {store.operatingInfo.weekendHours.isOpen ? (
-                        <p className="mt-1 font-medium">
-                          {store.operatingInfo.weekendHours.openTime} ~ {store.operatingInfo.weekendHours.closeTime}
-                          <span className="block text-xs text-txt-muted mt-1">라스트오더 마감 {store.operatingInfo.weekendHours.lastOrderMinutes ?? 30}분 전</span>
-                        </p>
-                      ) : (
-                        <p className="mt-1 text-txt-muted">휴무</p>
-                      )}
-                    </div>
-                    {store.operatingInfo.holidayHours && (
-                      <div className="p-4 bg-bg-hover rounded-lg">
-                        <label className="text-sm text-txt-muted">공휴일</label>
-                        <p className="mt-1 font-medium">
-                          {store.operatingInfo.holidayHours.isOpen ? '정상영업' : '휴무'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 요일별 영업시간 */}
-                  {store.operatingInfo.dailyHours && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium text-txt-secondary mb-3">요일별 영업시간</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                      {WEEK_DAYS.map((day) => {
-                        const hours = store.operatingInfo!.dailyHours![day];
-                        return (
-                          <div key={day} className="p-3 bg-bg-hover rounded-lg">
-                            <label className="text-sm text-txt-muted">{WEEK_DAY_SHORT_LABELS[day]}</label>
-                            {hours.isOpen ? (
-                              <p className="mt-1 font-medium text-sm">
-                                {hours.openTime} ~ {hours.closeTime}
-                                <span className="block text-xs text-txt-muted mt-1">
-                                  라스트오더 마감 {hours.lastOrderMinutes ?? 30}분 전
-                                </span>
-                                {hours.breakStart && hours.breakEnd && (
-                                  <span className="block text-xs text-txt-muted mt-0.5">휴게 {hours.breakStart}~{hours.breakEnd}</span>
-                                )}
-                              </p>
-                            ) : (
-                              <p className="mt-1 text-txt-muted text-sm">휴무</p>
-                            )}
-                          </div>
-                        );
-                      })}
-                      </div>
-                    </div>
-                  )}
-                </Card>
-
-                {/* 배달 설정 카드 */}
-                <Card className="p-5">
-                  <h3 className="text-base font-semibold mb-4">배달 설정</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-txt-muted w-28">배달 가능</label>
-                      <Badge variant={store.operatingInfo.deliverySettings?.isAvailable ? 'success' : 'secondary'}>
-                        {store.operatingInfo.deliverySettings?.isAvailable ? '가능' : '불가'}
-                      </Badge>
-                    </div>
-                    {store.operatingInfo.deliverySettings?.isAvailable && (
-                      <>
-                        <div className="flex items-center gap-4">
-                          <label className="text-sm text-txt-muted w-28">최소 주문금액</label>
-                          <span className="font-medium">{(store.operatingInfo.deliverySettings.minOrderAmount ?? 0).toLocaleString()}원</span>
-                        </div>
-                        {store.operatingInfo.deliverySettings.estimatedMinutes && (
-                          <div className="flex items-center gap-4">
-                            <label className="text-sm text-txt-muted w-28">예상 배달시간</label>
-                            <span className="font-medium">약 {store.operatingInfo.deliverySettings.estimatedMinutes}분</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    <div className="p-3 bg-bg-hover rounded-lg flex items-center justify-between">
-                      <span className="text-sm text-txt-secondary">배달비는 상권관리에서 설정합니다.</span>
-                      <button onClick={() => navigate('/delivery-zones')} className="text-sm text-blue-600 hover:text-blue-800 underline font-medium">
-                        상권관리로 이동 →
-                      </button>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* 포장 설정 카드 */}
-                <Card className="p-5">
-                  <h3 className="text-base font-semibold mb-4">포장 설정</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-4">
-                      <label className="text-sm text-txt-muted w-28">포장 가능</label>
-                      <Badge variant={store.operatingInfo.pickupSettings?.isAvailable ? 'success' : 'secondary'}>
-                        {store.operatingInfo.pickupSettings?.isAvailable ? '가능' : '불가'}
-                      </Badge>
-                    </div>
-                    {store.operatingInfo.pickupSettings?.isAvailable && (
-                      <>
-                        <div className="flex items-center gap-4">
-                          <label className="text-sm text-txt-muted w-28">최소 주문금액</label>
-                          <span className="font-medium">{(store.operatingInfo.pickupSettings.minOrderAmount ?? 0).toLocaleString()}원</span>
-                        </div>
-                        {store.operatingInfo.pickupSettings.estimatedMinutes && (
-                          <div className="flex items-center gap-4">
-                            <label className="text-sm text-txt-muted w-28">예상 준비시간</label>
-                            <span className="font-medium">약 {store.operatingInfo.pickupSettings.estimatedMinutes}분</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </Card>
-
-                {/* 예약 설정 카드 */}
-                <Card className="p-5">
-                  <h3 className="text-base font-semibold mb-4">예약 설정</h3>
-                  <div className="flex items-center gap-4">
-                    <label className="text-sm text-txt-muted w-24">예약 주문</label>
-                    <Badge variant={store.operatingInfo.isReservationAvailable ? 'success' : 'secondary'}>
-                      {store.operatingInfo.isReservationAvailable ? '가능' : '불가'}
-                    </Badge>
-                    {store.operatingInfo.isReservationAvailable && store.operatingInfo.reservationLeadTimeMinutes && (
-                      <span className="text-sm text-txt-secondary">
-                        현재 시간 + {store.operatingInfo.reservationLeadTimeMinutes}분 후부터 예약 가능
-                      </span>
-                    )}
-                  </div>
-                </Card>
-
-                {/* 휴무 설정 카드 */}
-                <Card className="p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold">휴무 설정</h3>
-                    <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/stores/${id}/edit/closed-day`)}>
-                      <EditOutlined className="mr-1" />
-                      수정
-                    </Button>
-                  </div>
-                  {store.operatingInfo.regularClosedDays && store.operatingInfo.regularClosedDays.length > 0 ? (
-                    <div className="space-y-2">
-                      {store.operatingInfo.regularClosedDays.map((closedDay, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-bg-hover rounded-lg">
-                          <Badge variant="secondary">
-                            {REGULAR_CLOSED_TYPE_LABELS[closedDay.type]}
-                          </Badge>
-                          {closedDay.dayOfWeek && (
-                            <span className="font-medium">
-                              {closedDay.nthWeek && `${closedDay.nthWeek}째주 `}
-                              {WEEK_DAY_LABELS[closedDay.dayOfWeek]}
-                            </span>
-                          )}
-                          {closedDay.dates && (
-                            <span className="font-medium">
-                              {closedDay.dates.join(', ')}일
-                            </span>
-                          )}
-                          {closedDay.description && (
-                            <span className="text-sm text-txt-muted">
-                              ({closedDay.description})
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-txt-muted">연중무휴</p>
-                  )}
-                  {/* 비정기 휴무 */}
-                  {store.operatingInfo.irregularClosedDays && store.operatingInfo.irregularClosedDays.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium text-txt-secondary mb-3">비정기 휴무</h4>
-                    <div className="space-y-2">
-                      {store.operatingInfo.irregularClosedDays.map((day, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 bg-bg-hover rounded-lg">
-                          <span className="font-mono font-medium">{day.date}</span>
-                          {day.reason && (
-                            <span className="text-sm text-txt-muted">- {day.reason}</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    </div>
-                  )}
-                </Card>
-
-                {/* 편의시설 카드 */}
-                {store.amenities && (
-                  <Card className="p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-base font-semibold">편의시설</h3>
-                      <Button size="sm" variant="ghost" onClick={() => navigate(`/staff/stores/${id}/edit/amenities`)}>
-                        <EditOutlined className="mr-1" />
-                        수정
-                      </Button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* 주차 */}
-                      <div className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm text-txt-muted">주차</label>
-                          <Badge variant={store.amenities.hasParking ? 'success' : 'secondary'}>
-                            {store.amenities.hasParking ? '가능' : '불가'}
-                          </Badge>
-                        </div>
-                        {store.amenities.hasParking && (
-                          <div className="space-y-1">
-                            {store.amenities.parkingNote && (
-                              <p className="text-sm text-txt-muted">{store.amenities.parkingNote}</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 좌석 */}
-                      <div className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm text-txt-muted">매장 내 식사</label>
-                          <Badge variant={store.amenities.hasDineIn ? 'success' : 'secondary'}>
-                            {store.amenities.hasDineIn ? '가능' : '불가'}
-                          </Badge>
-                        </div>
-                        {store.amenities.hasDineIn && store.amenities.seatCapacity && (
-                          <p className="text-sm">좌석 수: <span className="font-medium">{store.amenities.seatCapacity}석</span></p>
-                        )}
-                      </div>
-
-                      {/* 와이파이 */}
-                      <div className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm text-txt-muted">와이파이</label>
-                          <Badge variant={store.amenities.hasWifi ? 'success' : 'secondary'}>
-                            {store.amenities.hasWifi ? '제공' : '미제공'}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* 드라이브스루 */}
-                      <div className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm text-txt-muted">드라이브스루</label>
-                          <Badge variant={store.amenities.hasDriveThru ? 'success' : 'secondary'}>
-                            {store.amenities.hasDriveThru ? '지원' : '미지원'}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* 화장실 */}
-                      <div className="p-4 border border-border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm text-txt-muted">화장실</label>
-                          <Badge variant={store.amenities.hasRestroom ? 'success' : 'secondary'}>
-                            {store.amenities.hasRestroom ? '있음' : '없음'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-txt-muted">영업 정보가 등록되지 않았습니다.</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => navigate(`/staff/stores/${id}/edit/operating`)}
-                >
-                  <EditOutlined className="mr-1" />
-                  영업 정보 등록
-                </Button>
-              </div>
-            )}
-          </div>
+        {activeTab === 'operating' && id && (
+          <StoreOperatingTab store={store} navigate={navigate} id={id} />
         )}
 
-        {activeTab === 'integration' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">연동 정보</h2>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit/integration`)}>
-                <EditOutlined className="mr-1" />
-                수정
-              </Button>
-            </div>
-
-            {store.integrationCodes ? (
-              <div className="space-y-6">
-                {/* POS 연동 */}
-                <div className="p-4 border border-border rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-md font-medium">POS 연동</h3>
-                    <Badge variant={store.integrationCodes.pos.isConnected ? 'success' : 'secondary'}>
-                      {store.integrationCodes.pos.isConnected ? '연동됨' : '미연동'}
-                    </Badge>
-                  </div>
-                  {store.integrationCodes.pos.isConnected && (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="text-sm text-txt-muted">POS 벤더</label>
-                        <p className="mt-1">{POS_VENDORS.find(v => v.code === store.integrationCodes?.pos.posVendor)?.name || '-'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-txt-muted">POS 코드</label>
-                        <p className="mt-1 font-mono">{store.integrationCodes.pos.posCode || '-'}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* SK 할인/적립 */}
-                <div className="p-4 border border-border rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-md font-medium">SK 할인/적립 연동</h3>
-                    <Badge variant={store.integrationCodes.sk.isEnabled ? 'success' : 'secondary'}>
-                      {store.integrationCodes.sk.isEnabled ? '활성' : '비활성'}
-                    </Badge>
-                  </div>
-                  {store.integrationCodes.sk.isEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-txt-muted">가맹점 코드</label>
-                        <p className="mt-1 font-mono">{store.integrationCodes.sk.storeCode || '-'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-txt-muted">전체 코드 (V902+코드)</label>
-                        <p className="mt-1 font-mono font-medium text-primary">{store.integrationCodes.sk.fullCode || '-'}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* PG사 연동 */}
-                <div className="p-4 border border-border rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-md font-medium">PG사 연동 (스마트로 등)</h3>
-                    <div className="flex gap-2">
-                      {store.integrationCodes.pg.isTestMode && (
-                        <Badge variant="warning">테스트</Badge>
-                      )}
-                      <Badge variant={store.integrationCodes.pg.isEnabled ? 'success' : 'secondary'}>
-                        {store.integrationCodes.pg.isEnabled ? '활성' : '비활성'}
-                      </Badge>
-                    </div>
-                  </div>
-                  {store.integrationCodes.pg.isEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-txt-muted">PG사</label>
-                        <p className="mt-1">{PG_VENDORS.find(v => v.code === store.integrationCodes?.pg.pgVendor)?.name || '-'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-txt-muted">MID (Merchant ID)</label>
-                        <p className="mt-1 font-mono">{store.integrationCodes.pg.mid || '-'}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 교환권 벤더사 */}
-                <div className="p-4 border border-border rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-md font-medium">교환권 벤더사 연동</h3>
-                    <Badge variant={store.integrationCodes.voucherVendor.isEnabled ? 'success' : 'secondary'}>
-                      {store.integrationCodes.voucherVendor.isEnabled ? '활성' : '비활성'}
-                    </Badge>
-                  </div>
-                  {store.integrationCodes.voucherVendor.isEnabled && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-txt-muted">벤더사</label>
-                        <p className="mt-1">{store.integrationCodes.voucherVendor.vendorName || '-'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-txt-muted">가맹점 코드</label>
-                        <p className="mt-1 font-mono">{store.integrationCodes.voucherVendor.storeCode || '-'}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-txt-muted">연동 정보가 등록되지 않았습니다.</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => navigate(`/staff/stores/${id}/edit/integration`)}
-                >
-                  <EditOutlined className="mr-1" />
-                  연동 정보 등록
-                </Button>
-              </div>
-            )}
-          </div>
+        {activeTab === 'integration' && id && (
+          <StoreIntegrationTab store={store} navigate={navigate} id={id} />
         )}
 
-        {activeTab === 'payment' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">결제 수단</h2>
-              <Button size="sm" variant="outline" onClick={() => navigate(`/staff/stores/${id}/edit/payment-methods`)}>
-                <EditOutlined className="mr-1" />
-                수정
-              </Button>
-            </div>
-
-            {store.paymentMethods ? (
-              <div className="space-y-6">
-                {/* 기본 결제 수단 */}
-                <div className="space-y-4">
-                  <h3 className="text-md font-medium border-b border-border pb-2">기본 결제 수단</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <span className="font-medium">카드 결제</span>
-                      <Badge variant={store.paymentMethods.isCardEnabled ? 'success' : 'secondary'}>
-                        {store.paymentMethods.isCardEnabled ? '사용' : '미사용'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <span className="font-medium">현금 결제</span>
-                      <Badge variant={store.paymentMethods.isCashEnabled ? 'success' : 'secondary'}>
-                        {store.paymentMethods.isCashEnabled ? '사용' : '미사용'}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <span className="font-medium">포인트 결제</span>
-                      <Badge variant={store.paymentMethods.isPointEnabled ? 'success' : 'secondary'}>
-                        {store.paymentMethods.isPointEnabled ? '사용' : '미사용'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 간편 결제 */}
-                <div className="space-y-4">
-                  <h3 className="text-md font-medium border-b border-border pb-2">간편 결제</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {store.paymentMethods.simplePayments.map((sp) => (
-                      <div
-                        key={sp.type}
-                        className="flex items-center justify-between p-3 border border-border rounded-lg"
-                      >
-                        <span className="font-medium">{SIMPLE_PAYMENT_LABELS[sp.type]}</span>
-                        <Badge variant={sp.isEnabled ? 'success' : 'secondary'}>
-                          {sp.isEnabled ? '사용' : '미사용'}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-txt-muted">결제 수단이 등록되지 않았습니다.</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => navigate(`/staff/stores/${id}/edit/payment-methods`)}
-                >
-                  <EditOutlined className="mr-1" />
-                  결제 수단 등록
-                </Button>
-              </div>
-            )}
-          </div>
+        {activeTab === 'payment' && id && (
+          <StorePaymentTab store={store} navigate={navigate} id={id} />
         )}
 
         {activeTab === 'staff' && (
-          <div className="space-y-6">
-            <h2 className="text-lg font-semibold">가맹점주</h2>
-            <p className="text-sm text-txt-muted">가맹점주는 초대 승인 완료 시 자동으로 연결됩니다.</p>
-
-            {store.staffLinks.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-txt-muted">등록된 가맹점주가 없습니다.</p>
-                <p className="text-sm text-txt-muted mt-1">가맹점 직원 관리에서 점주를 초대해주세요.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="data-table w-full">
-                  <thead>
-                    <tr>
-                      <th>이름</th>
-                      <th>역할</th>
-                      <th>연락처</th>
-                      <th>이메일</th>
-                      <th>상태</th>
-                      <th className="w-20"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {store.staffLinks.map((link) => (
-                      <tr key={link.id}>
-                        <td className="font-medium">{link.staffName}</td>
-                        <td>
-                          <Badge variant={getRoleBadgeVariant(link.role)}>
-                            {STORE_STAFF_ROLE_LABELS[link.role]}
-                          </Badge>
-                        </td>
-                        <td>
-                          <MaskedData value={link.staffPhone} />
-                        </td>
-                        <td className="text-sm text-txt-secondary">{link.staffEmail}</td>
-                        <td>
-                          <Badge
-                            variant={getStaffStatusBadgeVariant(link.staffStatus as StaffStatus)}
-                          >
-                            {STAFF_STATUS_LABELS[link.staffStatus as StaffStatus] || link.staffStatus}
-                          </Badge>
-                        </td>
-                        <td>
-                          <button
-                            onClick={() => setUnlinkTarget({ linkId: link.id, staffName: link.staffName })}
-                            className="p-2 rounded hover:bg-bg-hover text-txt-muted hover:text-critical transition-colors"
-                            title="연결 해제"
-                          >
-                            <DeleteOutlined />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <StoreStaffTab
+            store={store}
+            getRoleBadgeVariant={getRoleBadgeVariant}
+            getStaffStatusBadgeVariant={getStaffStatusBadgeVariant}
+            setUnlinkTarget={setUnlinkTarget}
+          />
         )}
       </Card>
 
@@ -982,7 +261,6 @@ export const StoreDetail: React.FC = () => {
         confirmText="해제"
         type="warning"
       />
-
     </div>
   );
 };
