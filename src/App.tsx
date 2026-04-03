@@ -17,6 +17,7 @@ const Categories = lazy(() => import('@/pages/Menu').then(m => ({ default: m.Cat
 const Products = lazy(() => import('@/pages/Menu').then(m => ({ default: m.Products })));
 const OptionCategories = lazy(() => import('@/pages/Menu').then(m => ({ default: m.OptionCategories })));
 const OptionGroups = lazy(() => import('@/pages/Menu').then(m => ({ default: m.OptionGroups })));
+const MenuInfoManagement = lazy(() => import('@/pages/Menu').then(m => ({ default: m.MenuInfoManagement })));
 const Discounts = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.Discounts })));
 const Coupons = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.Coupons })));
 const BenefitCampaigns = lazy(() => import('@/pages/Marketing').then(m => ({ default: m.BenefitCampaigns })));
@@ -97,6 +98,7 @@ export default function App() {
           <Route path="menu/products" element={<ProtectedRoute requiredPermissions={[{ resource: 'menu', action: 'read' }]}><Products /></ProtectedRoute>} />
           <Route path="menu/options" element={<ProtectedRoute requiredPermissions={[{ resource: 'menu', action: 'read' }]}><OptionCategories /></ProtectedRoute>} />
           <Route path="menu/option-groups" element={<ProtectedRoute requiredPermissions={[{ resource: 'menu', action: 'read' }]}><OptionGroups /></ProtectedRoute>} />
+          <Route path="menu/info" element={<ProtectedRoute requiredPermissions={[{ resource: 'menu', action: 'read' }]}><MenuInfoManagement /></ProtectedRoute>} />
 
           {/* 마케팅관리 */}
           <Route path="marketing/discounts" element={<ProtectedRoute requiredPermissions={[{ resource: 'marketing', action: 'read' }]}><Discounts /></ProtectedRoute>} />

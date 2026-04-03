@@ -68,6 +68,7 @@ export const NAV_ITEMS: NavItem[] = [
       { path: '/menu/products', icon: FileTextOutlined, label: '메뉴' },
       { path: '/menu/options', icon: TagsOutlined, label: '옵션 카테고리' },
       { path: '/menu/option-groups', icon: GroupOutlined, label: '옵션 그룹' },
+      { path: '/menu/info', icon: FileProtectOutlined, label: '원산지/알레르기' },
     ],
   },
   {
