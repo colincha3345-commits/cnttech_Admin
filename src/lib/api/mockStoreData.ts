@@ -13,6 +13,7 @@ export const mockStores: Store[] = [
     id: 'store-1',
     name: '강남점',
     code: 'GN001',
+    phone: '02-1234-5678',
     branchId: 'branch-002', // 서울지사
     status: 'active',
     address: {
@@ -153,6 +154,7 @@ export const mockStores: Store[] = [
     id: 'store-2',
     name: '홍대점',
     code: 'HD001',
+    phone: '02-2345-6789',
     branchId: 'branch-002', // 서울지사
     status: 'active',
     address: {
@@ -238,6 +240,7 @@ export const mockStores: Store[] = [
     id: 'store-3',
     name: '부산 서면점',
     code: 'BS001',
+    phone: '051-345-6789',
     branchId: 'branch-005', // 부산지사
     status: 'active',
     address: {
@@ -329,6 +332,7 @@ export const mockStores: Store[] = [
     id: 'store-4',
     name: '대구 동성로점',
     code: 'DG001',
+    phone: '053-456-7890',
     branchId: 'branch-005', // 부산지사
     status: 'active',
     address: {
@@ -415,6 +419,7 @@ export const mockStores: Store[] = [
     id: 'store-5',
     name: '인천 구월점',
     code: 'IC001',
+    phone: '032-567-8901',
     branchId: 'branch-003', // 경기지사
     status: 'pending',
     address: {

@@ -57,6 +57,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
   const [formData, setFormData] = useState<StoreFormData>({
     name: '',
     code: '',
+    phone: '',
     branchId: '',
     status: 'pending',
     address: {
@@ -99,6 +100,7 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
       setFormData({
         name: existingStore.name,
         code: existingStore.code || '',
+        phone: existingStore.phone || '',
         branchId: existingStore.branchId || '',
         status: existingStore.status,
         address: { ...existingStore.address },
@@ -355,6 +357,16 @@ export const StoreForm: React.FC<StoreFormProps> = ({ mode }) => {
                 value={formData.code}
                 onChange={(e) => handleChange('code', '', e.target.value)}
                 placeholder="POS 연동용 코드"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-txt-main mb-1">
+                매장 전화번호
+              </label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => handleChange('phone', '', e.target.value)}
+                placeholder="02-1234-5678"
               />
             </div>
             <div>

@@ -301,6 +301,7 @@ export interface Store {
   id: string;
   name: string;
   code?: string;
+  phone?: string;        // 매장 전화번호
   branchId: string;      // 소속 지사 (필수) [2026-03-23 추가]
   status: StoreStatus;
   address: AddressInfo;
@@ -425,6 +426,7 @@ export interface BankAccountFormData {
 export interface StoreFormData {
   name: string;
   code?: string;
+  phone?: string;        // 매장 전화번호
   branchId: string;      // 소속 지사 (필수)
   status: StoreStatus;
   address: AddressFormData;

@@ -26,6 +26,10 @@ export const StoreBasicTab: React.FC<StoreBasicTabProps> = ({
           <p className="mt-1 font-mono">{store.code || '-'}</p>
         </div>
         <div>
+          <label className="text-sm text-txt-muted">매장 전화번호</label>
+          <p className="mt-1">{store.phone || '-'}</p>
+        </div>
+        <div>
           <label className="text-sm text-txt-muted">상태</label>
           <div className="mt-1">
             <Badge variant={getStatusBadgeVariant(store.status)}>
