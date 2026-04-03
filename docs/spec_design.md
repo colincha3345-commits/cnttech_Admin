@@ -19,7 +19,7 @@
 ### 1.1 배너 관리 (`/design/banners`)
 
 1. **배너 목록** — 위치(메인상단/메인중간/메인하단/서브상단)별 탭 또는 필터로 분류하여 노출한다. 상태별 Badge(활성=success, 비활성=secondary, 예약=info)를 표기한다.
-2. **배너 등록/수정** — 2컬럼 레이아웃(좌측 목록 + 우측 폼)에서 이미지, 링크URL, 게시위치, 노출기간, 정렬순서를 입력한다.
+2. **배너 등록/수정** — 2컬럼 레이아웃(좌측 목록 + 우측 폼)에서 PC/모바일 배너 이미지와 랜딩 URL을 각각 설정하고, 게시위치, 노출기간, 정렬순서를 입력한다. 각 이미지 업로드 아래에 권장 사이즈 안내를 표시한다.
 3. **상시 노출** — '상시 노출' 체크 시 종료일 DatePicker를 비활성화한다.
 
 ### 1.2 팝업 관리 (`/design/popups`)
@@ -52,8 +52,10 @@
 | 기능 / 필드명 | 입력/노출 형태 | 필수 여부 | 글자수 / 제약조건 | 비고 (UI/UX) |
 | :--- | :--- | :---: | :--- | :--- |
 | **배너명 (title)** | Input | Y | 2 ~ 50자 | 관리용 타이틀이다. 앱에는 노출하지 않는다. |
-| **이미지 (imageUrl)** | File Upload | Y | 5MB 이하, jpg/png/webp | 업로드 후 미리보기 썸네일을 제공한다. |
-| **링크 URL (linkUrl)** | Input | Y | URL 형식 | 웹 URL 또는 앱 딥링크를 입력한다. |
+| **PC 배너 이미지 (pcImageUrl)** | File Upload | Y(최소 1개) | 5MB 이하, jpg/png/webp | 권장 사이즈: 1200 × 586px. PC 웹에서 노출되는 배너 이미지다. |
+| **모바일 배너 이미지 (mobileImageUrl)** | File Upload | Y(최소 1개) | 5MB 이하, jpg/png/webp | 권장 사이즈: 331 × 196px. 모바일 앱에서 노출되는 배너 이미지다. |
+| **PC 랜딩 URL (pcLinkUrl)** | Input | N | URL 형식 | PC에서 클릭 시 이동할 웹 경로다. |
+| **모바일 랜딩 URL (mobileLinkUrl)** | Input | N | URL/딥링크 형식 | 모바일에서 클릭 시 이동할 경로다. (예: myapp://events) |
 | **게시 위치 (position)** | Select | Y | 4가지 | main_top/main_middle/main_bottom/sub_top 선택이다. |
 | **정렬 순서 (sortOrder)** | Number Input | Y | 1 이상 | 동일 위치 내 오름차순 정렬한다. |
 | **시작일 (startDate)** | DatePicker | Y | YYYY-MM-DD | 노출 시작일이다. |
@@ -109,8 +111,10 @@
 | :--- | :--- | :---: | :--- | :--- |
 | **id (PK)** | UUID | Y | 36자 | 고유 식별자다. |
 | **title** | String | Y | 2 ~ 50자 | 배너 관리명이다. |
-| **imageUrl** | String | Y | URL 형식 | S3 등 오브젝트 스토리지 경로다. |
-| **linkUrl** | String | Y | URL 형식 | 클릭 시 이동 경로다. |
+| **pcImageUrl** | String | Y(최소 1개) | URL 형식 | PC 배너 이미지 경로다. 권장 1200×586px. |
+| **mobileImageUrl** | String | Y(최소 1개) | URL 형식 | 모바일 배너 이미지 경로다. 권장 331×196px. |
+| **pcLinkUrl** | String | N | URL 형식 | PC 클릭 시 이동 경로다. |
+| **mobileLinkUrl** | String | N | URL/딥링크 형식 | 모바일 클릭 시 이동 경로다. |
 | **position** | Enum | Y | 4가지 | 'main_top', 'main_middle', 'main_bottom', 'sub_top' 만 허용한다. |
 | **status** | Enum | Y | - | 'active', 'inactive', 'scheduled'이다. startDate/endDate 기반으로 배치 전환한다. |
 | **sortOrder** | Integer | Y | 1 이상 | 동일 position 내 정렬 순서다. |
