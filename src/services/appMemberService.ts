@@ -73,6 +73,7 @@ class AppMemberService {
     dateType?: MemberSearchFilter['dateType'];
     dateFrom?: string;
     dateTo?: string;
+    marketingAgreed?: boolean;
     page?: number;
     limit?: number;
   }): Promise<{ data: Member[]; pagination: Pagination }> {
@@ -87,6 +88,7 @@ class AppMemberService {
       dateType,
       dateFrom,
       dateTo,
+      marketingAgreed,
       page = 1,
       limit = 10,
     } = params;
@@ -165,6 +167,11 @@ class AppMemberService {
         if (toDate && target > toDate) return false;
         return true;
       });
+    }
+
+    // 마케팅 동의 필터
+    if (marketingAgreed !== undefined) {
+      result = result.filter((m) => m.marketingAgreed === marketingAgreed);
     }
 
     // 전체 수

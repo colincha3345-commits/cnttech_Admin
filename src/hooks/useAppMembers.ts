@@ -15,6 +15,7 @@ interface UseAppMembersParams {
   dateType?: MemberSearchFilter['dateType'];
   dateFrom?: string;
   dateTo?: string;
+  marketingAgreed?: boolean;
   page?: number;
   limit?: number;
 }
@@ -29,12 +30,13 @@ export function useAppMembers(params: UseAppMembersParams = {}) {
     dateType,
     dateFrom,
     dateTo,
+    marketingAgreed,
     page = 1,
     limit = 10,
   } = params;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['app-members', filter, searchType, searchKeyword, grades, statuses, dateType, dateFrom, dateTo, page, limit],
+    queryKey: ['app-members', filter, searchType, searchKeyword, grades, statuses, dateType, dateFrom, dateTo, marketingAgreed, page, limit],
     queryFn: () =>
       appMemberService.getMembers({
         filter,
@@ -45,6 +47,7 @@ export function useAppMembers(params: UseAppMembersParams = {}) {
         dateType,
         dateFrom,
         dateTo,
+        marketingAgreed,
         page,
         limit,
       }),

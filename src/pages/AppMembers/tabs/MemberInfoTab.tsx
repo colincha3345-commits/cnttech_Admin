@@ -64,21 +64,32 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
     }
   };
 
-  // SNS 아이콘 색상
-  const getSnsColor = (sns: string) => {
+  // SNS 아이콘 및 컬러 매핑
+  const getSnsStyle = (sns: string) => {
     switch (sns) {
       case 'kakao':
-        return 'bg-yellow-400 text-yellow-900';
+        return 'bg-[#FEE500] text-[#191919]';
       case 'naver':
-        return 'bg-green-500 text-white';
-      case 'google':
-        return 'bg-red-500 text-white';
+        return 'bg-[#03C75A] text-white';
       case 'apple':
-        return 'bg-gray-900 text-white';
+        return 'bg-black text-white';
+      case 'google':
+        return 'bg-white text-gray-700 border border-gray-200';
       case 'facebook':
-        return 'bg-blue-600 text-white';
+        return 'bg-[#1877F2] text-white';
       default:
         return 'bg-gray-400 text-white';
+    }
+  };
+  
+  const getSnsInitial = (sns: string) => {
+    switch (sns) {
+      case 'kakao': return 'K';
+      case 'naver': return 'N';
+      case 'apple': return 'A';
+      case 'google': return 'G';
+      case 'facebook': return 'F';
+      default: return sns.charAt(0).toUpperCase();
     }
   };
 
@@ -209,11 +220,16 @@ export const MemberInfoTab: React.FC<MemberInfoTabProps> = ({ member }) => {
                 {member.linkedSns.map((sns) => (
                   <tr key={sns.snsType}>
                     <td>
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${getSnsColor(sns.snsType)}`}
-                      >
-                        {SNS_TYPE_LABELS[sns.snsType]}
-                      </span>
+                      <div className="flex items-center">
+                        <span
+                          className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-bold mr-2 ${getSnsStyle(sns.snsType)}`}
+                        >
+                          {getSnsInitial(sns.snsType)}
+                        </span>
+                        <span className="text-sm font-medium">
+                          {SNS_TYPE_LABELS[sns.snsType]}
+                        </span>
+                      </div>
                     </td>
                     <td>
                       <code className="px-2 py-1 bg-bg-hover rounded text-xs font-mono">

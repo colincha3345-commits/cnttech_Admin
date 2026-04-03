@@ -6,6 +6,7 @@ import {
   ClockCircleOutlined,
   ShoppingOutlined,
   TeamOutlined,
+  DownloadOutlined,
 } from '@ant-design/icons';
 
 import {
@@ -23,6 +24,9 @@ import { useAppMembers, useAppMemberStats } from '@/hooks';
 import { useTableSort } from '@/hooks/useTableSort';
 import { useMemberGroups } from '@/hooks/useMemberGroups';
 import { GroupFormModal } from '@/pages/AppMembers/components/GroupFormModal';
+import { ExportReasonModal } from '@/pages/AppMembers/components/ExportReasonModal';
+import { auditService } from '@/services/auditService';
+import { useAuthStore } from '@/stores/authStore';
 import type { MemberListFilter } from '@/types/app-member';
 import type { Member, MemberGrade, MemberStatus } from '@/types/member';
 import {
@@ -58,6 +62,7 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
   const [dateType, setDateType] = useState<DateType>('registeredAt');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [marketingAgreed, setMarketingAgreed] = useState<boolean | 'all'>('all');
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -66,7 +71,12 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
 
   // 그룹 생성 모달
   const [showGroupModal, setShowGroupModal] = useState(false);
+  // 엑셀 내보내기 모달
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
   const { groups } = useMemberGroups();
+  const { user } = useAuthStore();
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -102,6 +112,7 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
     dateType: dateFrom || dateTo ? dateType : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    marketingAgreed: marketingAgreed === 'all' ? undefined : marketingAgreed,
     page,
     limit,
   });
@@ -144,6 +155,37 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
     setPage(1);
   };
 
+  // 엑셀 내보내기 실행
+  const handleExport = async (reason: string) => {
+    setIsExporting(true);
+    try {
+      // 실제 구현에서는 API 호출
+      console.log('Exporting with reason:', reason);
+      
+      // 감사 로그 기록
+      if (user) {
+        auditService.log({
+          action: 'DATA_EXPORT',
+          resource: 'app-members',
+          userId: user.id,
+          details: {
+            reason,
+            filter: { searchType, searchKeyword, selectedGrades, selectedStatuses, marketingAgreed },
+            count: pagination.total,
+          },
+        });
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 시뮬레이션
+      window.alert('엑셀 파일 생성이 완료되었습니다. (다운로드 시작)');
+      setShowExportModal(false);
+    } catch (error) {
+      window.alert('내보내기 중 오류가 발생했습니다.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // 등급 필터 토글
   const toggleGradeFilter = (grade: MemberGrade) => {
     setSelectedGrades((prev) =>
@@ -171,7 +213,25 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
             <UserOutlined className="text-primary text-sm" />
           </div>
           <div>
-            <p className="font-medium text-txt-main">{member.name}</p>
+            <div className="font-medium text-txt-main flex items-center gap-1.5">
+              {member.name}
+              {member.linkedSns && member.linkedSns.length > 0 && (
+                <div className="flex gap-0.5">
+                  {member.linkedSns.map(sns => (
+                    <span 
+                      key={sns.snsType} 
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        sns.snsType === 'kakao' ? 'bg-yellow-400' :
+                        sns.snsType === 'naver' ? 'bg-green-500' :
+                        sns.snsType === 'apple' ? 'bg-gray-900' :
+                        'bg-blue-500'
+                      }`}
+                      title={sns.snsType.toUpperCase()}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
             <p className="text-xs text-txt-muted">{member.memberId}</p>
           </div>
         </div>
@@ -228,12 +288,20 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
     <div className="space-y-6">
       {/* 헤더 */}
       <div>
-        <h1 className="text-2xl font-bold text-txt-main">
-          {MEMBER_LIST_FILTER_LABELS[filter]}
-        </h1>
-        <p className="text-sm text-txt-muted mt-1">
-          앱 회원을 조회하고 관리합니다.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-txt-main">
+              {MEMBER_LIST_FILTER_LABELS[filter]}
+            </h1>
+            <p className="text-sm text-txt-muted mt-1">
+              앱 회원을 조회하고 관리합니다.
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowExportModal(true)}>
+            <DownloadOutlined className="mr-1" />
+            엑셀 다운로드
+          </Button>
+        </div>
       </div>
 
       {/* 통계 카드 */}
@@ -309,6 +377,7 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
               setSearchKeyword('');
               setSelectedGrades([]);
               setSelectedStatuses([]);
+              setMarketingAgreed('all');
               setDateType('registeredAt');
               setDateFrom('');
               setDateTo('');
@@ -412,6 +481,24 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
                 onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
+            </div>
+
+            {/* 마케팅 수신 동의 */}
+            <div>
+              <label className="block text-xs font-medium text-txt-muted mb-1">마케팅 동의</label>
+              <select
+                value={marketingAgreed.toString()}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setMarketingAgreed(val === 'all' ? 'all' : val === 'true');
+                  setPage(1);
+                }}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white text-txt-main focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                <option value="all">전체</option>
+                <option value="true">동의 (Agreed)</option>
+                <option value="false">미동의 (Disagreed)</option>
+              </select>
             </div>
 
             {/* 검색어 */}
@@ -534,6 +621,14 @@ export const AppMemberList: React.FC<AppMemberListProps> = ({ filter = 'all' }) 
         groups={groups}
         onSuccess={handleGroupCreateSuccess}
         initialMemberIds={Array.from(selectedIds)}
+      />
+
+      {/* 엑셀 내보내기 사유 입력 모달 */}
+      <ExportReasonModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onConfirm={handleExport}
+        isLoading={isExporting}
       />
     </div>
   );
